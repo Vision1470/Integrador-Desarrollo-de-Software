@@ -1,0 +1,38 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Inicio de sesión</title>
+</head>
+
+<body>
+    <h1>Inicio de sesión</h1>
+    <h3>En esta página ingresarás al sistema.<br>Sigue las instrucciones que están abajo.</h3>
+
+    <br>
+    ¿Es tu primer ingreso? <a href="{% url 'primer_ingreso' %}">Haz click aquí</a>
+    <br>
+    <br>
+    <br>
+
+    <form action="{% url 'enfermeria:pacientes_enfermeria' %}" method="POST">
+        {% csrf_token %}
+        <label for="usuario">Escribe tu usuario aquí -></label>
+        <input required id="usuario" name="usuario" placeholder="Tu usuario">
+        <br>
+        <label for="contraseña">Escribe tu contraseña aquí -></label>
+        <input required type="password" id="contraseña" name="contraseña" placeholder="Tu contraseña">
+        <br>
+        <button type="submit">Acceder</button>
+    </form>
+
+    <br>
+    <br>
+    <p> 
+        ¿Olvidaste tu usuario? <a href="{% url 'recuperar_usuario' %}">Haz click aquí</a>
+        <br> 
+        ¿Olvidaste tu contraseña? <a href="{% url 'recuperar_contrasenia' %}">Haz click aquí</a>  
+    </p>
+</body>
+</html>

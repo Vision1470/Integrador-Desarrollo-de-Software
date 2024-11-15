@@ -1,0 +1,69 @@
+<!DOCTYPE html>
+
+<html lang="en">
+<meta charset="UTF-8" />
+
+
+<head>
+    <title>Inicio de sesion</title>
+</head>
+
+
+<body>
+    <h1> Registro de usuario </h1>
+    <h3> Aqui registraras los datos para registrar tu cuenta <br> Sigue las instrucciones abajo </h3>
+
+    <br><br><br>
+
+    <form action="{% url 'login' %}" method="get" >
+        <label for="usuario"> Crea tu nombre de usuario aqui (memorizalo, con el accederas a tu cuenta y seras identificad@) -></label>
+        <input required id="usuario" name="Usuario" placeholder="Tu nombre de usuario">
+        <br>
+        <label for="usuario"> Confirma tu nombre de usuario (solo escribe lo mismo de arriba, que sea exactaente igual) -></label>
+        <input required id="usuario" name="Usuario" placeholder="Tu nombre de usuario (otra vez)">
+        <br>
+        <br>
+
+
+        <h4> Hay algunas reglas para que puedas crear tu contraseña, son las siguientes: </h4>
+        <p> 
+            1-Debe tener al menos 10 caracteres de longitud (si tiene menos no sera valida) <br>
+            2-Debe tener MINIMO 1 letra en mayuscula y 1 en minuscula (de no tenerlas no sera valida) <br>
+            3-Debe tener al menos 1 numero (de no tenerlo, no sera valida) <br>
+            4-Opcionalmente puedes agregar un caracter especial, estos son todos aquellos que no son numeros ni letras.
+            (Si no colocas uno tu contraseña igualmente sera valida, pero es recomendable que lo hagas para que sea mas segura)
+            <br>
+            Mezcla todas las instrucciones arriba par crear tu cuenta, entre mas lo hagas, mas segura sera tu cuenta <br>
+            (Abajo hay un indicador de que tan segura es tu contraseña, usalo como una guia).
+        </p>
+
+        <label for="contraseña"> Crea tu contraseña aqui (memorizala, con ella accederas a tu cuenta) -></label>
+        <input required type="password" id="contraseña" name="Contraseña" placeholder="Tu contraseña">
+        <br>
+        <label for="contraseña"> Confirma tu contraseña (solo esribela de nuevo, que sea exactamente igual) -></label>
+        <input required type="password" id="contraseña" name="Contraseña" placeholder="Tu contraseña">
+        <br><br><br>
+
+
+        <label for="correo"> Escribe tu correo electronico aqui (te servira para recibir notificaciones, recuperar tu usuario y/o contraseña en caso de olvidar alguno) -></label>
+        <input required id="correo" name="Correo" placeholder="Tu correo electronico">
+        <br>
+        <label for="correo"> Confirma tu correo electronico (solo escribe lo mismo de arriba, que sea exactaente igual) -></label>
+        <input required id="correo" name="Correo" placeholder="Tu correo electronico (otra vez)">
+        <br><br><br>
+        
+
+        <label for="numeroTelefonico"> Numero telefonico aqui (registra tu numero de telefono, tendra usos similares al correo) -></label>
+        <input required id="numeroTelefonico" name="NumeroTelefonico" placeholder="Tu numero telefonico">
+        <br>
+        <label for="numeroTelefonico"> Confirma tu numero telefonico (solo escribe lo mismo de arriba, que sea exactaente igual) -></label>
+        <input required id="numeroTelefonico" name="NumeroTelefonico" placeholder="Tu nombre de usuario (otra vez)">
+        <br><br><br>
+
+
+        <button type="submit" >  Crear usuario </button>
+    </form>
+
+</body>
+
+</html>

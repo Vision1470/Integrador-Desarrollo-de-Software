@@ -5,21 +5,7 @@ from .models import area, actividad
 from django.shortcuts import get_object_or_404
 
 # Create your views here.
-def index(request):
-    title = "welcome"
-    return render (request, "index.html", {
-        'title': title
-    })
-
-def hola(request, usuario):
-    return HttpResponse("Hola: %s" %usuario)
-
-def sobre(request):
-    username = 'yo'
-    return render(request, 'sobre.html', {
-        'username': username
-    })
-    
+     
 def Area(request):
    #areas = list(area.objects.values())
     Areas = area.objects.all()
@@ -33,3 +19,29 @@ def Actividad(request):
     return render(request, 'actividad.html', {
         'actividades' : Actividades 
     })
+
+
+
+
+
+
+
+''''
+def hola(request, usuario):
+    return HttpResponse("Hola: %s" %usuario)
+'''
+
+
+'''
+def index(request):
+    title = "welcome"
+    return render (request, "index.html", {
+        'title': title
+    })
+
+def sobre(request):
+    username = 'yo'
+    return render(request, 'sobre.html', {
+        'username': username
+    })
+'''

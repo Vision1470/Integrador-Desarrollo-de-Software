@@ -1,0 +1,31 @@
+<!DOCTYPE html>
+
+<html>
+<meta charset="UTF-8"/>
+
+
+    <head>
+        <title> Confirmar correo </title>
+    </head>
+
+    <body>
+        <h1> Confirmacion de correo </h1>
+        <h3> Confirmanos que realmente es tu correo <br> Sigue la instruccion de abajo, es por tu seguridad c:</h3>
+
+    <br>
+    <br>
+    <form action="{% url 'login' %}" method="get" >
+        <label for="codigo"> Escribe el codigo que fue enviado a tu correo -></label>
+        <input id="codigo" name="Codigo" placeholder="Codigo">
+        <br>
+        <button type="submit"> Enviar </button>
+    </form>
+
+    <p>
+        ¿No te llego el correo? <a href="Confirmar correo.html"> Haz click aqui para reenviarlo </a>
+    </p>
+
+    </body>
+
+
+</html>

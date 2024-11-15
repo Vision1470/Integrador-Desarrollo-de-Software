@@ -1,0 +1,30 @@
+<!DOCTYPE html>
+
+<html>
+<meta charset="UTF-8"/>
+
+
+    <head>
+        <title> Recuperacion de usuario </title>
+    </head>
+
+    <body>
+        <h1> Recuperacion de usuario</h1>
+        <h3> Aqui podras recuperar tu usuario <br> Sigue las instrucciones</h3>
+
+    <br>
+    <br>
+    <form action="{% url 'login' %}" method="get" >
+        <label for="correo"> Escribe tu correo aqui -></label>
+        <input id="correo" name="Correo" placeholder="Tu correo">
+        <br>
+        <label for="correo"> Vuelve a escribir tu correo aqui -></label>
+        <input id="correo" name="Correo" placeholder="Tu correo de nuevo">
+        <br>
+        <button type="submit"> Enviar </button>
+    </form>
+
+    </body>
+
+
+</html>
