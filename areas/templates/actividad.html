@@ -1,0 +1,12 @@
+<h1> Actividades </h1>
+
+{% for actividad in actividades %}
+
+<div>
+<h3> {{ actividad.titulo }}</h3>
+<p> {{ actividad.descripcion }}</p>
+<p> Area: {{ actividad.area }}</p>
+
+</div>
+
+{% endfor %}
