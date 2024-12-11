@@ -14,6 +14,7 @@
     <form action="{% url 'login:login' %}" method="POST">
         {% csrf_token %}
         <!-- Usuario -->
+        <label for="usuario_nuevo">Coloca tu nombre de ususario antiguo aqui-></label>
         <label for="usuario_nuevo">Crea tu nombre de usuario aquí (memorízalo, con él accederás a tu cuenta y serás identificad@) -></label>
         <input required id="usuario_nuevo" name="usuario" placeholder="Tu nombre de usuario">
         <br>

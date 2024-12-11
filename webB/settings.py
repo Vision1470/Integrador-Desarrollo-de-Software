@@ -42,6 +42,8 @@ INSTALLED_APPS = [
     'usuarioEnfermeria'
 ]
 
+AUTH_USER_MODEL = 'login.Usuarios'
+
 MIDDLEWARE = [
     'django.middleware.security.SecurityMiddleware',
     'django.contrib.sessions.middleware.SessionMiddleware',
