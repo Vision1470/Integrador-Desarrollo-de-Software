@@ -1,0 +1,27 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8"/>
+    <title>Confirmar correo</title>
+</head>
+
+<body>
+    <h1>Confirmación de correo</h1>
+    <h3>Confírmanos que realmente es tu correo<br>Sigue la instrucción de abajo, es por tu seguridad c:</h3>
+
+    <br>
+    <br>
+    <form action="{% url 'login:login' %}" method="POST">
+        {% csrf_token %}
+        <label for="codigo">Escribe el código que fue enviado a tu correo -></label>
+        <input required id="codigo" name="codigo" placeholder="Código">
+        <br>
+        <button type="submit">Enviar</button>
+    </form>
+
+    <p>
+        ¿No te llegó el correo? <a href="{% url 'login:confirmar_correo' %}">Haz click aquí para reenviarlo</a>
+    </p>
+
+</body>
+</html>

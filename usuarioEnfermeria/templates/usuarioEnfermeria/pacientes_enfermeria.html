@@ -1,0 +1,39 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8" />
+    <title>Tus pacientes</title>
+</head>
+
+<body>
+    <h1>Tus pacientes</h1>
+    
+    <table>
+        <tr>
+            <th>Nombre</th>
+            <th>Camilla</th>
+            <th>Area</th>
+            <th>Cuidados</th>
+            <th>Formulario</th>
+            <th>Doctor</th>
+        </tr>
+        <tr>
+            <td>Juan</td>
+            <td>40</td>
+            <td>Quemados</td>
+            <td>
+                <a href="{% url 'enfermeria:cuidados_paciente' %}" class="button">Ver</a>
+            </td>
+            <td>
+                <a href="{% url 'enfermeria:formulario_paciente' %}" class="button">Llenar</a>
+                <input type="checkbox">
+            </td>
+            <td>Alex</td>
+        </tr>
+    </table>
+
+    <br><br><br><br>
+
+    <a href="{% url 'login:login' %}" class="button">Cerrar sesión</a>
+</body>
+</html>

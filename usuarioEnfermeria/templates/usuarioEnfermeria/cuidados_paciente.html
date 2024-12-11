@@ -1,0 +1,35 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+   <meta charset="UTF-8" />
+   <title>Cuidados del paciente</title>
+</head>
+
+<body>
+   <h1>Cuidados paciente:</h1>
+
+   <table>
+       <tr>
+           <th>Padecimientos</th>
+           <th>Cuidados</th>
+           <th>Medicamentos</th>
+       </tr>
+       
+       <tr>
+           <td>Medicamento 1 <input type="checkbox" name="medicamento1"></td>
+           <td>Padecimiento 1</td>
+           <td>Cuidado 1 <input type="checkbox" name="cuidado1"></td>
+       </tr>
+       
+       <tr>
+           <td>Medicamento 2 <input type="checkbox" name="medicamento2"></td>
+           <td>Padecimiento 2</td>
+           <td>Cuidado 2 <input type="checkbox" name="cuidado2"></td>
+       </tr>
+   </table>
+
+   <br><br><br>
+
+   <a href="{% url 'enfermeria:pacientes_enfermeria' %}" class="button">Volver</a>
+</body>
+</html>

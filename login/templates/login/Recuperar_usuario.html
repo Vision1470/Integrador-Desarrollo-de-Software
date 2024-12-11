@@ -1,0 +1,25 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8"/>
+    <title>Recuperación de usuario</title>
+</head>
+
+<body>
+    <h1>Recuperación de usuario</h1>
+    <h3>Aquí podrás recuperar tu usuario<br>Sigue las instrucciones</h3>
+
+    <br>
+    <br>
+    <form action="{% url 'login:login' %}" method="POST">
+        {% csrf_token %}
+        <label for="correo_principal">Escribe tu correo aquí -></label>
+        <input required type="email" id="correo_principal" name="correo" placeholder="Tu correo">
+        <br>
+        <label for="correo_confirmar">Vuelve a escribir tu correo aquí -></label>
+        <input required type="email" id="correo_confirmar" name="correo_confirmar" placeholder="Tu correo de nuevo">
+        <br>
+        <button type="submit">Enviar</button>
+    </form>
+</body>
+</html>

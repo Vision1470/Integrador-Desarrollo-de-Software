@@ -1,0 +1,78 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8" />
+    <title>Formulario paciente</title>
+</head>
+
+<body>
+    <h1>Formulario paciente:</h1>
+
+    <form method="POST" action="{% url 'enfermeria:formulario_paciente' %}">
+        {% csrf_token %}
+        <p>
+            ¿Se dieron todos los cuidados? Si <input type="checkbox" name="todos_cuidados_si"> 
+            No <input type="checkbox" name="todos_cuidados_no">
+            <label for="cuidadosFaltantes">Cuidados faltantes</label>
+        
+            <select id="cuidadosFaltantes" name="CuidadosFaltantes" multiple>  
+                <option value="Cuidado 1">Cuidado 1</option>
+                <option value="Cuidado 2">Cuidado 2</option>
+                <option value="Cuidado 3">Cuidado 3</option>
+            </select>
+
+            <button type="submit">Agregar</button>
+        </p> 
+
+        <p>
+            ¿Se administraron todos los medicamentos? Si <input type="checkbox" name="todos_medicamentos_si"> 
+            No <input type="checkbox" name="todos_medicamentos_no">
+            <label for="medicamentosFaltantes">Medicamentos faltantes</label>
+        
+            <select id="medicamentosFaltantes" name="MedicamentosFaltantes" multiple> 
+                <option value="Medicamento 1">Medicamento 1</option>
+                <option value="Medicamento 2">Medicamento 2</option>
+                <option value="Medicamento 3">Medicamento 3</option>
+            </select>
+
+            <button type="submit">Agregar</button>
+        </p>
+    </form>
+        
+    <form method="POST" action="{% url 'enfermeria:formulario_paciente' %}">
+        {% csrf_token %}
+        <table>
+            <tr>
+                <td>Padecimiento 1</td>
+                <td>Mejoró <input type="checkbox" name="padecimiento1_mejoro"></td>
+                <td>Igual <input type="checkbox" name="padecimiento1_igual"></td>
+                <td>Empeoró <input type="checkbox" name="padecimiento1_empeoro"></td>
+                <td><button type="submit">Aceptar</button></td>
+            </tr>
+            <tr>
+                <td>Padecimiento 2</td>
+                <td>Mejoró <input type="checkbox" name="padecimiento2_mejoro"></td>
+                <td>Igual <input type="checkbox" name="padecimiento2_igual"></td>
+                <td>Empeoró <input type="checkbox" name="padecimiento2_empeoro"></td>
+                <td><button type="submit">Aceptar</button></td>
+            </tr>
+            <tr>
+                <td>Padecimiento 3</td>
+                <td>Mejoró <input type="checkbox" name="padecimiento3_mejoro"></td>
+                <td>Igual <input type="checkbox" name="padecimiento3_igual"></td>
+                <td>Empeoró <input type="checkbox" name="padecimiento3_empeoro"></td>
+                <td><button type="submit">Aceptar</button></td>
+            </tr>
+        </table>
+    </form>
+
+    <form method="POST" action="{% url 'enfermeria:formulario_paciente' %}">
+        {% csrf_token %}
+        <input type="text" id="comentarios" name="Comentarios" placeholder="Agregar comentarios...">
+        <button type="submit">Enviar comentarios</button>
+    </form>
+
+    <br>
+    <a href="{% url 'enfermeria:pacientes_enfermeria' %}" class="button">Guardar y volver a pacientes</a>
+</body>
+</html>
