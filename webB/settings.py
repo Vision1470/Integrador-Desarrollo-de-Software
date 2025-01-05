@@ -39,7 +39,8 @@ INSTALLED_APPS = [
     'django.contrib.staticfiles',
     'areas',
     'login',
-    'usuarioEnfermeria'
+    'usuarioEnfermeria',
+    'usuarioDoctor',
 ]
 
 AUTH_USER_MODEL = 'login.Usuarios'

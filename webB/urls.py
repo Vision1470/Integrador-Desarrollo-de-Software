@@ -23,4 +23,5 @@ urlpatterns = [
     path('', include('login.urlsLog')),
     #path('', include('areas.urlsAr')),
     path('enfermeria/', include('usuarioEnfermeria.urlsUe')),
+    path('doctor/', include('usuarioDoctor.urlsUd')),
 ]

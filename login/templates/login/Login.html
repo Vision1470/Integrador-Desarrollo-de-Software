@@ -7,6 +7,17 @@
 </head>
 
 <body>
+    <!-- Agregar esta sección de mensajes -->
+    {% if messages %}
+    <div class="messages">
+        {% for message in messages %}
+            <div class="message {% if message.tags %}{{ message.tags }}{% endif %}">
+                {{ message }}
+            </div>
+        {% endfor %}
+    </div>
+    {% endif %}
+
     <h1>Inicio de sesión</h1>
     <h3>En esta página ingresarás al sistema.<br>Sigue las instrucciones que están abajo.</h3>
 
@@ -16,7 +27,7 @@
     <br>
     <br>
 
-    <form action="{% url 'enfermeria:pacientes_enfermeria' %}" method="POST">
+    <form action="{% url 'login:login' %}" method="POST">
         {% csrf_token %}
         <label for="usuario">Escribe tu usuario aquí -></label>
         <input required id="usuario" name="usuario" placeholder="Tu usuario">
