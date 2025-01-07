@@ -24,4 +24,5 @@ urlpatterns = [
     #path('', include('areas.urlsAr')),
     path('enfermeria/', include('usuarioEnfermeria.urlsUe')),
     path('doctor/', include('usuarioDoctor.urlsUd')),
+    path('jefa/', include('usuarioJefa.urlsUj')),
 ]

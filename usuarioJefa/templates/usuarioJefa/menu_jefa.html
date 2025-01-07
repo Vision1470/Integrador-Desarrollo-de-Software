@@ -1,0 +1,33 @@
+<!DOCTYPE html>
+<html lang="en">
+<meta charset="UTF-8"/>
+
+<head>
+    <h1> Menu Jefa de piso </h1>
+</head>
+
+<body>
+    <td>
+        <a href="{% url 'jefa:pacientes_jefa' %}" class="button">Pacientes</a>
+    </td>
+    <td>
+        <a href="{% url 'jefa:calendario_' %}" class="button">Calendario</a>
+    </td>
+    <td>
+        <a class="button">Simulador</a>
+    </td>
+    <td>
+        <a class="button">Solicitar medicamento</a>
+    </td>
+    <td>
+        <a class="button">Material/Farmacia</a>
+    </td>
+    <td>
+        <a href="{% url 'jefa:historiales_' %}" class="button">Historiales</a>
+    </td>
+    <br><br><br><br>
+    <td>
+        <a href="{% url 'login:login' %}" class="button">Cerrar sesión</a>
+    </td>
+</body>
+</html>

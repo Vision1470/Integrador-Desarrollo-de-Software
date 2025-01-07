@@ -1,0 +1,73 @@
+<!DOCTYPE html>
+<html lang="en">
+<meta charset="UTF-8" />
+
+
+<head>
+    <h1> Historial empleados </h1> 
+    <select> <option> Tipo </option> </select>
+</head>
+
+
+<body>
+
+    <h3> Enfermeria </h3>
+    <table>
+        <thead>
+            <tr>
+                <th> Nombre </th>
+                <th> Cedula </th>
+                <th> Cant pacientes atendidos </th>
+                <th> Faltas </th>
+                <th> Rotaciones/Cambios </th>
+                <th> Fecha de entrada</th>
+                <th> Fecha de salida </th>
+            </tr>
+        </thead>
+
+        <tbody>
+            <tr>
+                <td> Sol </td>
+                <td> 0000000 </td>
+                <td> 9 <button> Ver </button> </td>
+                <td> 3 <button> Ver </button> </td>
+                <td> 8 <button> Ver </button> </td>
+                <td> 01/01/2024 </td>
+                <td> 14/01/2024 </td>
+            </tr>
+        </tbody>
+    </table>
+    <br><br><br><br><br><br>
+
+
+    <h3> Doctor </h3>
+
+    <table>
+        <thead>
+            <tr>
+                <th> Nombre </th>
+                <th> Cedula </th>
+                <th> Cant pacientes atendidos </th>
+                <th> Faltas </th>
+                <th> Fecha de entrada</th>
+                <th> Fecha de salida </th>
+            </tr>
+        </thead>
+
+        <tbody>
+            <tr>
+                <td> Sol </td>
+                <td> 0000000 </td>
+                <td> 9 <button> Ver </button> </td>
+                <td> 3 <button> Ver </button> </td>
+                <td> 01/01/2024 </td>
+                <td> 14/01/2024 </td>
+            </tr>
+        </tbody>
+    </table>
+
+    <br><br><br>
+    <a href="{% url 'jefa:historiales_' %}"> Volver </a> 
+</body>
+
+</html>
