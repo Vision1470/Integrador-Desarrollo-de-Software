@@ -6,28 +6,41 @@ from .models import Usuarios
 
 def login_view(request):
     if request.method == 'POST':
-        usuario = request.POST.get('usuario')
-        contraseña = request.POST.get('contraseña')
-        user = authenticate(username=usuario, password=contraseña)
+        usuario = request.POST.get('usuario', '').strip()
+        contraseña = request.POST.get('contraseña', '')
+
+        # Validaciones previas...
         
-        if user is not None:
-            # Verificar si es primer ingreso
-            if user.primerIngreso:
+        try:
+            user_exists = Usuarios.objects.filter(username=usuario).exists()
+            if not user_exists:
+                messages.error(request, 'El usuario ingresado no existe')
+                return render(request, 'login/login.html')
+            
+            user = authenticate(username=usuario, password=contraseña)
+            if user is not None:
+                if user.primerIngreso:
+                    login(request, user)
+                    return redirect('login:primer_ingreso')
+                    
                 login(request, user)
-                return redirect('login:primer_ingreso')
+                # Redirección según tipo de usuario
+                if user.tipoUsuario == 'JP':
+                    return redirect('jefa:menu_jefa')  # Cambiado
+                elif user.tipoUsuario == 'EN':
+                    return redirect('enfermeria:pacientes_enfermeria')
+                elif user.tipoUsuario == 'DR':
+                    return redirect('doctor:pacientes_doctor')  # Cambiado
+                elif user.tipoUsuario == 'CO':
+                    # Podemos omitir esta parte por ahora
+                    pass
+            else:
+                messages.error(request, 'La contraseña ingresada es incorrecta')
+                return render(request, 'login/login.html')
                 
-            login(request, user)
-            # Redirección según tipo de usuario
-            if user.tipoUsuario == 'JP':
-                return redirect('jefa_piso:dashboard')
-            elif user.tipoUsuario == 'EN':
-                return redirect('enfermeria:pacientes_enfermeria')
-            elif user.tipoUsuario == 'DR':
-                return redirect('doctor:dashboard')
-            elif user.tipoUsuario == 'CO':
-                return redirect('cocina:dashboard')
-        else:
-            messages.error(request, 'Usuario o contraseña incorrectos')
+        except Exception as e:
+            messages.error(request, 'Ocurrió un error al intentar iniciar sesión')
+            return render(request, 'login/login.html')
     
     return render(request, 'login/login.html')
 

@@ -2,64 +2,50 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <title>Registro de Usuario</title>
+    <title>Primer ingreso</title>
 </head>
-
 <body>
+    {% if messages %}
+    <div class="messages">
+        {% for message in messages %}
+            <div class="message {% if message.tags %}{{ message.tags }}{% endif %}">
+                {{ message }}
+            </div>
+        {% endfor %}
+    </div>
+    {% endif %}
+
     <h1>Registro de usuario</h1>
-    <h3>Aquí registrarás los datos para crear tu cuenta<br>Sigue las instrucciones abajo</h3>
+    <h3>Por favor complete sus datos para continuar</h3>
 
-    <br><br><br>
-
-    <form action="{% url 'login:login' %}" method="POST">
+    <form method="POST">
         {% csrf_token %}
-        <!-- Usuario -->
-        <label for="usuario_nuevo">Coloca tu nombre de ususario antiguo aqui-></label>
-        <label for="usuario_nuevo">Crea tu nombre de usuario aquí (memorízalo, con él accederás a tu cuenta y serás identificad@) -></label>
-        <input required id="usuario_nuevo" name="usuario" placeholder="Tu nombre de usuario">
-        <br>
-        <label for="usuario_confirmar">Confirma tu nombre de usuario (escribe exactamente lo mismo de arriba) -></label>
-        <input required id="usuario_confirmar" name="usuario_confirmar" placeholder="Tu nombre de usuario (confirmar)">
-        <br>
-        <br>
-
-        <h4>Hay algunas reglas para que puedas crear tu contraseña:</h4>
-        <p> 
-            1-Debe tener al menos 10 caracteres de longitud<br>
-            2-Debe tener MÍNIMO 1 letra en mayúscula y 1 en minúscula<br>
-            3-Debe tener al menos 1 número<br>
-            4-Opcionalmente puedes agregar un caracter especial (recomendado para mayor seguridad)
-            <br>
-            Mezcla todas las instrucciones arriba para crear tu contraseña, entre más lo hagas, más segura será<br>
-            (Abajo hay un indicador de qué tan segura es tu contraseña, úsalo como guía).
+        <p>
+            <label for="usuario">Crea tu nombre de usuario:</label>
+            <input type="text" id="usuario" name="usuario" required>
         </p>
 
-        <!-- Contraseña -->
-        <label for="password_nuevo">Crea tu contraseña aquí (memorízala, con ella accederás a tu cuenta) -></label>
-        <input required type="password" id="password_nuevo" name="password" placeholder="Tu contraseña">
-        <br>
-        <label for="password_confirmar">Confirma tu contraseña (escribe exactamente lo mismo) -></label>
-        <input required type="password" id="password_confirmar" name="password_confirmar" placeholder="Confirma tu contraseña">
-        <br><br><br>
+        <p>
+            <label for="contraseña">Crea tu contraseña:</label>
+            <input type="password" id="contraseña" name="contraseña" required>
+        </p>
 
-        <!-- Correo -->
-        <label for="correo_nuevo">Escribe tu correo electrónico aquí -></label>
-        <input required type="email" id="correo_nuevo" name="correo" placeholder="Tu correo electrónico">
-        <br>
-        <label for="correo_confirmar">Confirma tu correo electrónico -></label>
-        <input required type="email" id="correo_confirmar" name="correo_confirmar" placeholder="Confirma tu correo electrónico">
-        <br><br><br>
+        <p>
+            <label for="contraseña_confirmar">Confirma tu contraseña:</label>
+            <input type="password" id="contraseña_confirmar" name="contraseña_confirmar" required>
+        </p>
 
-        <!-- Teléfono -->
-        <label for="telefono_nuevo">Número telefónico aquí -></label>
-        <input required type="tel" id="telefono_nuevo" name="telefono" placeholder="Tu número telefónico">
-        <br>
-        <label for="telefono_confirmar">Confirma tu número telefónico -></label>
-        <input required type="tel" id="telefono_confirmar" name="telefono_confirmar" placeholder="Confirma tu número telefónico">
-        <br><br><br>
+        <p>
+            <label for="correo">Correo electrónico:</label>
+            <input type="email" id="correo" name="correo" required>
+        </p>
 
-        <button type="submit">Crear usuario</button>
+        <p>
+            <label for="telefono">Teléfono:</label>
+            <input type="tel" id="telefono" name="telefono" required>
+        </p>
+
+        <button type="submit">Guardar datos</button>
     </form>
-
 </body>
 </html>
