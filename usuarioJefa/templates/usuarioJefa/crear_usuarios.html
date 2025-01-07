@@ -1,0 +1,57 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Crear usuario</title>
+</head>
+<body>
+    <h1>Creación de usuarios</h1>
+
+    {% if messages %}
+    <div class="messages">
+        {% for message in messages %}
+            <div class="message {% if message.tags %}{{ message.tags }}{% endif %}">
+                {{ message }}
+            </div>
+        {% endfor %}
+    </div>
+    {% endif %}
+
+    <form method="POST">
+        {% csrf_token %}
+        <p>
+            <label for="nombre_temporal">Nombre temporal:</label>
+            <input type="text" id="nombre_temporal" name="nombre_temporal" required>
+        </p>
+
+        <p>
+            <label for="contraseña">Contraseña temporal:</label>
+            <input type="password" id="contraseña" name="contraseña" required>
+        </p>
+
+        <p>
+            <label for="nombre_real">Nombre:</label>
+            <input type="text" id="nombre_real" name="nombre_real" required>
+        </p>
+
+        <p>
+            <label for="cedula">Cédula:</label>
+            <input type="text" id="cedula" name="cedula" required>
+        </p>
+
+        <p>
+            <label for="tipo_usuario">Tipo de usuario:</label>
+            <select id="tipo_usuario" name="tipo_usuario" required>  
+                <option value="EN">Enfermería</option>
+                <option value="DR">Doctor</option>
+                <option value="JP">Jefa de piso</option>
+            </select>
+        </p>
+
+        <button type="submit">Crear usuario</button>
+    </form>
+
+    <br><br><br>
+    <a href="{% url 'jefa:usuarios_' %}">Volver</a>
+</body>
+</html>
