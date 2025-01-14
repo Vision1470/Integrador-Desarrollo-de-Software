@@ -1,14 +1,48 @@
 from django.shortcuts import render, redirect, get_object_or_404
 from django.contrib.auth import authenticate, login
 from django.contrib import messages
-from login.models import Usuarios, AreaEspecialidad, Fortaleza, HistorialPersonal
+from login.models import *
+from usuarioJefa.models import Paciente
 from django.utils import timezone
+from usuarioJefa.forms import PacienteForm
 
 def menu_jefa(request):
     return render(request, 'usuarioJefa/menu_jefa.html')
 
 def pacientes_jefa(request):
-    return render(request, 'usuarioJefa/pacientes_jefa.html')
+    # Obtener todos los pacientes
+    print("Número de pacientes:", Paciente.objects.count())  # Para debug
+    pacientes = Paciente.objects.select_related(
+        'area', 
+        'doctor_actual', 
+        'enfermero_actual'
+    ).all()
+    
+    context = {
+        'pacientes': pacientes,
+    }
+    
+    print("Contexto:", context)  # Para debug
+    return render(request, 'usuarioJefa/pacientes_jefa.html', context)
+
+def agregar_pacientes(request):
+    if request.method == 'POST':
+        form = PacienteForm(request.POST)
+        if form.is_valid():
+            try:
+                paciente = form.save()
+                messages.success(request, 'Paciente agregado exitosamente.')
+            except Exception as e:
+                messages.error(request, 'No se pudo crear el paciente. Por favor, intente nuevamente.')
+        else:
+            messages.error(request, 'Por favor, corrija los errores en el formulario.')
+    else:
+        form = PacienteForm()
+    
+    return render(request, 'usuarioJefa/agregar_pacientes.html', {
+        'form': form,
+        'titulo': 'Agregar Nuevo Paciente'
+    })
 
 def historiales_(request):
     return render(request, 'usuarioJefa/historiales.html')  

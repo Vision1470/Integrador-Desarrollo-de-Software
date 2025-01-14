@@ -1,0 +1,92 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Agregar Paciente</title>
+</head>
+<body>
+    <h1>Agregar Nuevo Paciente</h1>
+    
+
+    {% if messages %}
+<div class="messages">
+    {% for message in messages %}
+        <div class="message {% if message.tags %}{{ message.tags }}{% endif %}">
+            {{ message }}
+        </div>
+    {% endfor %}
+</div>
+{% endif %}
+
+    <form method="POST">
+        {% csrf_token %}
+        
+        <!-- Campo Nombres -->
+        <div>
+            <label>Nombres:</label>
+            {{ form.nombres }}
+            {{ form.nombres.errors }}
+        </div>
+
+        <!-- Campo Apellidos -->
+        <div>
+            <label>Apellidos:</label>
+            {{ form.apellidos }}
+            {{ form.apellidos.errors }}
+        </div>
+
+        <!-- Fecha de Nacimiento -->
+        <div>
+            <label>Fecha de Nacimiento:</label>
+            {{ form.fecha_nacimiento }}
+            {{ form.fecha_nacimiento.errors }}
+        </div>
+
+        <!-- Sexo -->
+        <div>
+            <label>Sexo:</label>
+            {{ form.sexo }}
+            {{ form.sexo.errors }}
+        </div>
+
+        <!-- Número de Seguridad Social -->
+        <div>
+            <label>Número de Seguridad Social:</label>
+            {{ form.num_seguridad_social }}
+            {{ form.num_seguridad_social.errors }}
+        </div>
+
+        <!-- Área -->
+        <div>
+            <label>Área:</label>
+            {{ form.area }}
+            {{ form.area.errors }}
+        </div>
+
+        <!-- Doctor Actual -->
+        <div>
+            <label>Doctor Actual:</label>
+            {{ form.doctor_actual }}
+            {{ form.doctor_actual.errors }}
+        </div>
+
+        <!-- Enfermero Actual -->
+        <div>
+            <label>Enfermero Actual:</label>
+            {{ form.enfermero_actual }}
+            {{ form.enfermero_actual.errors }}
+        </div>
+
+        <!-- Hospital de Origen -->
+        <div>
+            <label>Hospital de Origen:</label>
+            {{ form.hospital_origen }}
+            {{ form.hospital_origen.errors }}
+        </div>
+
+        <div>
+            <button type="submit">Guardar Paciente</button>
+            <a href="{% url 'jefa:pacientes_jefa' %}">Volver</a>
+        </div>
+    </form>
+</body>
+</html>

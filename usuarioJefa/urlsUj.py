@@ -5,6 +5,7 @@ app_name = 'jefa'
 urlpatterns = [
     path('menu-jefa/', views.menu_jefa, name='menu_jefa'),
     path('pacientes-jefa/', views.pacientes_jefa, name='pacientes_jefa'),
+    path('agregar_pacientes', views.agregar_pacientes, name='agregar_pacientes'),
     path('historiales-/', views.historiales_, name='historiales_'),
     path('historial-pacientes/', views.historial_pacientes, name='historial_pacientes'),
     path('historial-empleados/', views.historial_empleados, name='historial_empleados'),

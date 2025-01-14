@@ -1,41 +1,52 @@
 <!DOCTYPE html>
 <html lang="en">
-<meta charset="UTF-8" />
-
-
 <head>
-    <h1> Pacientes </h1> 
+    <meta charset="UTF-8">
+    <title>Pacientes</title>
 </head>
-
-
 <body>
+    <h1>Pacientes</h1>
     
-    <table>
-        <tr>
-            <th> Nombre </th>
-            <th> Camilla </th>
-            <th> Area </th>
-            <th> Cuidados </th>
-            <th> Receta </th>
-            <th> Enfermera/o </th>
-            <th> Doctor </th>
-        </tr>
-        <tr>
-            <td> Juan </td>
-            <td> <Select id="camilla", name="Camilla"> <option> 2 </option></Select> </td>
-            <td> <select id ="area", name="Area"> <option> Quemados </option></select> </td>
-            <td> <button role="link" onclick="window.location='Cuidados paciente.html'"> Ver </button> </td>
-            <td> 
-                <button role="link" onclick="window.location='Formulario paciente.html'"> Ver </button> 
-            </td>
-            <td> <select id="enfermeria", name="Enfermeria"> <option> Marta </option></select> </td>
-            <td> <select id="doctor", name="Doctor"> <option> Alex </option></select> </td>
-        </tr>
+    <table border="1">
+        <thead>
+            <tr>
+                <th>Nombre</th>
+                <th>Apellidos</th>
+                <th>Número SS</th>
+                <th>Fecha Nacimiento</th>
+                <th>Sexo</th>
+                <th>Área</th>
+                <th>Doctor</th>
+                <th>Enfermero/a</th>
+                <th>Hospital Origen</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% if pacientes %}
+                {% for paciente in pacientes %}
+                    <tr>
+                        <td>{{ paciente.nombres }}</td>
+                        <td>{{ paciente.apellidos }}</td>
+                        <td>{{ paciente.num_seguridad_social }}</td>
+                        <td>{{ paciente.fecha_nacimiento|date:"d/m/Y" }}</td>
+                        <td>{{ paciente.sexo }}</td>
+                        <td>{{ paciente.area }}</td>
+                        <td>{{ paciente.doctor_actual }}</td>
+                        <td>{{ paciente.enfermero_actual }}</td>
+                        <td>{{ paciente.hospital_origen|default:"-" }}</td>
+                    </tr>
+                {% endfor %}
+            {% else %}
+                <tr>
+                    <td colspan="9">No hay pacientes registrados</td>
+                </tr>
+            {% endif %}
+        </tbody>
     </table>
 
-    <br><br><br><br>
-
-    <a href="{% url 'jefa:menu_jefa' %}"> volver </a>
+    <br><br>
+    <a href="{% url 'jefa:agregar_pacientes' %}">Agregar Paciente</a>
+    <br><br>
+    <a href="{% url 'jefa:menu_jefa' %}">Volver al Menú</a>
 </body>
-
 </html>
