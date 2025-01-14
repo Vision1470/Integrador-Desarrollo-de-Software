@@ -23,7 +23,6 @@
                 <th>Nombre</th>
                 <th>Tipo de Usuario</th>
                 <th>Cédula</th>
-                <th>Estado</th>
                 <th>Acciones</th>
             </tr>
         </thead>
@@ -33,20 +32,12 @@
                 <td>{{ usuario.first_name }}</td>
                 <td>{{ usuario.get_tipoUsuario_display }}</td>
                 <td>{{ usuario.cedula }}</td>
-                <td>{% if usuario.estaActivo %}Activo{% else %}Inactivo{% endif %}</td>
                 <td>
                     <a href="{% url 'jefa:editar_usuario' usuario.id %}">Editar</a>
-                    {% if usuario.estaActivo %}
-                        <form method="POST" action="{% url 'jefa:toggle_usuario' usuario.id %}" style="display: inline;">
-                            {% csrf_token %}
-                            <button type="submit" name="action" value="desactivar">Desactivar</button>
-                        </form>
-                    {% else %}
-                        <form method="POST" action="{% url 'jefa:toggle_usuario' usuario.id %}" style="display: inline;">
-                            {% csrf_token %}
-                            <button type="submit" name="action" value="activar">Activar</button>
-                        </form>
-                    {% endif %}
+                    <form method="POST" action="{% url 'jefa:toggle_usuario' usuario.id %}" style="display: inline;">
+                        {% csrf_token %}
+                        <button type="submit" name="action" value="desactivar">Desactivar</button>
+                    </form>
                 </td>
             </tr>
             {% endfor %}
@@ -54,6 +45,6 @@
     </table>
 
     <br><br>
-    <a href="{% url 'jefa:usuarios-/' %}">Volver al Menú</a>
+    <a href="{% url 'jefa:usuarios_' %}">Volver al Menú</a>
 </body>
 </html>

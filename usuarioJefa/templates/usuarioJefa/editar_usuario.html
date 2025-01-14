@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <title>Editar usuario</title>
+    <title>Editar Usuario</title>
     <style>
         .form-section {
             margin-bottom: 20px;
@@ -12,6 +12,8 @@
     </style>
 </head>
 <body>
+    <h1>Editar Usuario</h1>
+
     {% if messages %}
     <div class="messages">
         {% for message in messages %}
@@ -30,22 +32,23 @@
             <h3>Datos Personales</h3>
             <p>
                 <label for="nombre">Nombre:</label>
-                <input type="text" id="nombre" name="nombre" required>
+                <input type="text" id="nombre" name="nombre" value="{{ usuario.first_name }}">
             </p>
 
             <p>
                 <label for="apellidos">Apellidos:</label>
-                <input type="text" id="apellidos" name="apellidos" required>
+                <input type="text" id="apellidos" name="apellidos" value="{{ usuario.apellidos }}">
             </p>
 
             <p>
                 <label for="edad">Edad:</label>
-                <input type="number" id="edad" name="edad" required min="18">
+                <input type="number" id="edad" name="edad" min="18" value="{{ usuario.edad }}">
             </p>
 
             <p>
                 <label for="fecha_nacimiento">Fecha de Nacimiento:</label>
-                <input type="date" id="fecha_nacimiento" name="fecha_nacimiento" required>
+                <input type="date" id="fecha_nacimiento" name="fecha_nacimiento" 
+                       value="{{ usuario.fechaNacimiento|date:'Y-m-d' }}">
             </p>
         </div>
 
@@ -54,10 +57,13 @@
             <h3>Datos Profesionales</h3>
             <p>
                 <label for="area_especialidad">Área de Especialidad:</label>
-                <select id="area_especialidad" name="area_especialidad" required>
+                <select id="area_especialidad" name="area_especialidad">
                     <option value="">Seleccione un área</option>
                     {% for area in areas %}
-                        <option value="{{ area.id }}">{{ area.nombre }}</option>
+                        <option value="{{ area.id }}" 
+                            {% if usuario.areaEspecialidad.id == area.id %}selected{% endif %}>
+                            {{ area.nombre }}
+                        </option>
                     {% endfor %}
                 </select>
             </p>
@@ -66,47 +72,34 @@
                 <label>Fortalezas (seleccione máximo 4):</label><br>
                 {% for fortaleza in fortalezas %}
                     <label>
-                        <input type="checkbox" name="fortalezas" value="{{ fortaleza.id }}">
+                        <input type="checkbox" name="fortalezas" value="{{ fortaleza.id }}"
+                            {% if fortaleza in usuario.fortalezas.all %}checked{% endif %}>
                         {{ fortaleza.nombre }}
                     </label><br>
                 {% endfor %}
             </p>
 
             <p>
+                <label for="cedula">Cédula:</label>
+                <input type="text" id="cedula" name="cedula" value="{{ usuario.cedula }}">
+            </p>
+
+            <p>
                 <label for="tipo_usuario">Tipo de Usuario:</label>
-                <select id="tipo_usuario" name="tipo_usuario" required>
-                    <option value="EN">Enfermería</option>
-                    <option value="DR">Doctor</option>
-                    <option value="JP">Jefa de piso</option>
-                    <option value="CO">Cocina</option>
+                <select id="tipo_usuario" name="tipo_usuario">
+                    <option value="EN" {% if usuario.tipoUsuario == 'EN' %}selected{% endif %}>Enfermería</option>
+                    <option value="DR" {% if usuario.tipoUsuario == 'DR' %}selected{% endif %}>Doctor</option>
+                    <option value="JP" {% if usuario.tipoUsuario == 'JP' %}selected{% endif %}>Jefa de piso</option>
+                    <option value="CO" {% if usuario.tipoUsuario == 'CO' %}selected{% endif %}>Cocina</option>
                 </select>
             </p>
-
-            <p>
-                <label for="cedula">Cédula:</label>
-                <input type="text" id="cedula" name="cedula" value="{{ usuario.cedula }}" required>
-            </p>
         </div>
 
-        <!-- Datos de Acceso -->
-        <div class="form-section">
-            <h3>Datos de Acceso</h3>
-            <p>
-                <label for="nombre_temporal">Nombre temporal:</label>
-                <input type="text" id="nombre_temporal" name="nombre_temporal" required>
-            </p>
-
-            <p>
-                <label for="contraseña">Contraseña temporal:</label>
-                <input type="password" id="contraseña" name="contraseña" required>
-            </p>
-        </div>
-
-        <button type="submit">Guardar</button>
+        <button type="submit">Guardar cambios</button>
     </form>
 
     <br><br>
-    <a href="{% url 'jefa:usuarios-/' %}">Volver al Menú</a>
+    <a href="{% url 'jefa:gestionar_usuarios' %}">Volver</a>
 
     <script>
         // Validación de fortalezas

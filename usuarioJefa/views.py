@@ -2,6 +2,7 @@ from django.shortcuts import render, redirect, get_object_or_404
 from django.contrib.auth import authenticate, login
 from django.contrib import messages
 from login.models import Usuarios, AreaEspecialidad, Fortaleza, HistorialPersonal
+from django.utils import timezone
 
 def menu_jefa(request):
     return render(request, 'usuarioJefa/menu_jefa.html')
@@ -12,8 +13,17 @@ def pacientes_jefa(request):
 def historiales_(request):
     return render(request, 'usuarioJefa/historiales.html')  
 
+# views.py
 def historial_empleados(request):
-    return render(request, 'usuarioJefa/historial_empleados.html')
+    # Obtener todos los usuarios
+    usuarios = Usuarios.objects.all().select_related('areaEspecialidad').prefetch_related('fortalezas')
+    
+    # Ordenar por fecha de registro
+    usuarios = usuarios.order_by('-fechaRegistro')
+
+    return render(request, 'usuarioJefa/historial_empleados.html', {
+        'usuarios': usuarios
+    })
 
 def historial_pacientes(request):
     return render(request, 'usuarioJefa/historial_pacientes.html') 
@@ -71,43 +81,62 @@ def crear_usuarios(request):
     return render(request, 'usuarioJefa/crear_usuarios.html', context)
 
 def gestionar_usuarios(request):
-    usuarios = Usuarios.objects.all().order_by('tipoUsuario', 'first_name')
+    # Filtrar solo usuarios activos
+    usuarios = Usuarios.objects.filter(estaActivo=True).order_by('tipoUsuario', 'first_name')
     return render(request, 'usuarioJefa/gestionar_usuarios.html', {'usuarios': usuarios})
 
 def editar_usuario(request, usuario_id):
     usuario = get_object_or_404(Usuarios, id=usuario_id)
     
     if request.method == 'POST':
-        nombre_real = request.POST.get('nombre_real')
-        cedula = request.POST.get('cedula')
-        
         try:
-            usuario.first_name = nombre_real
-            usuario.cedula = cedula
+            # Actualizar solo los campos que se enviaron
+            if request.POST.get('nombre'):
+                usuario.first_name = request.POST.get('nombre')
+            if request.POST.get('apellidos'):
+                usuario.apellidos = request.POST.get('apellidos')
+            if request.POST.get('edad'):
+                usuario.edad = request.POST.get('edad')
+            if request.POST.get('fecha_nacimiento'):
+                usuario.fechaNacimiento = request.POST.get('fecha_nacimiento')
+            if request.POST.get('area_especialidad'):
+                usuario.areaEspecialidad_id = request.POST.get('area_especialidad')
+            if request.POST.getlist('fortalezas'):
+                usuario.fortalezas.set(request.POST.getlist('fortalezas'))
+            if request.POST.get('tipo_usuario'):
+                usuario.tipoUsuario = request.POST.get('tipo_usuario')
+            if request.POST.get('cedula'):
+                usuario.cedula = request.POST.get('cedula')
+                
             usuario.save()
             messages.success(request, 'Usuario actualizado correctamente')
             return redirect('jefa:gestionar_usuarios')
+            
         except Exception as e:
-            messages.error(request, 'Error al actualizar el usuario')
+            messages.error(request, f'Error al actualizar el usuario: {str(e)}')
     
-    return render(request, 'usuarioJefa/editar_usuario.html', {'usuario': usuario})
+    # Para GET request, enviamos el mismo template con los datos actuales
+    context = {
+        'usuario': usuario,
+        'areas': AreaEspecialidad.objects.all(),
+        'fortalezas': Fortaleza.objects.all(),
+        'modo_edicion': True  # Para identificar que estamos editando
+    }
+    return render(request, 'usuarioJefa/editar_usuario.html', context)
 
 def toggle_usuario(request, usuario_id):
     if request.method == 'POST':
         usuario = get_object_or_404(Usuarios, id=usuario_id)
         action = request.POST.get('action')
+        # Obtener la URL de la página anterior
+        referer = request.META.get('HTTP_REFERER')
         
         try:
             if action == 'desactivar':
                 usuario.estaActivo = False
+                fecha_eliminacion = timezone.now()
+                usuario.fechaEliminacion = fecha_eliminacion
                 usuario.save()
-                
-                # Crear registro en historial
-                HistorialPersonal.objects.create(
-                    usuario=usuario,
-                    fechaRegistro=usuario.fechaRegistro,
-                    motivoEliminacion='Desactivación por jefa de piso'
-                )
                 messages.success(request, 'Usuario desactivado correctamente')
             
             elif action == 'activar':
@@ -118,6 +147,11 @@ def toggle_usuario(request, usuario_id):
                 
         except Exception as e:
             messages.error(request, f'Error al modificar el estado del usuario: {str(e)}')
+        
+        # Si viene de historial, redirigir allí
+        if 'historial' in referer:
+            return redirect('jefa:historial_empleados')
+        # Si no, redirigir a gestionar usuarios
+        return redirect('jefa:gestionar_usuarios')
     
     return redirect('jefa:gestionar_usuarios')
-
