@@ -3,6 +3,13 @@
 <head>
     <meta charset="UTF-8">
     <title>Crear usuario</title>
+    <style>
+        .form-section {
+            margin-bottom: 20px;
+            padding: 10px;
+            border: 1px solid #ccc;
+        }
+    </style>
 </head>
 <body>
     <h1>Creación de usuarios</h1>
@@ -19,39 +26,104 @@
 
     <form method="POST">
         {% csrf_token %}
-        <p>
-            <label for="nombre_temporal">Nombre temporal:</label>
-            <input type="text" id="nombre_temporal" name="nombre_temporal" required>
-        </p>
+        
+        <!-- Datos Personales -->
+        <div class="form-section">
+            <h3>Datos Personales</h3>
+            <p>
+                <label for="nombre">Nombre:</label>
+                <input type="text" id="nombre" name="nombre" required>
+            </p>
 
-        <p>
-            <label for="contraseña">Contraseña temporal:</label>
-            <input type="password" id="contraseña" name="contraseña" required>
-        </p>
+            <p>
+                <label for="apellidos">Apellidos:</label>
+                <input type="text" id="apellidos" name="apellidos" required>
+            </p>
 
-        <p>
-            <label for="nombre_real">Nombre:</label>
-            <input type="text" id="nombre_real" name="nombre_real" required>
-        </p>
+            <p>
+                <label for="edad">Edad:</label>
+                <input type="number" id="edad" name="edad" required min="18">
+            </p>
 
-        <p>
-            <label for="cedula">Cédula:</label>
-            <input type="text" id="cedula" name="cedula" required>
-        </p>
+            <p>
+                <label for="fecha_nacimiento">Fecha de Nacimiento:</label>
+                <input type="date" id="fecha_nacimiento" name="fecha_nacimiento" required>
+            </p>
+        </div>
 
-        <p>
-            <label for="tipo_usuario">Tipo de usuario:</label>
-            <select id="tipo_usuario" name="tipo_usuario" required>  
-                <option value="EN">Enfermería</option>
-                <option value="DR">Doctor</option>
-                <option value="JP">Jefa de piso</option>
-            </select>
-        </p>
+        <!-- Datos Profesionales -->
+        <div class="form-section">
+            <h3>Datos Profesionales</h3>
+            <p>
+                <label for="area_especialidad">Área de Especialidad:</label>
+                <select id="area_especialidad" name="area_especialidad" required>
+                    <option value="">Seleccione un área</option>
+                    {% for area in areas %}
+                        <option value="{{ area.id }}">{{ area.nombre }}</option>
+                    {% endfor %}
+                </select>
+            </p>
+
+            <p>
+                <label>Fortalezas (seleccione máximo 4):</label><br>
+                {% for fortaleza in fortalezas %}
+                    <label>
+                        <input type="checkbox" name="fortalezas" value="{{ fortaleza.id }}">
+                        {{ fortaleza.nombre }}
+                    </label><br>
+                {% endfor %}
+            </p>
+
+            <p>
+                <label for="tipo_usuario">Tipo de Usuario:</label>
+                <select id="tipo_usuario" name="tipo_usuario" required>
+                    <option value="EN">Enfermería</option>
+                    <option value="DR">Doctor</option>
+                    <option value="JP">Jefa de piso</option>
+                    <option value="CO">Cocina</option>
+                </select>
+            </p>
+
+            <p>
+                <label for="cedula">Cédula:</label>
+                <input type="text" id="cedula" name="cedula" value="{{ usuario.cedula }}" required>
+            </p>
+        </div>
+
+        <!-- Datos de Acceso -->
+        <div class="form-section">
+            <h3>Datos de Acceso</h3>
+            <p>
+                <label for="nombre_temporal">Nombre temporal:</label>
+                <input type="text" id="nombre_temporal" name="nombre_temporal" required>
+            </p>
+
+            <p>
+                <label for="contraseña">Contraseña temporal:</label>
+                <input type="password" id="contraseña" name="contraseña" required>
+            </p>
+        </div>
 
         <button type="submit">Crear usuario</button>
     </form>
 
-    <br><br><br>
-    <a href="{% url 'jefa:usuarios_' %}">Volver</a>
+    <br><br>
+    <a href="{% url 'jefa:usuarios-/' %}">Volver al Menú</a>
+
+    <script>
+        // Validación de fortalezas
+        const maxFortalezas = 4;
+        const checkboxes = document.querySelectorAll('input[name="fortalezas"]');
+        
+        checkboxes.forEach(checkbox => {
+            checkbox.addEventListener('change', function() {
+                const checkedBoxes = document.querySelectorAll('input[name="fortalezas"]:checked');
+                if (checkedBoxes.length > maxFortalezas) {
+                    this.checked = false;
+                    alert('Solo puede seleccionar hasta 4 fortalezas');
+                }
+            });
+        });
+    </script>
 </body>
 </html>

@@ -46,6 +46,9 @@ INSTALLED_APPS = [
 
 AUTH_USER_MODEL = 'login.Usuarios'
 
+USE_TZ = True
+TIME_ZONE = 'America/Mexico_City'
+
 MIDDLEWARE = [
     'django.middleware.security.SecurityMiddleware',
     'django.contrib.sessions.middleware.SessionMiddleware',

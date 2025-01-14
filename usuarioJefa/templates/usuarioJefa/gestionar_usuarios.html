@@ -3,30 +3,6 @@
 <head>
     <meta charset="UTF-8">
     <title>Gestionar Usuarios</title>
-    <style>
-        .modal {
-            display: none;
-            position: fixed;
-            top: 0;
-            left: 0;
-            width: 100%;
-            height: 100%;
-            background-color: rgba(0,0,0,0.5);
-        }
-
-        .modal-content {
-            background-color: white;
-            margin: 15% auto;
-            padding: 20px;
-            width: 300px;
-            text-align: center;
-        }
-
-        .modal-buttons button {
-            margin: 10px;
-            padding: 5px 15px;
-        }
-    </style>
 </head>
 <body>
     <h1>Gestión de Usuarios</h1>
@@ -57,11 +33,10 @@
                 <td>{{ usuario.first_name }}</td>
                 <td>{{ usuario.get_tipoUsuario_display }}</td>
                 <td>{{ usuario.cedula }}</td>
-                <td>{% if usuario.is_active %}Activo{% else %}Inactivo{% endif %}</td>
+                <td>{% if usuario.estaActivo %}Activo{% else %}Inactivo{% endif %}</td>
                 <td>
                     <a href="{% url 'jefa:editar_usuario' usuario.id %}">Editar</a>
-                    <button onclick="mostrarConfirmacion('{{ usuario.id }}')">Eliminar</button>
-                    {% if usuario.is_active %}
+                    {% if usuario.estaActivo %}
                         <form method="POST" action="{% url 'jefa:toggle_usuario' usuario.id %}" style="display: inline;">
                             {% csrf_token %}
                             <button type="submit" name="action" value="desactivar">Desactivar</button>
@@ -78,36 +53,7 @@
         </tbody>
     </table>
 
-    <!-- Modal de confirmación -->
-    <div id="modalConfirmacion" class="modal">
-        <div class="modal-content">
-            <h2>Confirmar eliminación</h2>
-            <p>¿Está seguro que desea eliminar este usuario?</p>
-            <div class="modal-buttons">
-                <form id="formEliminar" method="POST" action="">
-                    {% csrf_token %}
-                    <button type="button" onclick="cancelarEliminacion()">No</button>
-                    <button type="submit">Sí</button>
-                </form>
-            </div>
-        </div>
-    </div>
-
     <br><br>
-    <a href="{% url 'jefa:menu_jefa' %}">Volver al Menú</a>
-
-    <script>
-        function mostrarConfirmacion(usuarioId) {
-            var modal = document.getElementById('modalConfirmacion');
-            var form = document.getElementById('formEliminar');
-            modal.style.display = 'block';
-            form.action = "{% url 'jefa:eliminar_usuario' 0 %}".replace('0', usuarioId);
-        }
-
-        function cancelarEliminacion() {
-            var modal = document.getElementById('modalConfirmacion');
-            modal.style.display = 'none';
-        }
-    </script>
+    <a href="{% url 'jefa:usuarios-/' %}">Volver al Menú</a>
 </body>
 </html>
