@@ -76,12 +76,14 @@ def crear_usuarios(request):
             apellidos = request.POST.get('apellidos')
             edad = request.POST.get('edad')
             fecha_nacimiento = request.POST.get('fecha_nacimiento')
-            
+            tipo_usuario = request.POST.get('tipo_usuario')
+            cedula = request.POST.get('cedula')
+
             # Área de especialidad
             area_especialidad_id = request.POST.get('area_especialidad')
             area_especialidad = AreaEspecialidad.objects.get(id=area_especialidad_id)
             
-            # Crear usuario
+            # Crear usuario con todos los campos
             usuario = Usuarios.objects.create_user(
                 username=request.POST.get('nombre_temporal'),
                 password=request.POST.get('contraseña'),
@@ -90,6 +92,8 @@ def crear_usuarios(request):
                 edad=edad,
                 fechaNacimiento=fecha_nacimiento,
                 areaEspecialidad=area_especialidad,
+                tipoUsuario=tipo_usuario,
+                cedula=cedula,
                 estaActivo=True,
                 primerIngreso=True
             )
@@ -101,11 +105,21 @@ def crear_usuarios(request):
             usuario.fortalezas.set(fortalezas_ids)
             
             messages.success(request, 'Usuario creado exitosamente')
-            return render(request, 'usuarioJefa/crear_usuarios.html')
+            
+            # Crear nuevo contexto para el formulario limpio
+            context = {
+                'areas': AreaEspecialidad.objects.all(),
+                'fortalezas': Fortaleza.objects.all(),
+            }
+            return render(request, 'usuarioJefa/crear_usuarios.html', context)
             
         except Exception as e:
             messages.error(request, f'Error al crear el usuario: {str(e)}')
-            return render(request, 'usuarioJefa/crear_usuarios.html')
+            context = {
+                'areas': AreaEspecialidad.objects.all(),
+                'fortalezas': Fortaleza.objects.all(),
+            }
+            return render(request, 'usuarioJefa/crear_usuarios.html', context)
     
     # GET: mostrar formulario
     context = {
