@@ -7,6 +7,20 @@
         .hidden {
             display: none;
         }
+        .modal {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0,0,0,0.5);
+        }
+        .modal-content {
+            background: white;
+            padding: 20px;
+            width: 300px;
+            margin: 100px auto;
+        }
     </style>
 </head>
 <body>
@@ -34,7 +48,7 @@
     <!-- Vista de Medicamentos -->
     <div id="vistaMedicamentos" class="{% if tipo_vista != 'medicamentos' %}hidden{% endif %}">
         <h2>Medicamentos</h2>
-        <button onclick="mostrarFormularioMedicamento()">Agregar Medicamento</button>
+        <button onclick="mostrarFormularioCrearMedicamento()">Agregar Medicamento</button>
         
         <table border="1">
             <thead>
@@ -44,13 +58,14 @@
                     <th>Compuestos</th>
                     <th>Cantidad Disponible</th>
                     <th>Última Actualización</th>
+                    <th>Acciones</th>
                 </tr>
             </thead>
             <tbody>
                 {% for medicamento in medicamentos %}
                 <tr>
                     <td>{{ medicamento.nombre }}</td>
-                    <td>{{ medicamento.gramaje }}g</td>
+                    <td>{{ medicamento.gramaje }}</td>
                     <td>
                         {% for compuesto in medicamento.compuestos.all %}
                             {{ compuesto.nombre }}{% if not forloop.last %}, {% endif %}
@@ -58,45 +73,83 @@
                     </td>
                     <td>{{ medicamento.cantidad_disponible }}</td>
                     <td>{{ medicamento.fecha_actualizacion|date:"d/m/Y H:i" }}</td>
+                    <td>
+                        <button onclick="mostrarFormularioEditarMedicamento({{ medicamento.id }})">Editar</button>
+                        <button onclick="confirmarEliminacion('medicamento', {{ medicamento.id }})">Eliminar</button>
+                    </td>
                 </tr>
                 {% endfor %}
             </tbody>
         </table>
 
-        <!-- Formulario para agregar medicamento -->
-        <div id="formMedicamento" class="hidden">
-            <h3>Agregar Medicamento</h3>
-            <form method="POST">
-                {% csrf_token %}
-                <input type="hidden" name="agregar_medicamento" value="1">
-                <p>
-                    <label>Nombre:</label>
-                    <input type="text" name="nombre" required>
-                </p>
-                <p>
-                    <label>Gramaje:</label>
-                    <input type="number" step="0.01" name="gramaje" required>
-                </p>
-                <p>
-                    <label>Compuestos:</label><br>
-                    {% for compuesto in compuestos %}
-                        <input type="checkbox" name="compuestos" value="{{ compuesto.id }}">
-                        {{ compuesto.nombre }}<br>
-                    {% endfor %}
-                </p>
-                <p>
-                    <label>Cantidad:</label>
-                    <input type="number" name="cantidad" required>
-                </p>
-                <button type="submit">Guardar</button>
-            </form>
+        <!-- Modal para crear medicamento -->
+        <div id="modalCrearMedicamento" class="modal hidden">
+            <div class="modal-content">
+                <h3>Agregar Medicamento</h3>
+                <form method="POST">
+                    {% csrf_token %}
+                    <input type="hidden" name="agregar_medicamento" value="1">
+                    <p>
+                        <label>Nombre:</label>
+                        <input type="text" name="nombre" required>
+                    </p>
+                    <p>
+                        <label>Gramaje:</label>
+                        <input type="text" name="gramaje" required>
+                    </p>
+                    <p>
+                        <label>Compuestos:</label><br>
+                        {% for compuesto in compuestos %}
+                            <input type="checkbox" name="compuestos" value="{{ compuesto.id }}">
+                            {{ compuesto.nombre }}<br>
+                        {% endfor %}
+                    </p>
+                    <p>
+                        <label>Cantidad:</label>
+                        <input type="number" name="cantidad" required>
+                    </p>
+                    <button type="submit">Guardar</button>
+                    <button type="button" onclick="ocultarModal('modalCrearMedicamento')">Cancelar</button>
+                </form>
+            </div>
+        </div>
+
+        <!-- Modal para editar medicamento -->
+        <div id="modalEditarMedicamento" class="modal hidden">
+            <div class="modal-content">
+                <h3>Editar Medicamento</h3>
+                <form method="POST" id="formEditarMedicamento">
+                    {% csrf_token %}
+                    <p>
+                        <label>Nombre:</label>
+                        <input type="text" name="nombre" required>
+                    </p>
+                    <p>
+                        <label>Gramaje:</label>
+                        <input type="text" name="gramaje" required>
+                    </p>
+                    <p>
+                        <label>Compuestos:</label><br>
+                        {% for compuesto in compuestos %}
+                            <input type="checkbox" name="compuestos" value="{{ compuesto.id }}">
+                            {{ compuesto.nombre }}<br>
+                        {% endfor %}
+                    </p>
+                    <p>
+                        <label>Cantidad:</label>
+                        <input type="number" name="cantidad" required>
+                    </p>
+                    <button type="submit">Guardar cambios</button>
+                    <button type="button" onclick="ocultarModal('modalEditarMedicamento')">Cancelar</button>
+                </form>
+            </div>
         </div>
     </div>
 
     <!-- Vista de Instrumentos -->
     <div id="vistaInstrumentos" class="{% if tipo_vista != 'instrumentos' %}hidden{% endif %}">
         <h2>Instrumentos</h2>
-        <button onclick="mostrarFormularioInstrumento()">Agregar Instrumento</button>
+        <button onclick="mostrarFormularioCrearInstrumento()">Agregar Instrumento</button>
         
         <table border="1">
             <thead>
@@ -105,6 +158,7 @@
                     <th>Cantidad</th>
                     <th>Especificaciones</th>
                     <th>Última Actualización</th>
+                    <th>Acciones</th>
                 </tr>
             </thead>
             <tbody>
@@ -114,30 +168,74 @@
                     <td>{{ instrumento.cantidad }}</td>
                     <td>{{ instrumento.especificaciones }}</td>
                     <td>{{ instrumento.fecha_actualizacion|date:"d/m/Y H:i" }}</td>
+                    <td>
+                        <button onclick="mostrarFormularioEditarInstrumento({{ instrumento.id }})">Editar</button>
+                        <button onclick="confirmarEliminacion('instrumento', {{ instrumento.id }})">Eliminar</button>
+                    </td>
                 </tr>
                 {% endfor %}
             </tbody>
         </table>
 
-        <!-- Formulario para agregar instrumento -->
-        <div id="formInstrumento" class="hidden">
-            <h3>Agregar Instrumento</h3>
-            <form method="POST">
+        <!-- Modal para crear instrumento -->
+        <div id="modalCrearInstrumento" class="modal hidden">
+            <div class="modal-content">
+                <h3>Agregar Instrumento</h3>
+                <form method="POST">
+                    {% csrf_token %}
+                    <input type="hidden" name="agregar_instrumento" value="1">
+                    <p>
+                        <label>Nombre:</label>
+                        <input type="text" name="nombre" required>
+                    </p>
+                    <p>
+                        <label>Cantidad:</label>
+                        <input type="number" name="cantidad" required>
+                    </p>
+                    <p>
+                        <label>Especificaciones:</label><br>
+                        <textarea name="especificaciones" required></textarea>
+                    </p>
+                    <button type="submit">Guardar</button>
+                    <button type="button" onclick="ocultarModal('modalCrearInstrumento')">Cancelar</button>
+                </form>
+            </div>
+        </div>
+
+        <!-- Modal para editar instrumento -->
+        <div id="modalEditarInstrumento" class="modal hidden">
+            <div class="modal-content">
+                <h3>Editar Instrumento</h3>
+                <form method="POST" id="formEditarInstrumento">
+                    {% csrf_token %}
+                    <p>
+                        <label>Nombre:</label>
+                        <input type="text" name="nombre" required>
+                    </p>
+                    <p>
+                        <label>Cantidad:</label>
+                        <input type="number" name="cantidad" required>
+                    </p>
+                    <p>
+                        <label>Especificaciones:</label><br>
+                        <textarea name="especificaciones" required></textarea>
+                    </p>
+                    <button type="submit">Guardar cambios</button>
+                    <button type="button" onclick="ocultarModal('modalEditarInstrumento')">Cancelar</button>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal de confirmación para eliminar -->
+    <div id="modalConfirmacion" class="modal hidden">
+        <div class="modal-content">
+            <h3>Confirmar eliminación</h3>
+            <p>¿Estás seguro de que deseas eliminar este elemento?</p>
+            <form id="formEliminar" method="POST">
                 {% csrf_token %}
-                <input type="hidden" name="agregar_instrumento" value="1">
-                <p>
-                    <label>Nombre:</label>
-                    <input type="text" name="nombre" required>
-                </p>
-                <p>
-                    <label>Cantidad:</label>
-                    <input type="number" name="cantidad" required>
-                </p>
-                <p>
-                    <label>Especificaciones:</label><br>
-                    <textarea name="especificaciones" required></textarea>
-                </p>
-                <button type="submit">Guardar</button>
+                <button type="button" onclick="ocultarModal('modalConfirmacion')">Cancelar</button>
+                <button type="submit">Confirmar</button>
             </form>
         </div>
     </div>
@@ -146,19 +244,61 @@
         function cambiarVista(tipo) {
             document.getElementById('vistaMedicamentos').classList.toggle('hidden', tipo !== 'medicamentos');
             document.getElementById('vistaInstrumentos').classList.toggle('hidden', tipo !== 'instrumentos');
-            // Actualizar la URL sin recargar la página
             const url = new URL(window.location);
             url.searchParams.set('tipo', tipo);
             window.history.pushState({}, '', url);
         }
 
-        function mostrarFormularioMedicamento() {
-            document.getElementById('formMedicamento').classList.toggle('hidden');
+        function mostrarFormularioCrearMedicamento() {
+            document.getElementById('modalCrearMedicamento').classList.remove('hidden');
         }
 
-        function mostrarFormularioInstrumento() {
-            document.getElementById('formInstrumento').classList.toggle('hidden');
+        function mostrarFormularioCrearInstrumento() {
+            document.getElementById('modalCrearInstrumento').classList.remove('hidden');
+        }
+
+        async function mostrarFormularioEditarMedicamento(id) {
+            const response = await fetch(`/jefa/get-medicamento/${id}/`);
+            const medicamento = await response.json();
+            const form = document.getElementById('formEditarMedicamento');
+            form.action = `/jefa/editar-medicamento/${id}/`;
+            form.querySelector('input[name="nombre"]').value = medicamento.nombre;
+            form.querySelector('input[name="gramaje"]').value = medicamento.gramaje;
+            form.querySelector('input[name="cantidad"]').value = medicamento.cantidad_disponible;
+            
+            // Marcar los compuestos
+            const compuestosCheckboxes = form.querySelectorAll('input[name="compuestos"]');
+            compuestosCheckboxes.forEach(checkbox => {
+                checkbox.checked = medicamento.compuestos.includes(parseInt(checkbox.value));
+            });
+            
+            document.getElementById('modalEditarMedicamento').classList.remove('hidden');
+        }
+
+        async function mostrarFormularioEditarInstrumento(id) {
+            const response = await fetch(`/jefa/get-instrumento/${id}/`);
+            const instrumento = await response.json();
+            const form = document.getElementById('formEditarInstrumento');
+            form.action = `/jefa/editar-instrumento/${id}/`;
+            form.querySelector('input[name="nombre"]').value = instrumento.nombre;
+            form.querySelector('input[name="cantidad"]').value = instrumento.cantidad;
+            form.querySelector('textarea[name="especificaciones"]').value = instrumento.especificaciones;
+            
+            document.getElementById('modalEditarInstrumento').classList.remove('hidden');
+        }
+
+        function confirmarEliminacion(tipo, id) {
+            document.getElementById('modalConfirmacion').classList.remove('hidden');
+            document.getElementById('formEliminar').action = `/jefa/eliminar-${tipo}/${id}/`;
+        }
+
+        function ocultarModal(modalId) {
+            document.getElementById(modalId).classList.add('hidden');
         }
     </script>
+
+    <br><br><br>
+
+    <a href="{% url 'jefa:menu_jefa' %}" class="button"> Volver </a> 
 </body>
 </html>

@@ -7,6 +7,7 @@ from django.utils import timezone
 from usuarioJefa.forms import PacienteForm
 from django.contrib.auth.decorators import login_required
 from .models import *
+from django.urls import reverse
 
 def menu_jefa(request):
     return render(request, 'usuarioJefa/menu_jefa.html')
@@ -241,3 +242,77 @@ def almacen_(request):
         'compuestos': Compuesto.objects.all(),
     }
     return render(request, 'usuarioJefa/almacen_.html', context)
+
+@login_required
+def editar_medicamento(request, medicamento_id):
+    medicamento = get_object_or_404(Medicamento, id=medicamento_id)
+    if request.method == 'POST':
+        try:
+            medicamento.nombre = request.POST.get('nombre')
+            medicamento.gramaje = request.POST.get('gramaje')
+            medicamento.cantidad_disponible = request.POST.get('cantidad')
+            medicamento.compuestos.set(request.POST.getlist('compuestos'))
+            medicamento.save()
+            messages.success(request, 'Medicamento actualizado exitosamente')
+        except Exception as e:
+            messages.error(request, f'Error al actualizar medicamento: {str(e)}')
+        return redirect(f'{reverse("jefa:almacen_")}?tipo=medicamentos')
+    return redirect(f'{reverse("jefa:almacen_")}?tipo=medicamentos')
+
+@login_required
+def editar_instrumento(request, instrumento_id):
+    instrumento = get_object_or_404(Instrumento, id=instrumento_id)
+    if request.method == 'POST':
+        try:
+            instrumento.nombre = request.POST.get('nombre')
+            instrumento.cantidad = request.POST.get('cantidad')
+            instrumento.especificaciones = request.POST.get('especificaciones')
+            instrumento.save()
+            messages.success(request, 'Instrumento actualizado exitosamente')
+        except Exception as e:
+            messages.error(request, f'Error al actualizar instrumento: {str(e)}')
+        return redirect(f'{reverse('jefa:almacen_')}?tipo=instrumentos')
+    return redirect(f'{reverse('jefa:almacen_')}?tipo=instrumentos')
+
+@login_required
+def eliminar_medicamento(request, medicamento_id):
+    if request.method == 'POST':
+        try:
+            medicamento = get_object_or_404(Medicamento, id=medicamento_id)
+            medicamento.delete()
+            messages.success(request, 'Medicamento eliminado exitosamente')
+        except Exception as e:
+            messages.error(request, f'Error al eliminar medicamento: {str(e)}')
+    return redirect('jefa:almacen_')
+
+@login_required
+def eliminar_instrumento(request, instrumento_id):
+    if request.method == 'POST':
+        try:
+            instrumento = get_object_or_404(Instrumento, id=instrumento_id)
+            instrumento.delete()
+            messages.success(request, 'Instrumento eliminado exitosamente')
+        except Exception as e:
+            messages.error(request, f'Error al eliminar instrumento: {str(e)}')
+    return redirect(f'{reverse('jefa:almacen_')}?tipo=instrumentos')
+
+from django.http import JsonResponse
+
+@login_required
+def get_medicamento(request, medicamento_id):
+    medicamento = get_object_or_404(Medicamento, id=medicamento_id)
+    return JsonResponse({
+        'nombre': medicamento.nombre,
+        'gramaje': medicamento.gramaje,
+        'cantidad_disponible': medicamento.cantidad_disponible,
+        'compuestos': list(medicamento.compuestos.values_list('id', flat=True))
+    })
+
+@login_required
+def get_instrumento(request, instrumento_id):
+    instrumento = get_object_or_404(Instrumento, id=instrumento_id)
+    return JsonResponse({
+        'nombre': instrumento.nombre,
+        'cantidad': instrumento.cantidad,
+        'especificaciones': instrumento.especificaciones
+    })
