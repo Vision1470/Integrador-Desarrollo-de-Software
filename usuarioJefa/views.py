@@ -5,6 +5,8 @@ from login.models import *
 from usuarioJefa.models import Paciente
 from django.utils import timezone
 from usuarioJefa.forms import PacienteForm
+from django.contrib.auth.decorators import login_required
+from .models import *
 
 def menu_jefa(request):
     return render(request, 'usuarioJefa/menu_jefa.html')
@@ -76,14 +78,12 @@ def crear_usuarios(request):
             apellidos = request.POST.get('apellidos')
             edad = request.POST.get('edad')
             fecha_nacimiento = request.POST.get('fecha_nacimiento')
-            tipo_usuario = request.POST.get('tipo_usuario')
-            cedula = request.POST.get('cedula')
 
             # Área de especialidad
             area_especialidad_id = request.POST.get('area_especialidad')
             area_especialidad = AreaEspecialidad.objects.get(id=area_especialidad_id)
             
-            # Crear usuario con todos los campos
+            # Crear usuario
             usuario = Usuarios.objects.create_user(
                 username=request.POST.get('nombre_temporal'),
                 password=request.POST.get('contraseña'),
@@ -92,8 +92,6 @@ def crear_usuarios(request):
                 edad=edad,
                 fechaNacimiento=fecha_nacimiento,
                 areaEspecialidad=area_especialidad,
-                tipoUsuario=tipo_usuario,
-                cedula=cedula,
                 estaActivo=True,
                 primerIngreso=True
             )
@@ -104,22 +102,15 @@ def crear_usuarios(request):
                 raise ValueError("No se pueden seleccionar más de 4 fortalezas")
             usuario.fortalezas.set(fortalezas_ids)
             
+            usuario.tipoUsuario = request.POST.get('tipo_usuario')
+            usuario.cedula = request.POST.get('cedula')
+
             messages.success(request, 'Usuario creado exitosamente')
-            
-            # Crear nuevo contexto para el formulario limpio
-            context = {
-                'areas': AreaEspecialidad.objects.all(),
-                'fortalezas': Fortaleza.objects.all(),
-            }
-            return render(request, 'usuarioJefa/crear_usuarios.html', context)
+            return render(request, 'usuarioJefa/crear_usuarios.html')
             
         except Exception as e:
             messages.error(request, f'Error al crear el usuario: {str(e)}')
-            context = {
-                'areas': AreaEspecialidad.objects.all(),
-                'fortalezas': Fortaleza.objects.all(),
-            }
-            return render(request, 'usuarioJefa/crear_usuarios.html', context)
+            return render(request, 'usuarioJefa/crear_usuarios.html')
     
     # GET: mostrar formulario
     context = {
@@ -203,3 +194,50 @@ def toggle_usuario(request, usuario_id):
         return redirect('jefa:gestionar_usuarios')
     
     return redirect('jefa:gestionar_usuarios')
+
+
+@login_required
+def almacen_(request):
+    tipo_vista = request.GET.get('tipo', 'medicamentos')  # Por defecto muestra medicamentos
+    
+    if request.method == 'POST':
+        if 'agregar_medicamento' in request.POST:
+            try:
+                nombre = request.POST.get('nombre')
+                gramaje = request.POST.get('gramaje')
+                cantidad = request.POST.get('cantidad', 0)
+                compuestos = request.POST.getlist('compuestos')
+
+                medicamento = Medicamento.objects.create(
+                    nombre=nombre,
+                    gramaje=gramaje,
+                    cantidad_disponible=cantidad
+                )
+                medicamento.compuestos.set(compuestos)
+                messages.success(request, 'Medicamento agregado exitosamente')
+            except Exception as e:
+                messages.error(request, f'Error al agregar medicamento: {str(e)}')
+
+        elif 'agregar_instrumento' in request.POST:
+            try:
+                nombre = request.POST.get('nombre')
+                cantidad = request.POST.get('cantidad', 0)
+                especificaciones = request.POST.get('especificaciones')
+
+                Instrumento.objects.create(
+                    nombre=nombre,
+                    cantidad=cantidad,
+                    especificaciones=especificaciones
+                )
+                messages.success(request, 'Instrumento agregado exitosamente')
+            except Exception as e:
+                messages.error(request, f'Error al agregar instrumento: {str(e)}')
+
+    # Siempre cargar ambos tipos de datos
+    context = {
+        'tipo_vista': tipo_vista,
+        'medicamentos': Medicamento.objects.all().prefetch_related('compuestos'),
+        'instrumentos': Instrumento.objects.all(),
+        'compuestos': Compuesto.objects.all(),
+    }
+    return render(request, 'usuarioJefa/almacen_.html', context)

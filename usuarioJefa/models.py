@@ -85,7 +85,7 @@ class HistorialMedico(models.Model):
         ordering = ['-fecha']
 
 class RecetaMedica(models.Model):
-    paciente = models.ForeignKey(Paciente, on_delete=models.CASCADE, related_name='recetas')
+    paciente = models.ForeignKey(Paciente, on_delete=models.CASCADE, related_name='recetas_medicas')  # Cambiado de 'recetas' a 'recetas_medicas'
     doctor = models.ForeignKey(
         Usuarios,
         on_delete=models.SET_NULL,
@@ -132,3 +132,41 @@ class HistorialEnfermeros(models.Model):
         ordering = ['-fecha_asignacion']
         verbose_name = 'Historial de Enfermeros'
         verbose_name_plural = 'Historiales de Enfermeros'
+
+class Compuesto(models.Model):
+    nombre = models.CharField(max_length=200)
+    descripcion = models.TextField(blank=True)
+
+    def __str__(self):
+        return self.nombre
+
+    class Meta:
+        verbose_name = 'Compuesto'
+        verbose_name_plural = 'Compuestos'
+
+class Medicamento(models.Model):
+    nombre = models.CharField(max_length=200)
+    gramaje = models.CharField(max_length=50)
+    compuestos = models.ManyToManyField(Compuesto)
+    cantidad_disponible = models.IntegerField(default=0)
+    fecha_actualizacion = models.DateTimeField(auto_now=True)
+
+    def __str__(self):
+        return f"{self.nombre} {self.gramaje}g"
+
+    class Meta:
+        verbose_name = 'Medicamento'
+        verbose_name_plural = 'Medicamentos'
+
+class Instrumento(models.Model):
+    nombre = models.CharField(max_length=200)
+    cantidad = models.IntegerField(default=0)
+    especificaciones = models.TextField()
+    fecha_actualizacion = models.DateTimeField(auto_now=True)
+
+    def __str__(self):
+        return self.nombre
+
+    class Meta:
+        verbose_name = 'Instrumento'
+        verbose_name_plural = 'Instrumentos'

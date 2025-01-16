@@ -1,40 +1,58 @@
 <!DOCTYPE html>
 <html lang="en">
-<meta charset="UTF-8" />
-
-
 <head>
-    <h1> Tus pacientes </h1> 
+    <meta charset="UTF-8">
+    <title>Pacientes - Doctor</title>
 </head>
-
-
 <body>
-    
-    <table>
-        <tr>
-            <th> Nombre </th>
-            <th> Camilla </th>
-            <th> Area </th>
-            <th> Cuidados </th>
-            <th> Receta </th>
-            <th> Doctor </th>
-        </tr>
-        <tr>
-            <td> Juan </td>
-            <td> 40 </td>
-            <td> Quemados </td>
-            <td>
-                <a href="{% url 'doctor:cuidados_pacienteD' %}" class="button">Ver</a>
-            </td>
-            <td>
-                <a href="{% url 'doctor:receta_paciente' %}" class="button">Modificar</a>
-            <td> Alex </td>
-        </tr>
-    </table>
+    <h1>Mis Pacientes</h1>
+    <h3>Doctor: {{ doctor.first_name }} {{ doctor.apellidos }}</h3>
 
-    <br><br><br><br>
+    {% if messages %}
+    <div class="messages">
+        {% for message in messages %}
+            <div class="message {% if message.tags %}{{ message.tags }}{% endif %}">
+                {{ message }}
+            </div>
+        {% endfor %}
+    </div>
+    {% endif %}
 
-    <a href="{% url 'login:login' %}" class="button">Cerrar sesión</a>
+    {% if pacientes %}
+        <table border="1">
+            <thead>
+                <tr>
+                    <th>Nombre</th>
+                    <th>Apellidos</th>
+                    <th>Área</th>
+                    <th>Cuidados</th>
+                    <th>Receta</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for paciente in pacientes %}
+                <tr>
+                    <td>{{ paciente.nombres }} {{ paciente.apellidos }}</td>
+                    <td>{{ paciente.num_seguridad_social }}</td>
+                    <td>{{ paciente.area }}</td>
+                    <td>
+                        <a href="{% url 'doctor:cuidados_pacienteD' %}?paciente_id={{ paciente.id }}">Ver</a>
+                    </td>
+                    <td>
+                        <a href="{% url 'doctor:receta_paciente' %}?paciente_id={{ paciente.id }}">Modificar</a>
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    {% else %}
+        <p>No tienes pacientes asignados actualmente.</p>
+    {% endif %}
+
+    <br><br>
+    <form action="{% url 'login:login' %}" method="POST">
+        {% csrf_token %}
+        <button type="submit">Cerrar Sesión</button>
+    </form>
 </body>
-
 </html>

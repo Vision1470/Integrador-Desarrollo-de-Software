@@ -1,39 +1,58 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-    <meta charset="UTF-8" />
-    <title>Tus pacientes</title>
+    <meta charset="UTF-8">
+    <title>Mis Pacientes - Enfermería</title>
 </head>
-
 <body>
-    <h1>Tus pacientes</h1>
-    
-    <table>
-        <tr>
-            <th>Nombre</th>
-            <th>Camilla</th>
-            <th>Area</th>
-            <th>Cuidados</th>
-            <th>Formulario</th>
-            <th>Doctor</th>
-        </tr>
-        <tr>
-            <td>Juan</td>
-            <td>40</td>
-            <td>Quemados</td>
-            <td>
-                <a href="{% url 'enfermeria:cuidados_paciente' %}" class="button">Ver</a>
-            </td>
-            <td>
-                <a href="{% url 'enfermeria:formulario_paciente' %}" class="button">Llenar</a>
-                <input type="checkbox">
-            </td>
-            <td>Alex</td>
-        </tr>
-    </table>
+    <h1>Mis Pacientes</h1>
+    <h3>Enfermero/a: {{ enfermero.first_name }} {{ enfermero.apellidos }}</h3>
 
-    <br><br><br><br>
+    {% if messages %}
+    <div class="messages">
+        {% for message in messages %}
+            <div class="message {% if message.tags %}{{ message.tags }}{% endif %}">
+                {{ message }}
+            </div>
+        {% endfor %}
+    </div>
+    {% endif %}
 
-    <a href="{% url 'login:login' %}" class="button">Cerrar sesión</a>
+    {% if pacientes %}
+        <table border="1">
+            <thead>
+                <tr>
+                    <th>Nombre</th>
+                    <th>Apellidos</th>
+                    <th>Área</th>
+                    <th>Doctor Asignado</th>
+                    <th>Acciones</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for paciente in pacientes %}
+                <tr>
+                    <td>{{ paciente.nombres }}</td>
+                    <td>{{ paciente.apellidos }}</td>
+                    <td>{{ paciente.area }}</td>
+                    <td>{{ paciente.doctor_actual.first_name }} {{ paciente.doctor_actual.apellidos }}</td>
+                    <td>
+                        <a href="{% url 'enfermeria:cuidados_paciente' %}?paciente_id={{ paciente.id }}">Ver Cuidados</a>
+                        <a href="{% url 'enfermeria:formulario_paciente' %}?paciente_id={{ paciente.id }}">Llenar Formulario</a>
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    {% else %}
+        <p>No tienes pacientes asignados actualmente.</p>
+    {% endif %}
+
+    <br><br>
+    <!-- Botón de cerrar sesión -->
+    <form action="{% url 'login:login' %}" method="POST">
+        {% csrf_token %}
+        <button type="submit">Cerrar Sesión</button>
+    </form>
 </body>
 </html>
