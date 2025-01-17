@@ -23,8 +23,9 @@ class RecetaAdmin(admin.ModelAdmin):
 
 @admin.register(Padecimiento)
 class PadecimientoAdmin(admin.ModelAdmin):
-    list_display = ('id', 'nombre')
-    search_fields = ('nombre',)
+    list_display = ('nombre', 'descripcion', 'activo')
+    search_fields = ['nombre']
+    list_filter = ['activo']
 
 @admin.register(Cuidado)
 class CuidadoAdmin(admin.ModelAdmin):
@@ -67,3 +68,4 @@ class DetalleRecetaAdmin(admin.ModelAdmin):
     list_display = ('receta', 'medicamento', 'cantidad_por_toma', 'frecuencia_horas', 'dias_tratamiento', 'hay_existencia')
     list_filter = ('hay_existencia', 'unidad_medida')
     search_fields = ('receta__paciente__nombres', 'medicamento__nombre')
+

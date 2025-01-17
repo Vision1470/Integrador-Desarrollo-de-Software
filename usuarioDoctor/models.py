@@ -2,17 +2,18 @@ from django.db import models
 from django.utils import timezone
 from usuarioJefa.models import Paciente
 from login.models import Usuarios
+from decimal import Decimal
 
 class Padecimiento(models.Model):
     nombre = models.CharField(max_length=200)
-    descripcion = models.TextField(null=True, blank=True)  # Permitir nulos
+    descripcion = models.TextField(null=True, blank=True)
+    activo = models.BooleanField(default=True)  # Para poder desactivar padecimientos sin eliminarlos
+    
+    class Meta:
+        ordering = ['nombre']  # Para que aparezcan ordenados alfabéticamente
     
     def __str__(self):
         return self.nombre
-
-    class Meta:
-        verbose_name = 'Padecimiento'
-        verbose_name_plural = 'Padecimientos'
 
 class Cuidado(models.Model):
     nombre = models.CharField(max_length=200)
@@ -57,6 +58,7 @@ class HistorialDiagnostico(models.Model):
     fecha_modificacion = models.DateTimeField(auto_now_add=True)
     cambios_realizados = models.TextField()
     motivo_cambio = models.TextField()
+
 
 class Receta(models.Model):
     paciente = models.ForeignKey(Paciente, on_delete=models.CASCADE, related_name='recetas_doctor')
@@ -118,9 +120,10 @@ class DetalleReceta(models.Model):
     descripcion_opcional = models.TextField(blank=True)
     hay_existencia = models.BooleanField(default=True)
 
+    
     def calcular_cantidad_total(self):
-        tomas_por_dia = 24 / self.frecuencia_horas
-        return self.cantidad_por_toma * tomas_por_dia * self.dias_tratamiento
+        tomas_por_dia = Decimal('24') / Decimal(str(self.frecuencia_horas))
+        return self.cantidad_por_toma * tomas_por_dia * Decimal(str(self.dias_tratamiento))
 
     def save(self, *args, **kwargs):
         cantidad_necesaria = self.calcular_cantidad_total()

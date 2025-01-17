@@ -62,34 +62,41 @@
         </div>
 
         <!-- Sección de Padecimientos -->
-        <div class="seccion-padecimientos">
-            <h3>Padecimientos</h3>
-            <div id="padecimientos-container">
-                {% if padecimientos %}
-                    {% for padecimiento in padecimientos %}
-                        <div class="padecimiento-row">
-                            <div>
-                                <label>Nombre del padecimiento:</label>
-                                <input type="text" name="padecimientos[]" required value="{{ padecimiento.padecimiento.nombre }}">
-                            </div>
-                            <div>
-                                <label>Nivel de gravedad:</label>
-                                <select name="niveles_gravedad[]" required>
-                                    {% for nivel in niveles_gravedad %}
-                                        <option value="{{ nivel.0 }}" {% if nivel.0 == padecimiento.nivel_gravedad %}selected{% endif %}>
-                                            {{ nivel.1 }}
-                                        </option>
-                                    {% endfor %}
-                                </select>
-                            </div>
-                            <button type="button" onclick="eliminarPadecimiento(this)">Eliminar</button>
-                        </div>
-                    {% endfor %}
-                {% endif %}
-            </div>
-            <button type="button" onclick="agregarPadecimiento()">Agregar Padecimiento</button>
-        </div>
-
+        <!-- Sección de Padecimientos -->
+<div class="seccion-padecimientos">
+    <h3>Padecimientos</h3>
+    <div id="padecimientos-container">
+        {% if padecimientos %}
+            {% for padecimiento in padecimientos %}
+                <div class="padecimiento-row">
+                    <div>
+                        <label>Padecimiento:</label>
+                        <select name="padecimientos[]" required>
+                            <option value="">Seleccione un padecimiento</option>
+                            {% for pad in padecimientos_disponibles %}
+                                <option value="{{ pad.id }}" {% if pad.id == padecimiento.padecimiento.id %}selected{% endif %}>
+                                    {{ pad.nombre }}
+                                </option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                    <div>
+                        <label>Nivel de gravedad:</label>
+                        <select name="niveles_gravedad[]" required>
+                            {% for nivel in niveles_gravedad %}
+                                <option value="{{ nivel.0 }}" {% if nivel.0 == padecimiento.nivel_gravedad %}selected{% endif %}>
+                                    {{ nivel.1 }}
+                                </option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                    <button type="button" onclick="eliminarPadecimiento(this)">Eliminar</button>
+                </div>
+            {% endfor %}
+        {% endif %}
+    </div>
+    <button type="button" onclick="agregarPadecimiento()">Agregar Padecimiento</button>
+</div>
         <!-- Sección de Cuidados -->
         <div class="seccion-cuidados">
             <h3>Cuidados</h3>
@@ -186,26 +193,32 @@
     </form>
 
     <!-- Templates para las filas -->
-    <div id="padecimiento-template" class="hidden">
-        <div class="padecimiento-row">
-            <div>
-                <label>Nombre del padecimiento:</label>
-                <input type="text" name="padecimientos[]" required>
-            </div>
-
-            <div>
-                <label>Nivel de gravedad:</label>
-                <select name="niveles_gravedad[]" required>
-                    <option value="">Seleccione nivel</option>
-                    {% for nivel in niveles_gravedad %}
-                        <option value="{{ nivel.0 }}">{{ nivel.1 }}</option>
-                    {% endfor %}
-                </select>
-            </div>
-
-            <button type="button" onclick="eliminarPadecimiento(this)">Eliminar</button>
+   <!-- Templates para las filas -->
+<div id="padecimiento-template" class="hidden">
+    <div class="padecimiento-row">
+        <div>
+            <label>Padecimiento:</label>
+            <select name="padecimientos[]" required>
+                <option value="">Seleccione un padecimiento</option>
+                {% for padecimiento in padecimientos_disponibles %}
+                    <option value="{{ padecimiento.id }}">{{ padecimiento.nombre }}</option>
+                {% endfor %}
+            </select>
         </div>
+
+        <div>
+            <label>Nivel de gravedad:</label>
+            <select name="niveles_gravedad[]" required>
+                <option value="">Seleccione nivel</option>
+                {% for nivel in niveles_gravedad %}
+                    <option value="{{ nivel.0 }}">{{ nivel.1 }}</option>
+                {% endfor %}
+            </select>
+        </div>
+
+        <button type="button" onclick="eliminarPadecimiento(this)">Eliminar</button>
     </div>
+</div>
 
     <!-- Template para cuidados -->
     <div id="cuidado-template" class="hidden">
