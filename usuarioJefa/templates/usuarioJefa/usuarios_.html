@@ -1,17 +1,85 @@
 <!DOCTYPE html>
 <html lang="en">
-<meta charset="UTF-8" />
-
 <head>
-    <h1>Menu usuarios</h1> 
+    <meta charset="UTF-8">
+    <title>Menú de usuarios</title>
+    <style>
+        .tab-container {
+            margin-top: 20px;
+        }
+
+        .tab-nav {
+            list-style-type: none;
+            padding: 0;
+            margin: 0;
+        }
+
+        .tab-nav li {
+            display: inline-block;
+            margin-right: 10px;
+        }
+
+        .tab-nav li a {
+            text-decoration: none;
+            padding: 5px 10px;
+            background-color: #f1f1f1;
+            color: #333;
+            border-radius: 4px 4px 0 0;
+        }
+
+        .tab-nav li a.active {
+            background-color: #ccc;
+        }
+
+        .tab-content {
+            display: none;
+            padding: 10px;
+            border: 1px solid #ccc;
+        }
+
+        .tab-content.active {
+            display: block;
+        }
+    </style>
 </head>
-
 <body>
-    <a href="{% url 'jefa:crear_usuarios' %}">Crear usuarios</a>
-    <a href="{% url 'jefa:gestionar_usuarios' %}">gestionar usuarios</a>
+    <body>
+        <h1>Menú Usuarios</h1>
+        <div class="tab-container">
+            <ul class="tab-nav">
+                <li><a href="#gestionar-usuarios" class="active">Gestionar Usuarios</a></li>
+                <li><a href="#crear-usuarios">Crear Usuarios</a></li>
+            </ul>
+    
+            <div id="crear-usuarios" class="tab-content">
+                {% include 'usuarioJefa/crear_usuarios.html' with areas=areas fortalezas=fortalezas %}
+            </div>
+            <div id="gestionar-usuarios" class="tab-content active">
+                {% include 'usuarioJefa/gestionar_usuarios.html' %}
+            </div>
+        </div>
 
-    <br><br><br>
+    <br><br>
     <a href="{% url 'jefa:menu_jefa' %}">Volver</a>
-</body>
 
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            const tabLinks = document.querySelectorAll('.tab-nav a');
+            const tabContents = document.querySelectorAll('.tab-content');
+
+            tabLinks.forEach(link => {
+                link.addEventListener('click', function(e) {
+                    e.preventDefault();
+                    const target = this.getAttribute('href');
+
+                    tabLinks.forEach(link => link.classList.remove('active'));
+                    tabContents.forEach(content => content.classList.remove('active'));
+
+                    this.classList.add('active');
+                    document.querySelector(target).classList.add('active');
+                });
+            });
+        });
+    </script>
+</body>
 </html>

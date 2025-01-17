@@ -1,17 +1,86 @@
 <!DOCTYPE html>
 <html lang="en">
-<meta charset="UTF-8" />
-
 <head>
-    <h1>Historiales</h1> 
+    <meta charset="UTF-8">
+    <title>Historiales</title>
+    <style>
+        .tab-container {
+            margin-top: 20px;
+        }
+
+        .tab-nav {
+            list-style-type: none;
+            padding: 0;
+            margin: 0;
+        }
+
+        .tab-nav li {
+            display: inline-block;
+            margin-right: 10px;
+        }
+
+        .tab-nav li a {
+            text-decoration: none;
+            padding: 5px 10px;
+            background-color: #f1f1f1;
+            color: #333;
+            border-radius: 4px 4px 0 0;
+        }
+
+        .tab-nav li a.active {
+            background-color: #ccc;
+        }
+
+        .tab-content {
+            display: none;
+            padding: 10px;
+            border: 1px solid #ccc;
+        }
+
+        .tab-content.active {
+            display: block;
+        }
+    </style>
 </head>
-
 <body>
-    <a href="{% url 'jefa:historial_pacientes' %}">Historial pacientes</a>
-    <a href="{% url 'jefa:historial_empleados' %}">Historial empleados</a>
+    <div class="container">
+        <h1>Historiales</h1>
+        <div class="tab-container">
+            <ul class="tab-nav">
+                <li><a href="#pacientes" class="active">Historial Pacientes</a></li>
+                <li><a href="#empleados">Historial Empleados</a></li>
+            </ul>
 
-    <br><br><br>
-    <a href="{% url 'jefa:menu_jefa' %}">Volver</a>
+            <div id="pacientes" class="tab-content active">
+                {% include 'usuarioJefa/historial_pacientes.html' %}
+            </div>
+            <div id="empleados" class="tab-content">
+                {% include 'usuarioJefa/historial_empleados.html' %}
+            </div>
+        </div>
+
+        <br><br>
+        <a href="{% url 'jefa:menu_jefa' %}">Volver</a>
+    </div>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            const tabLinks = document.querySelectorAll('.tab-nav a');
+            const tabContents = document.querySelectorAll('.tab-content');
+
+            tabLinks.forEach(link => {
+                link.addEventListener('click', function(e) {
+                    e.preventDefault();
+                    const target = this.getAttribute('href');
+
+                    tabLinks.forEach(link => link.classList.remove('active'));
+                    tabContents.forEach(content => content.classList.remove('active'));
+
+                    this.classList.add('active');
+                    document.querySelector(target).classList.add('active');
+                });
+            });
+        });
+    </script>
 </body>
-
 </html>

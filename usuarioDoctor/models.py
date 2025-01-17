@@ -3,6 +3,27 @@ from django.utils import timezone
 from usuarioJefa.models import Paciente
 from login.models import Usuarios
 
+class Padecimiento(models.Model):
+    nombre = models.CharField(max_length=200)
+    descripcion = models.TextField(null=True, blank=True)  # Permitir nulos
+    
+    def __str__(self):
+        return self.nombre
+
+    class Meta:
+        verbose_name = 'Padecimiento'
+        verbose_name_plural = 'Padecimientos'
+
+class Cuidado(models.Model):
+    nombre = models.CharField(max_length=200)
+    
+    def __str__(self):
+        return self.nombre
+
+    class Meta:
+        verbose_name = 'Cuidado'
+        verbose_name_plural = 'Cuidados'
+
 class Diagnostico(models.Model):
     NIVELES_GRAVEDAD = [
         (1, 'Leve'),
@@ -38,7 +59,7 @@ class HistorialDiagnostico(models.Model):
     motivo_cambio = models.TextField()
 
 class Receta(models.Model):
-    paciente = models.ForeignKey(Paciente, on_delete=models.CASCADE, related_name='recetas_doctor')  # Cambiado de 'recetas' a 'recetas_doctor'
+    paciente = models.ForeignKey(Paciente, on_delete=models.CASCADE, related_name='recetas_doctor')
     doctor = models.ForeignKey(
         Usuarios, 
         on_delete=models.PROTECT,
@@ -50,14 +71,67 @@ class Receta(models.Model):
     aprobado_por_jefa = models.BooleanField(default=False)
     activa = models.BooleanField(default=True)
 
+class RecetaPadecimiento(models.Model):
+    receta = models.ForeignKey(Receta, on_delete=models.CASCADE, related_name='padecimientos')
+    padecimiento = models.ForeignKey(Padecimiento, on_delete=models.PROTECT)
+    nivel_gravedad = models.IntegerField(choices=Diagnostico.NIVELES_GRAVEDAD)
+    
+    def __str__(self):
+        return f"{self.padecimiento} - {self.get_nivel_gravedad_display()}"
+
+class RecetaCuidado(models.Model):
+    receta = models.ForeignKey(Receta, on_delete=models.CASCADE, related_name='cuidados')
+    cuidado = models.ForeignKey(Cuidado, on_delete=models.PROTECT)
+    completado = models.BooleanField(default=False)
+    fecha_completado = models.DateTimeField(null=True, blank=True)
+    completado_por = models.ForeignKey(
+        'login.Usuarios',
+        null=True,
+        blank=True,
+        on_delete=models.SET_NULL,
+        limit_choices_to={'tipoUsuario': 'EN'}
+    )
+
+
 class DetalleReceta(models.Model):
+    UNIDADES_MEDIDA = [
+        ('TAB', 'Tabletas'),
+        ('ML', 'Mililitros'),
+        ('MG', 'Miligramos'),
+        ('CAP', 'Cápsulas'),
+        ('GOT', 'Gotas'),
+        ('AMP', 'Ampolletas'),
+    ]
+
     receta = models.ForeignKey(Receta, on_delete=models.CASCADE, related_name='detalles')
-    medicamento = models.ForeignKey('usuarioJefa.Medicamento', on_delete=models.PROTECT)  # Asumiendo que existirá este modelo
-    dosis = models.CharField(max_length=100)
-    horario = models.CharField(max_length=200)
+    medicamento = models.ForeignKey('usuarioJefa.Medicamento', on_delete=models.PROTECT)
+    
+    # Dosis
+    cantidad_por_toma = models.DecimalField(max_digits=5, decimal_places=2)
+    unidad_medida = models.CharField(max_length=3, choices=UNIDADES_MEDIDA)
+    
+    # Horario
+    frecuencia_horas = models.PositiveIntegerField(help_text="Cada cuántas horas")
+    dias_tratamiento = models.PositiveIntegerField()
+    
     instrucciones = models.TextField()
     descripcion_opcional = models.TextField(blank=True)
     hay_existencia = models.BooleanField(default=True)
+
+    def calcular_cantidad_total(self):
+        tomas_por_dia = 24 / self.frecuencia_horas
+        return self.cantidad_por_toma * tomas_por_dia * self.dias_tratamiento
+
+    def save(self, *args, **kwargs):
+        cantidad_necesaria = self.calcular_cantidad_total()
+        if self.medicamento.cantidad_disponible < cantidad_necesaria:
+            self.hay_existencia = False
+        super().save(*args, **kwargs)
+        
+        # Actualizar stock del medicamento
+        if self.hay_existencia:
+            self.medicamento.cantidad_disponible -= cantidad_necesaria
+            self.medicamento.save()
 
 class HistorialReceta(models.Model):
     receta = models.ForeignKey(Receta, on_delete=models.CASCADE)
@@ -71,32 +145,21 @@ class HistorialReceta(models.Model):
     motivo_cambio = models.TextField()
     medicamento_no_efectivo = models.BooleanField(default=False)
 
-class Padecimiento(models.Model):
-    nombre = models.CharField(max_length=200)
-    descripcion = models.TextField()
-    
-    def __str__(self):
-        return self.nombre
-
-    class Meta:
-        verbose_name = 'Padecimiento'
-        verbose_name_plural = 'Padecimientos'
-
 class PadecimientoDiagnostico(models.Model):
-    NIVELES_GRAVEDAD = [
-        (1, 'Leve'),
-        (2, 'Moderado'),
-        (3, 'Grave')
-    ]
-
     diagnostico = models.ForeignKey(Diagnostico, on_delete=models.CASCADE, related_name='padecimientos')
     padecimiento = models.ForeignKey(Padecimiento, on_delete=models.PROTECT)
-    nivel_gravedad = models.IntegerField(choices=NIVELES_GRAVEDAD)
-    comentarios = models.TextField(blank=True)
+    nivel_gravedad = models.IntegerField(choices=Diagnostico.NIVELES_GRAVEDAD)
+    cuidados = models.ManyToManyField(Cuidado, through='CuidadoPadecimiento')
 
-    def __str__(self):
-        return f"{self.padecimiento.nombre} - Nivel {self.nivel_gravedad}"
-
-    class Meta:
-        verbose_name = 'Padecimiento en Diagnóstico'
-        verbose_name_plural = 'Padecimientos en Diagnósticos'
+class CuidadoPadecimiento(models.Model):
+    padecimiento_diagnostico = models.ForeignKey(PadecimientoDiagnostico, on_delete=models.CASCADE)
+    cuidado = models.ForeignKey(Cuidado, on_delete=models.PROTECT)
+    completado = models.BooleanField(default=False)
+    fecha_completado = models.DateTimeField(null=True, blank=True)
+    completado_por = models.ForeignKey(
+        Usuarios,
+        null=True,
+        blank=True,
+        on_delete=models.SET_NULL,
+        limit_choices_to={'tipoUsuario': 'EN'}
+    )

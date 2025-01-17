@@ -1,0 +1,80 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <title>Ver Receta</title>
+    <style>
+        .seccion {
+            margin: 20px 0;
+            padding: 10px;
+            border: 1px solid #ccc;
+        }
+        .item {
+            margin: 10px 0;
+            padding: 5px;
+        }
+    </style>
+</head>
+<body>
+    <h1>Receta del Paciente</h1>
+    <h2>{{ paciente.nombres }} {{ paciente.apellidos }}</h2>
+    <p>Fecha de creación: {{ receta.fecha_creacion }}</p>
+    <p>Doctor: {{ receta.doctor.first_name }} {{ receta.doctor.apellidos }}</p>
+
+    <div class="seccion">
+        <h3>Diagnóstico</h3>
+        <p>{{ diagnostico.descripcion }}</p>
+    </div>
+
+    <div class="seccion">
+        <h3>Padecimientos</h3>
+        {% for padecimiento in padecimientos %}
+        <div class="item">
+            <strong>{{ padecimiento.padecimiento.nombre }}</strong>
+            <br>
+            Nivel de gravedad: {{ padecimiento.get_nivel_gravedad_display }}
+        </div>
+        {% endfor %}
+    </div>
+
+    <div class="seccion">
+        <h3>Cuidados</h3>
+        {% for cuidado in cuidados %}
+        <div class="item">
+            <strong>{{ cuidado.cuidado.nombre }}</strong>
+            <br>
+            Estado: {% if cuidado.completado %}Completado{% else %}Pendiente{% endif %}
+            {% if cuidado.completado_por %}
+            <br>
+            Completado por: {{ cuidado.completado_por.first_name }} {{ cuidado.completado_por.apellidos }}
+            {% endif %}
+        </div>
+        {% endfor %}
+    </div>
+
+    <div class="seccion">
+        <h3>Medicamentos</h3>
+        {% for detalle in detalles_medicamentos %}
+        <div class="item">
+            <strong>{{ detalle.medicamento.nombre }} - {{ detalle.medicamento.gramaje }}</strong>
+            <br>
+            Dosis: {{ detalle.cantidad_por_toma }} cada {{ detalle.frecuencia_horas }} horas
+            <br>
+            Duración: {{ detalle.dias_tratamiento }} días
+            <br>
+            Instrucciones: {{ detalle.instrucciones }}
+            {% if detalle.descripcion_opcional %}
+            <br>
+            Descripción adicional: {{ detalle.descripcion_opcional }}
+            {% endif %}
+        </div>
+        {% endfor %}
+    </div>
+
+    <div style="margin-top: 20px;">
+        <a href="{% url 'doctor:pacientes_doctor' %}">Volver a lista de pacientes</a>
+        <br>
+        <a href="{% url 'doctor:receta_paciente' paciente.id %}">Crear nueva receta</a>
+    </div>
+</body>
+</html>

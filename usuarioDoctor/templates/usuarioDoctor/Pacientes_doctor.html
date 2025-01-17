@@ -1,58 +1,60 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-    <meta charset="UTF-8">
-    <title>Pacientes - Doctor</title>
+   <meta charset="UTF-8">
+   <title>Pacientes - Doctor</title>
 </head>
 <body>
-    <h1>Mis Pacientes</h1>
-    <h3>Doctor: {{ doctor.first_name }} {{ doctor.apellidos }}</h3>
+   <h1>Mis Pacientes</h1>
+   <h3>Doctor: {{ doctor.first_name }} {{ doctor.apellidos }}</h3>
 
-    {% if messages %}
-    <div class="messages">
-        {% for message in messages %}
-            <div class="message {% if message.tags %}{{ message.tags }}{% endif %}">
-                {{ message }}
-            </div>
-        {% endfor %}
-    </div>
-    {% endif %}
+   {% if messages %}
+   <div class="messages">
+       {% for message in messages %}
+           <div class="message {% if message.tags %}{{ message.tags }}{% endif %}">
+               {{ message }}
+           </div>
+       {% endfor %}
+   </div>
+   {% endif %}
 
-    {% if pacientes %}
-        <table border="1">
-            <thead>
-                <tr>
-                    <th>Nombre</th>
-                    <th>Apellidos</th>
-                    <th>Área</th>
-                    <th>Cuidados</th>
-                    <th>Receta</th>
-                </tr>
-            </thead>
-            <tbody>
-                {% for paciente in pacientes %}
-                <tr>
-                    <td>{{ paciente.nombres }} {{ paciente.apellidos }}</td>
-                    <td>{{ paciente.num_seguridad_social }}</td>
-                    <td>{{ paciente.area }}</td>
-                    <td>
-                        <a href="{% url 'doctor:cuidados_pacienteD' %}?paciente_id={{ paciente.id }}">Ver</a>
-                    </td>
-                    <td>
-                        <a href="{% url 'doctor:receta_paciente' %}?paciente_id={{ paciente.id }}">Modificar</a>
-                    </td>
-                </tr>
-                {% endfor %}
-            </tbody>
-        </table>
-    {% else %}
-        <p>No tienes pacientes asignados actualmente.</p>
-    {% endif %}
+   {% if pacientes %}
+       <table border="1">
+           <thead>
+               <tr>
+                   <th>Nombre</th>
+                   <th>Num Seguridad</th>
+                   <th>Área</th>
+                   <th>Receta</th>
+                   <th>Cuidados</th>
+               </tr>
+           </thead>
+           <tbody>
+               {% for paciente in pacientes %}
+               <tr>
+                   <td>{{ paciente.nombres }} {{ paciente.apellidos }}</td>
+                   <td>{{ paciente.num_seguridad_social }}</td>
+                   <td>{{ paciente.area }}</td>
+                   <td>
+                       {% if paciente.recetas_doctor.exists %}
+                           <a href="{% url 'doctor:ver_receta_paciente' paciente.id %}">Ver Receta Actual</a>
+                           <br>
+                       {% endif %}
+                       <a href="{% url 'doctor:receta_paciente' paciente.id %}">Crear Nueva Receta</a>
+                   </td>
+                   <td> Ver </td>
+               </tr>
+               {% endfor %}
+           </tbody>
+       </table>
+   {% else %}
+       <p>No tienes pacientes asignados actualmente.</p>
+   {% endif %}
 
-    <br><br>
-    <form action="{% url 'login:login' %}" method="POST">
-        {% csrf_token %}
-        <button type="submit">Cerrar Sesión</button>
-    </form>
+   <br><br>
+   <form action="{% url 'login:login' %}" method="POST">
+       {% csrf_token %}
+       <button type="submit">Cerrar Sesión</button>
+   </form>
 </body>
 </html>

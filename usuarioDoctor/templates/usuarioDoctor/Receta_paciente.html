@@ -1,57 +1,352 @@
 <!DOCTYPE html>
-<html lang="en">
-<meta charset="UTF-8" />
-
-<head> <h1>Receta paciente: </h1> </head>
-
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <title>Receta y Diagnóstico</title>
+    <style>
+        .hidden {
+            display: none;
+        }
+        .padecimiento-row, .medicamento-row, .cuidado-row {
+            margin: 15px 0;
+            padding: 15px;
+            border: 1px solid #ccc;
+        }
+        .dosis-container, .horario-container {
+            margin: 10px 0;
+            padding: 10px;
+            background-color: #f8f9fa;
+        }
+        .cantidad-total {
+            margin-top: 10px;
+            font-weight: bold;
+            color: #0056b3;
+        }
+        label {
+            display: inline-block;
+            margin-bottom: 5px;
+        }
+        input, textarea {
+            margin: 5px 0;
+        }
+        textarea {
+            width: 100%;
+            min-height: 60px;
+        }
+    </style>
+</head>
 <body>
-    <form action="{% url 'doctor:pacientes_doctor' %}" method="POST">
+    <h1>Receta y Diagnóstico</h1>
+    <h2>Paciente: {{ paciente.nombres }} {{ paciente.apellidos }}</h2>
+
+    {% if messages %}
+    <div class="messages">
+        {% for message in messages %}
+            <div class="message {% if message.tags %}{{ message.tags }}{% endif %}">
+                {{ message }}
+            </div>
+        {% endfor %}
+    </div>
+    {% endif %}
+
+    <form method="POST" id="recetaForm">
         {% csrf_token %}
-        <table>
-            <tr>
-                <th>
-                    <label for="padecimientos">padecimientos</label>
-        
-                    <select id="padecimientos" name="padecimientos" required> 
-                        <option value="Padecimiento 1">Padecimiento 1</option>
-                        <option value="Padecimiento 2">Padecimiento 2</option>
-                        <option value="Padecimiento 3">Padecimiento 3</option>
-                    </select> 
-                </th>
-                
-                <th>
-                    <label for="medicamentos">Medicamentos</label>
-        
-                    <select id="medicamentos" name="medicamentos" required> 
-                        <option value="Medicamento 1">Medicamento 1</option>
-                        <option value="Medicamento 2">Medicamento 2</option>
-                        <option value="Medicamento 3">Medicamento 3</option>
-                    </select>
-                
-                    <select id="alergias" name="alergias"> 
-                        <option value="Alergia 1">Alergias</option>
-                    </select>
-                </th>
-                
-                <th>
-                    <label for="cuidados">Cuidados faltantes</label>
+
+        <!-- Sección de Diagnóstico -->
+        <div class="seccion-diagnostico">
+            <h3>Diagnóstico</h3>
+            <div>
+                <label for="descripcion">Descripción del diagnóstico:</label><br>
+                <textarea name="descripcion_diagnostico" id="descripcion" rows="4" required>{% if diagnostico %}{{ diagnostico.descripcion }}{% endif %}</textarea>
+            </div>
+        </div>
+
+        <!-- Sección de Padecimientos -->
+        <div class="seccion-padecimientos">
+            <h3>Padecimientos</h3>
+            <div id="padecimientos-container">
+                {% if padecimientos %}
+                    {% for padecimiento in padecimientos %}
+                        <div class="padecimiento-row">
+                            <div>
+                                <label>Nombre del padecimiento:</label>
+                                <input type="text" name="padecimientos[]" required value="{{ padecimiento.padecimiento.nombre }}">
+                            </div>
+                            <div>
+                                <label>Nivel de gravedad:</label>
+                                <select name="niveles_gravedad[]" required>
+                                    {% for nivel in niveles_gravedad %}
+                                        <option value="{{ nivel.0 }}" {% if nivel.0 == padecimiento.nivel_gravedad %}selected{% endif %}>
+                                            {{ nivel.1 }}
+                                        </option>
+                                    {% endfor %}
+                                </select>
+                            </div>
+                            <button type="button" onclick="eliminarPadecimiento(this)">Eliminar</button>
+                        </div>
+                    {% endfor %}
+                {% endif %}
+            </div>
+            <button type="button" onclick="agregarPadecimiento()">Agregar Padecimiento</button>
+        </div>
+
+        <!-- Sección de Cuidados -->
+        <div class="seccion-cuidados">
+            <h3>Cuidados</h3>
+            <div id="cuidados-container">
+                {% if cuidados %}
+                    {% for cuidado in cuidados %}
+                        <div class="cuidado-row">
+                            <div>
+                                <label>Nombre del cuidado:</label>
+                                <input type="text" name="cuidados[]" required value="{{ cuidado.cuidado.nombre }}">
+                            </div>
+                            <button type="button" onclick="eliminarCuidado(this)">Eliminar</button>
+                        </div>
+                    {% endfor %}
+                {% endif %}
+            </div>
+            <button type="button" onclick="agregarCuidado()">Agregar Cuidado</button>
+        </div>
+
+        <!-- Sección de Medicamentos -->
+        <div class="seccion-medicamentos">
+            <h3>Medicamentos</h3>
+            <div id="medicamentos-container">
+                {% if detalles_medicamentos %}
+                    {% for detalle in detalles_medicamentos %}
+                        <div class="medicamento-row">
+                            <select name="medicamentos[]" required onchange="actualizarInfoMedicamento(this)">
+                                <option value="">Seleccione un medicamento</option>
+                                {% for medicamento in medicamentos %}
+                                    <option value="{{ medicamento.id }}" {% if medicamento.id == detalle.medicamento.id %}selected{% endif %}>
+                                        {{ medicamento.nombre }} - {{ medicamento.gramaje }}
+                                    </option>
+                                {% endfor %}
+                            </select>
+
+                            <div class="info-medicamento">
+                                <p>Gramaje: {{ detalle.medicamento.gramaje }}</p>
+                                <p>Compuestos: {{ detalle.medicamento.compuestos.all|join:", " }}</p>
+                                <p>Disponible: {{ detalle.medicamento.cantidad_disponible }} unidades</p>
+                            </div>
+
+                            <div class="dosis-container">
+                                <label>Dosis:</label>
+                                <input type="number" name="cantidad_por_toma[]" step="0.01" min="0.01" required 
+                                       value="{{ detalle.cantidad_por_toma }}" placeholder="Cantidad">
+                            </div>
+
+                            <div class="horario-container">
+                                <label>Frecuencia y Duración:</label>
+                                <div>
+                                    <label>Cada</label>
+                                    <input type="number" name="frecuencia_horas[]" min="1" max="24" required 
+                                           value="{{ detalle.frecuencia_horas }}" placeholder="horas">
+                                    <label>horas</label>
+                                </div>
+                                <div>
+                                    <label>Durante</label>
+                                    <input type="number" name="dias_tratamiento[]" min="1" required 
+                                           value="{{ detalle.dias_tratamiento }}" placeholder="días">
+                                    <label>días</label>
+                                </div>
+                            </div>
+
+                            <textarea name="instrucciones[]" placeholder="Instrucciones de uso" required>{{ detalle.instrucciones }}</textarea>
+                            <textarea name="descripciones[]" placeholder="Descripción adicional (opcional)">{{ detalle.descripcion_opcional }}</textarea>
+                            
+                            <div class="cantidad-total">
+                                Cantidad total necesaria: {{ detalle.calcular_cantidad_total }}
+                            </div>
+                            
+                            <button type="button" onclick="eliminarMedicamento(this)">Eliminar</button>
+                        </div>
+                    {% endfor %}
+                {% endif %}
+            </div>
+            <button type="button" onclick="agregarMedicamento()">Agregar Medicamento</button>
+        </div>
+
+        <!-- Botones de acción -->
+        <div style="margin-top: 20px;">
+            {% if receta_actual %}
+                <!-- Si hay una receta existente, mostramos botón de actualizar -->
+                <button type="submit">Actualizar Receta y Diagnóstico</button>
+            {% else %}
+                <!-- Si no hay receta, mostramos botón de crear -->
+                <button type="submit">Crear Receta y Diagnóstico</button>
+            {% endif %}
             
-                    <select id="cuidados" name="cuidados" required>  
-                        <option value="Cuidado 1">Cuidado 1</option>
-                        <option value="Cuidado 2">Cuidado 2</option>
-                        <option value="Cuidado 3">Cuidado 3</option>
-                    </select>
-                </th>
-            </tr>
-        </table>
-
-        <br><br><br><br>
-
-        <input type="text" name="comentarios" placeholder="Comentarios adicionales...">
-
-        <br><br><br>
-
-        <button type="submit">Guardar</button>
+            <!-- Botón de volver -->
+            <a href="{% url 'doctor:pacientes_doctor' %}" style="margin-left: 10px;">
+                <button type="button">Volver</button>
+            </a>
+        </div>
     </form>
+
+    <!-- Templates para las filas -->
+    <div id="padecimiento-template" class="hidden">
+        <div class="padecimiento-row">
+            <div>
+                <label>Nombre del padecimiento:</label>
+                <input type="text" name="padecimientos[]" required>
+            </div>
+
+            <div>
+                <label>Nivel de gravedad:</label>
+                <select name="niveles_gravedad[]" required>
+                    <option value="">Seleccione nivel</option>
+                    {% for nivel in niveles_gravedad %}
+                        <option value="{{ nivel.0 }}">{{ nivel.1 }}</option>
+                    {% endfor %}
+                </select>
+            </div>
+
+            <button type="button" onclick="eliminarPadecimiento(this)">Eliminar</button>
+        </div>
+    </div>
+
+    <!-- Template para cuidados -->
+    <div id="cuidado-template" class="hidden">
+        <div class="cuidado-row">
+            <div>
+                <label>Nombre del cuidado:</label>
+                <input type="text" name="cuidados[]" required>
+            </div>
+            <button type="button" onclick="eliminarCuidado(this)">Eliminar</button>
+        </div>
+    </div>
+
+    <!-- Template para medicamentos -->
+    <div id="medicamento-template" class="hidden">
+        <div class="medicamento-row">
+            <select name="medicamentos[]" required onchange="actualizarInfoMedicamento(this)">
+                <option value="">Seleccione un medicamento</option>
+                {% for medicamento in medicamentos %}
+                    <option value="{{ medicamento.id }}">{{ medicamento.nombre }} - {{ medicamento.gramaje }}</option>
+                {% endfor %}
+            </select>
+
+            <div class="info-medicamento"></div>
+
+            <div class="dosis-container">
+                <label>Dosis:</label>
+                <input type="number" name="cantidad_por_toma[]" step="0.01" min="0.01" required placeholder="Cantidad">
+            </div>
+
+            <div class="horario-container">
+                <label>Frecuencia y Duración:</label>
+                <div>
+                    <label>Cada</label>
+                    <input type="number" name="frecuencia_horas[]" min="1" max="24" required placeholder="horas">
+                    <label>horas</label>
+                </div>
+                <div>
+                    <label>Durante</label>
+                    <input type="number" name="dias_tratamiento[]" min="1" required placeholder="días">
+                    <label>días</label>
+                </div>
+            </div>
+
+            <textarea name="instrucciones[]" placeholder="Instrucciones de uso" required></textarea>
+            <textarea name="descripciones[]" placeholder="Descripción adicional (opcional)"></textarea>
+            
+            <div class="cantidad-total"></div>
+            
+            <button type="button" onclick="eliminarMedicamento(this)">Eliminar</button>
+        </div>
+    </div>
+
+    <script>
+        function agregarPadecimiento() {
+            const container = document.getElementById('padecimientos-container');
+            const template = document.getElementById('padecimiento-template');
+            const clon = template.firstElementChild.cloneNode(true);
+            container.appendChild(clon);
+        }
+
+        function eliminarPadecimiento(button) {
+            button.closest('.padecimiento-row').remove();
+        }
+
+        function agregarCuidado() {
+            const container = document.getElementById('cuidados-container');
+            const template = document.getElementById('cuidado-template');
+            const clon = template.firstElementChild.cloneNode(true);
+            container.appendChild(clon);
+        }
+
+        function eliminarCuidado(button) {
+            button.closest('.cuidado-row').remove();
+        }
+
+        function agregarMedicamento() {
+            const container = document.getElementById('medicamentos-container');
+            const template = document.getElementById('medicamento-template');
+            const clon = template.firstElementChild.cloneNode(true);
+            container.appendChild(clon);
+        }
+
+        function eliminarMedicamento(button) {
+            button.closest('.medicamento-row').remove();
+        }
+
+        function calcularCantidadTotal(row) {
+            const cantidadPorToma = parseFloat(row.querySelector('[name="cantidad_por_toma[]"]').value) || 0;
+            const frecuenciaHoras = parseInt(row.querySelector('[name="frecuencia_horas[]"]').value) || 0;
+            const diasTratamiento = parseInt(row.querySelector('[name="dias_tratamiento[]"]').value) || 0;
+            
+            if (cantidadPorToma && frecuenciaHoras && diasTratamiento) {
+                const tomasPorDia = 24 / frecuenciaHoras;
+                const cantidadTotal = cantidadPorToma * tomasPorDia * diasTratamiento;
+                
+                row.querySelector('.cantidad-total').innerHTML = 
+                    `Cantidad total necesaria: ${cantidadTotal.toFixed(2)}`;
+            }
+        }
+
+        async function actualizarInfoMedicamento(select) {
+            const medicamentoId = select.value;
+            if (!medicamentoId) return;
+
+            const row = select.closest('.medicamento-row');
+            const infoDiv = row.querySelector('.info-medicamento');
+            
+            try {
+                const response = await fetch(`/doctor/get-medicamento-info/${medicamentoId}/`);
+                const data = await response.json();
+                
+                infoDiv.innerHTML = `
+                    <p>Gramaje: ${data.gramaje}</p>
+                    <p>Compuestos: ${data.compuestos.map(c => c.nombre).join(', ')}</p>
+                    <p>Disponible: ${data.cantidad_disponible} unidades</p>
+                    ${data.cantidad_disponible < 10 ? 
+                        '<div class="alert alert-warning">Existencias bajas</div>' : ''}
+                `;
+
+                const inputs = row.querySelectorAll('input[type="number"]');
+                inputs.forEach(input => {
+                    input.addEventListener('input', () => calcularCantidadTotal(row));
+                });
+                
+            } catch (error) {
+                console.error('Error al obtener información del medicamento:', error);
+            }
+        }
+
+        document.addEventListener('DOMContentLoaded', function() {
+            // Solo agregar filas iniciales si no hay datos existentes
+            if (!document.querySelector('.padecimiento-row')) {
+                agregarPadecimiento();
+            }
+            if (!document.querySelector('.cuidado-row')) {
+                agregarCuidado();
+            }
+            if (!document.querySelector('.medicamento-row')) {
+                agregarMedicamento();
+            }
+        });
+    </script>
 </body>
 </html>

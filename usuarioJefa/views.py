@@ -48,9 +48,16 @@ def agregar_pacientes(request):
     })
 
 def historiales_(request):
-    return render(request, 'usuarioJefa/historiales.html')  
+    # Obtener todos los usuarios
+    usuarios = Usuarios.objects.all().select_related('areaEspecialidad').prefetch_related('fortalezas')
+    
+    # Ordenar por fecha de registro
+    usuarios = usuarios.order_by('-fechaRegistro')
 
-# views.py
+    return render(request, 'usuarioJefa/historiales.html', {
+        'usuarios': usuarios
+    }) 
+
 def historial_empleados(request):
     # Obtener todos los usuarios
     usuarios = Usuarios.objects.all().select_related('areaEspecialidad').prefetch_related('fortalezas')
@@ -69,7 +76,20 @@ def calendario_(request):
     return render(request, 'usuarioJefa/calendario.html')  
 
 def usuarios_(request):
-    return render(request, 'usuarioJefa/usuarios_.html')
+    usuarios_activos = Usuarios.objects.filter(estaActivo=True)
+    areas = AreaEspecialidad.objects.all()
+    fortalezas = Fortaleza.objects.all()
+
+    return render(request, 'usuarioJefa/usuarios_.html', {
+        'usuarios': usuarios_activos,
+        'areas': areas,
+        'fortalezas': fortalezas
+    })
+
+def gestionar_usuarios(request):
+    # Filtrar solo usuarios activos
+    usuarios = Usuarios.objects.filter(estaActivo=True).order_by('tipoUsuario', 'first_name')
+    return render(request, 'usuarioJefa/gestionar_usuarios.html', {'usuarios': usuarios})
 
 def crear_usuarios(request):
     if request.method == 'POST':
@@ -107,23 +127,18 @@ def crear_usuarios(request):
             usuario.cedula = request.POST.get('cedula')
 
             messages.success(request, 'Usuario creado exitosamente')
-            return render(request, 'usuarioJefa/crear_usuarios.html')
+            return redirect(request, 'usuarioJefa/usuarios_.html')
             
         except Exception as e:
             messages.error(request, f'Error al crear el usuario: {str(e)}')
-            return render(request, 'usuarioJefa/crear_usuarios.html')
+            return redirect(request, 'usuarioJefa/usuarios_.html')
     
     # GET: mostrar formulario
     context = {
         'areas': AreaEspecialidad.objects.all(),
         'fortalezas': Fortaleza.objects.all(),
     }
-    return render(request, 'usuarioJefa/crear_usuarios.html', context)
-
-def gestionar_usuarios(request):
-    # Filtrar solo usuarios activos
-    usuarios = Usuarios.objects.filter(estaActivo=True).order_by('tipoUsuario', 'first_name')
-    return render(request, 'usuarioJefa/gestionar_usuarios.html', {'usuarios': usuarios})
+    return redirect(request, 'usuarioJefa/crear_usuarios.html', context)
 
 def editar_usuario(request, usuario_id):
     usuario = get_object_or_404(Usuarios, id=usuario_id)
@@ -150,7 +165,7 @@ def editar_usuario(request, usuario_id):
                 
             usuario.save()
             messages.success(request, 'Usuario actualizado correctamente')
-            return redirect('jefa:gestionar_usuarios')
+            return redirect('jefa:usuarios_')
             
         except Exception as e:
             messages.error(request, f'Error al actualizar el usuario: {str(e)}')
@@ -190,11 +205,11 @@ def toggle_usuario(request, usuario_id):
         
         # Si viene de historial, redirigir allí
         if 'historial' in referer:
-            return redirect('jefa:historial_empleados')
+            return redirect('jefa:historiales_')
         # Si no, redirigir a gestionar usuarios
-        return redirect('jefa:gestionar_usuarios')
+        return redirect('jefa:usuarios_')
     
-    return redirect('jefa:gestionar_usuarios')
+    return redirect('jefa:usuarios_')
 
 
 @login_required
