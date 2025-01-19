@@ -1,78 +1,172 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="es">
 <head>
     <meta charset="UTF-8" />
     <title>Formulario paciente</title>
 </head>
-
 <body>
-    <h1>Formulario paciente:</h1>
+    <h1>Formulario paciente: {{ paciente.nombres }} {{ paciente.apellidos }}</h1>
 
-    <form method="POST" action="{% url 'enfermeria:formulario_paciente' %}">
+    {% if messages %}
+    <div>
+        {% for message in messages %}
+            <div>{{ message }}</div>
+        {% endfor %}
+    </div>
+    {% endif %}
+
+    {% if receta %}
+    <form method="POST" action="{% url 'enfermeria:formulario_paciente' paciente.id %}">
         {% csrf_token %}
-        <p>
-            ¿Se dieron todos los cuidados? Si <input type="checkbox" name="todos_cuidados_si"> 
-            No <input type="checkbox" name="todos_cuidados_no">
-            <label for="cuidadosFaltantes">Cuidados faltantes</label>
         
-            <select id="cuidadosFaltantes" name="CuidadosFaltantes" multiple>  
-                <option value="Cuidado 1">Cuidado 1</option>
-                <option value="Cuidado 2">Cuidado 2</option>
-                <option value="Cuidado 3">Cuidado 3</option>
-            </select>
+        <!-- Sección de Cuidados No Realizados -->
+        <div>
+            <h3>Cuidados Faltantes</h3>
+            {% if cuidados_no_realizados %}
+                {% for cuidado in cuidados_no_realizados %}
+                <div>
+                    <!-- Input oculto para marcar automáticamente el cuidado como faltante -->
+                    <input type="hidden" 
+                           name="cuidado_faltante_{{ cuidado.id }}" 
+                           value="on">
+                    <label>
+                        {{ cuidado.cuidado.nombre }}
+                    </label>
+                    <br>
+                    <input type="text" 
+                           name="motivo_cuidado_{{ cuidado.id }}" 
+                           placeholder="Motivo por el que no se realizó..."
+                           required>
+                </div>
+                {% endfor %}
+            {% else %}
+                <p>Se completaron todos los cuidados requeridos.</p>
+            {% endif %}
+        </div>
 
-            <button type="submit">Agregar</button>
-        </p> 
+        <!-- Sección de Medicamentos No Administrados -->
+        <div>
+            <h3>Medicamentos Faltantes</h3>
+            {% if medicamentos_no_administrados %}
+                {% for medicamento in medicamentos_no_administrados %}
+                <div>
+                    <!-- Input oculto para marcar automáticamente el medicamento como faltante -->
+                    <input type="hidden" 
+                           name="medicamento_faltante_{{ medicamento.id }}" 
+                           value="on">
+                    <label>
+                        {{ medicamento.medicamento.nombre }} - 
+                        {{ medicamento.cantidad_por_toma }} 
+                        {{ medicamento.get_unidad_medida_display }}
+                    </label>
+                    <br>
+                    <input type="text" 
+                           name="motivo_medicamento_{{ medicamento.id }}" 
+                           placeholder="Motivo por el que no se administró..."
+                           required>
+                </div>
+                {% endfor %}
+            {% else %}
+                <p>Se administraron todos los medicamentos requeridos.</p>
+            {% endif %}
+        </div>
 
-        <p>
-            ¿Se administraron todos los medicamentos? Si <input type="checkbox" name="todos_medicamentos_si"> 
-            No <input type="checkbox" name="todos_medicamentos_no">
-            <label for="medicamentosFaltantes">Medicamentos faltantes</label>
-        
-            <select id="medicamentosFaltantes" name="MedicamentosFaltantes" multiple> 
-                <option value="Medicamento 1">Medicamento 1</option>
-                <option value="Medicamento 2">Medicamento 2</option>
-                <option value="Medicamento 3">Medicamento 3</option>
-            </select>
-
-            <button type="submit">Agregar</button>
-        </p>
-    </form>
-        
-    <form method="POST" action="{% url 'enfermeria:formulario_paciente' %}">
-        {% csrf_token %}
-        <table>
+        <!-- Sección de Padecimientos -->
+        <h3>Evaluación de Padecimientos</h3>
+        <table border="1">
             <tr>
-                <td>Padecimiento 1</td>
-                <td>Mejoró <input type="checkbox" name="padecimiento1_mejoro"></td>
-                <td>Igual <input type="checkbox" name="padecimiento1_igual"></td>
-                <td>Empeoró <input type="checkbox" name="padecimiento1_empeoro"></td>
-                <td><button type="submit">Aceptar</button></td>
+                <th>Padecimiento</th>
+                <th>Estado</th>
+                <th>Notas</th>
             </tr>
+            {% for padecimiento in padecimientos %}
             <tr>
-                <td>Padecimiento 2</td>
-                <td>Mejoró <input type="checkbox" name="padecimiento2_mejoro"></td>
-                <td>Igual <input type="checkbox" name="padecimiento2_igual"></td>
-                <td>Empeoró <input type="checkbox" name="padecimiento2_empeoro"></td>
-                <td><button type="submit">Aceptar</button></td>
+                <td>{{ padecimiento.padecimiento.nombre }}</td>
+                <td>
+                    <select name="estado_padecimiento_{{ padecimiento.id }}" required>
+                        <option value="">Seleccione estado</option>
+                        {% for estado in estados_padecimiento %}
+                            <option value="{{ estado.0 }}">{{ estado.1 }}</option>
+                        {% endfor %}
+                    </select>
+                </td>
+                <td>
+                    <input type="text" 
+                           name="notas_padecimiento_{{ padecimiento.id }}" 
+                           placeholder="Notas sobre el padecimiento...">
+                </td>
             </tr>
-            <tr>
-                <td>Padecimiento 3</td>
-                <td>Mejoró <input type="checkbox" name="padecimiento3_mejoro"></td>
-                <td>Igual <input type="checkbox" name="padecimiento3_igual"></td>
-                <td>Empeoró <input type="checkbox" name="padecimiento3_empeoro"></td>
-                <td><button type="submit">Aceptar</button></td>
-            </tr>
+            {% endfor %}
         </table>
+
+        <!-- Notas Generales -->
+        <h3>Notas Generales</h3>
+        <textarea name="notas_generales" rows="4" placeholder="Comentarios generales sobre el paciente..."></textarea>
+
+        <br><br>
+        <button type="submit">Guardar Formulario</button>
     </form>
 
-    <form method="POST" action="{% url 'enfermeria:formulario_paciente' %}">
-        {% csrf_token %}
-        <input type="text" id="comentarios" name="Comentarios" placeholder="Agregar comentarios...">
-        <button type="submit">Enviar comentarios</button>
-    </form>
+    <!-- Últimos Registros -->
+    {% if registros_recientes %}
+    <div>
+        <h3>Últimos Registros</h3>
+        <table border="1">
+            <tr>
+                <th>Fecha</th>
+                <th>Registrado por</th>
+                <th>Estado de Padecimientos</th>
+                <th>Cuidados Faltantes</th>
+                <th>Medicamentos Faltantes</th>
+                <th>Notas Generales</th>
+            </tr>
+            {% for registro in registros_recientes %}
+            <tr>
+                <td>{{ registro.fecha_registro|date:"d/m/Y H:i" }}</td>
+                <td>{{ registro.enfermero.get_full_name }}</td>
+                <td>
+                    {% for evaluacion in registro.evaluacionpadecimiento_set.all %}
+                        - {{ evaluacion.padecimiento.padecimiento.nombre }}: 
+                        {{ evaluacion.get_estado_display }}
+                        {% if evaluacion.notas %}
+                            ({{ evaluacion.notas }})
+                        {% endif %}
+                        <br>
+                    {% endfor %}
+                </td>
+                <td>
+                    {% for faltante in registro.cuidadofaltante_set.all %}
+                        {% if faltante.cuidado %}
+                            - {{ faltante.cuidado.cuidado.nombre }}: 
+                            {{ faltante.motivo }}
+                            <br>
+                        {% endif %}
+                    {% empty %}
+                        No hubo
+                    {% endfor %}
+                </td>
+                <td>
+                    {% for faltante in registro.medicamentofaltante_set.all %}
+                        - {{ faltante.medicamento.medicamento.nombre }}: 
+                        {{ faltante.motivo }}
+                        <br>
+                    {% empty %}
+                        No hubo
+                    {% endfor %}
+                </td>
+                <td>{{ registro.notas_generales }}</td>
+            </tr>
+            {% endfor %}
+        </table>
+    </div>
+    {% endif %}
+    {% else %}
+    <p>No hay una receta activa para este paciente.</p>
+    {% endif %}
 
-    <br>
-    <a href="{% url 'enfermeria:pacientes_enfermeria' %}" class="button">Guardar y volver a pacientes</a>
+    <br><br>
+    <a href="{% url 'enfermeria:pacientes_enfermeria' %}">
+        <button type="button">Volver</button>
+    </a>
 </body>
 </html>
