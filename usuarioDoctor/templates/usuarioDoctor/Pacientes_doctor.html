@@ -42,7 +42,9 @@
                        {% endif %}
                        <a href="{% url 'doctor:receta_paciente' paciente.id %}">Crear Nueva Receta</a>
                    </td>
-                   <td> Ver </td>
+                   <td>
+                    <a href="{% url 'doctor:cuidados_pacienteD' paciente.id %}">Ver</a>
+                   </td>
                </tr>
                {% endfor %}
            </tbody>

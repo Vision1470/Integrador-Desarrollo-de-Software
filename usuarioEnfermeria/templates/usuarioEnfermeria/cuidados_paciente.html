@@ -1,35 +1,141 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="es">
 <head>
-   <meta charset="UTF-8" />
-   <title>Cuidados del paciente</title>
+    <meta charset="UTF-8">
+    <title>Cuidados del paciente</title>
 </head>
-
 <body>
-   <h1>Cuidados paciente:</h1>
+    <h1>Cuidados del Paciente: {{ paciente.nombres }} {{ paciente.apellidos }}</h1>
 
-   <table>
-       <tr>
-           <th>Padecimientos</th>
-           <th>Cuidados</th>
-           <th>Medicamentos</th>
-       </tr>
-       
-       <tr>
-           <td>Medicamento 1 <input type="checkbox" name="medicamento1"></td>
-           <td>Padecimiento 1</td>
-           <td>Cuidado 1 <input type="checkbox" name="cuidado1"></td>
-       </tr>
-       
-       <tr>
-           <td>Medicamento 2 <input type="checkbox" name="medicamento2"></td>
-           <td>Padecimiento 2</td>
-           <td>Cuidado 2 <input type="checkbox" name="cuidado2"></td>
-       </tr>
-   </table>
+    {% if messages %}
+    <div>
+        {% for message in messages %}
+            <div>{{ message }}</div>
+        {% endfor %}
+    </div>
+    {% endif %}
 
-   <br><br><br>
+    {% if receta %}
+    <form method="POST">
+        {% csrf_token %}
+        <table border="1">
+            <tr>
+                <th>Padecimientos</th>
+                <th>Cuidados</th>
+                <th>Medicamentos</th>
+            </tr>
+            <tr>
+                <td>
+                    {% for padecimiento in padecimientos %}
+                        <div>
+                            {{ padecimiento.padecimiento.nombre }}
+                            ({{ padecimiento.get_nivel_gravedad_display }})
+                        </div>
+                    {% endfor %}
+                </td>
+                <td>
+                    {% for cuidado in cuidados %}
+                        <div>
+                            <input type="checkbox" 
+                                   name="cuidado_{{ cuidado.id }}" 
+                                   id="cuidado_{{ cuidado.id }}"
+                                   {% if ultimo_registro %}
+                                       {% for registro in ultimo_registro.registrocuidado_set.all %}
+                                           {% if registro.cuidado_id == cuidado.id and registro.completado %}
+                                               checked
+                                           {% endif %}
+                                       {% endfor %}
+                                   {% endif %}>
+                            <label for="cuidado_{{ cuidado.id }}">{{ cuidado.cuidado.nombre }}</label>
+                            {% if ultimo_registro %}
+                                {% for registro in ultimo_registro.registrocuidado_set.all %}
+                                    {% if registro.cuidado_id == cuidado.id and registro.completado %}
+                                        <div>
+                                            Completado por: {{ ultimo_registro.registrado_por.get_full_name }}
+                                            el {{ ultimo_registro.fecha_registro|date:"d/m/Y H:i" }}
+                                        </div>
+                                    {% endif %}
+                                {% endfor %}
+                            {% endif %}
+                        </div>
+                    {% endfor %}
+                </td>
+                <td>
+                    {% for medicamento in medicamentos %}
+                        <div>
+                            <input type="checkbox" 
+                                   name="medicamento_{{ medicamento.id }}" 
+                                   id="medicamento_{{ medicamento.id }}"
+                                   {% if ultimo_registro %}
+                                       {% for registro in ultimo_registro.registromedicamento_set.all %}
+                                           {% if registro.medicamento_id == medicamento.id and registro.administrado %}
+                                               checked
+                                           {% endif %}
+                                       {% endfor %}
+                                   {% endif %}>
+                            <label for="medicamento_{{ medicamento.id }}">
+                                {{ medicamento.medicamento.nombre }} - {{ medicamento.cantidad_por_toma }}
+                                {{ medicamento.get_unidad_medida_display }}
+                            </label>
+                            {% if ultimo_registro %}
+                                {% for registro in ultimo_registro.registromedicamento_set.all %}
+                                    {% if registro.medicamento_id == medicamento.id and registro.administrado %}
+                                        <div>
+                                            Administrado por: {{ ultimo_registro.registrado_por.get_full_name }}
+                                            el {{ ultimo_registro.fecha_registro|date:"d/m/Y H:i" }}
+                                        </div>
+                                    {% endif %}
+                                {% endfor %}
+                            {% endif %}
+                        </div>
+                    {% endfor %}
+                </td>
+            </tr>
+        </table>
 
-   <a href="{% url 'enfermeria:pacientes_enfermeria' %}" class="button">Volver</a>
+        <button type="submit">Guardar Registro</button>
+    </form>
+    {% else %}
+    <p>No hay una receta activa para este paciente.</p>
+    {% endif %}
+
+    {% if registros_recientes %}
+    <div>
+        <h3>Últimos Registros</h3>
+        <table border="1">
+            <tr>
+                <th>Fecha</th>
+                <th>Registrado por</th>
+                <th>Cuidados Completados</th>
+                <th>Medicamentos Administrados</th>
+            </tr>
+            {% for registro in registros_recientes %}
+            <tr>
+                <td>{{ registro.fecha_registro|date:"d/m/Y H:i" }}</td>
+                <td>{{ registro.registrado_por.get_full_name }}</td>
+                <td>
+                    {% for cuidado in registro.registrocuidado_set.all %}
+                        {% if cuidado.completado %}
+                            - {{ cuidado.cuidado.cuidado.nombre }}<br>
+                        {% endif %}
+                    {% endfor %}
+                </td>
+                <td>
+                    {% for medicamento in registro.registromedicamento_set.all %}
+                        {% if medicamento.administrado %}
+                            - {{ medicamento.medicamento.medicamento.nombre }}<br>
+                        {% endif %}
+                    {% endfor %}
+                </td>
+            </tr>
+            {% endfor %}
+        </table>
+    </div>
+    {% endif %}
+
+    <br><br>
+    <a href="{% url 'enfermeria:pacientes_enfermeria' %}">
+        <button type="button">Volver</button>
+    </a>
 </body>
 </html>

@@ -4,6 +4,8 @@ from usuarioJefa.models import *
 from .models import *
 from django.contrib import messages
 from django.http import JsonResponse
+from decimal import Decimal
+from usuarioEnfermeria.models import * 
 
 @login_required
 def pacientes_doctor(request):
@@ -78,7 +80,26 @@ def receta_paciente(request, paciente_id):
                     )
 
             # Procesar medicamentos...
-            # [Código existente para medicamentos se mantiene igual]
+            medicamentos = request.POST.getlist('medicamentos[]')
+            cantidades = request.POST.getlist('cantidad_por_toma[]')
+            frecuencias = request.POST.getlist('frecuencia_horas[]')
+            duraciones = request.POST.getlist('dias_tratamiento[]')
+            instrucciones = request.POST.getlist('instrucciones[]')
+            descripciones = request.POST.getlist('descripciones[]')
+
+            # Verificar que tenemos todos los datos necesarios
+            if medicamentos and cantidades and frecuencias and duraciones and instrucciones:
+             for i in range(len(medicamentos)):
+                if medicamentos[i]:  # Si hay un medicamento seleccionado
+                    DetalleReceta.objects.create(
+                    receta=receta,
+                    medicamento_id=int(medicamentos[i]),
+                    cantidad_por_toma=Decimal(str(cantidades[i])),  # Convertido a Decimal
+                    frecuencia_horas=int(frecuencias[i]),
+                    dias_tratamiento=int(duraciones[i]),
+                    instrucciones=instrucciones[i],
+                    descripcion_opcional=descripciones[i] if i < len(descripciones) else ''
+            )
 
             messages.success(request, 'Receta creada exitosamente')
             return redirect('doctor:pacientes_doctor')
@@ -123,10 +144,7 @@ def get_medicamento_info(request, medicamento_id):
             'cantidad_disponible': medicamento.cantidad_disponible
         })
     except Medicamento.DoesNotExist:
-        return JsonResponse({'error': 'Medicamento no encontrado'}, status=404)
-
-def cuidados_paciente(request):
-    return render(request, 'usuarioDoctor/cuidados_pacienteD.html')  
+        return JsonResponse({'error': 'Medicamento no encontrado'}, status=404) 
 
 @login_required
 def ver_receta_paciente(request, paciente_id):
@@ -156,3 +174,38 @@ def ver_receta_paciente(request, paciente_id):
     }
     
     return render(request, 'usuarioDoctor/ver_receta_paciente.html', context)
+
+@login_required
+def cuidados_pacienteD(request, paciente_id):  # Cambio de nombre aquí
+    # Verificar que sea doctor
+    if request.user.tipoUsuario != 'DR':
+        messages.error(request, 'No tienes permiso para acceder a esta sección')
+        return redirect('login')
+    
+    paciente = get_object_or_404(Paciente, id=paciente_id)
+    
+    # Verificar que el paciente esté asignado al doctor
+    if paciente.doctor_actual != request.user:
+        messages.error(request, 'No tienes permiso para ver los cuidados de este paciente')
+        return redirect('doctor:pacientes_doctor')
+
+    receta_actual = Receta.objects.filter(
+        paciente=paciente,
+        activa=True
+    ).select_related('diagnostico').first()
+
+    context = {
+        'paciente': paciente,
+        'receta': receta_actual,
+        'padecimientos': RecetaPadecimiento.objects.filter(receta=receta_actual).select_related('padecimiento') if receta_actual else None,
+        'cuidados': RecetaCuidado.objects.filter(receta=receta_actual).select_related('cuidado') if receta_actual else None,
+        'medicamentos': DetalleReceta.objects.filter(receta=receta_actual).select_related('medicamento') if receta_actual else None,
+        'registros_recientes': SeguimientoCuidados.objects.filter(
+            paciente=paciente
+        ).order_by('-fecha_registro')[:5],
+        'ultimo_registro': SeguimientoCuidados.objects.filter(
+            paciente=paciente
+        ).order_by('-fecha_registro').first()
+    }
+
+    return render(request, 'usuarioDoctor/cuidados_pacienteD.html', context)

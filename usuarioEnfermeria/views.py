@@ -1,7 +1,11 @@
-from django.shortcuts import render, redirect
+from django.shortcuts import render, redirect, get_object_or_404
 from django.contrib.auth import authenticate, login
 from django.contrib.auth.decorators import login_required
 from usuarioJefa.models import Paciente
+from django.contrib import messages
+from django.utils import timezone
+from .models import SeguimientoCuidados, RegistroCuidado, RegistroMedicamento
+from usuarioDoctor.models import *
 
 @login_required
 def pacientes_enfermeria(request):
@@ -21,8 +25,71 @@ def pacientes_enfermeria(request):
         'enfermero': enfermero_actual
     })
 
+@login_required
+def cuidados_paciente(request, paciente_id):
+    # Verificar permisos
+    if request.user.tipoUsuario not in ['EN', 'JP']:
+        messages.error(request, 'No tienes permiso para acceder a esta sección')
+        return redirect('login')
+    
+    paciente = get_object_or_404(Paciente, id=paciente_id)
+    receta_actual = Receta.objects.filter(
+        paciente=paciente,
+        activa=True
+    ).select_related('diagnostico').first()
+
+    if request.method == 'POST':
+        print("POST Data:", request.POST)
+        try:
+            # Crear el registro de seguimiento
+            seguimiento = SeguimientoCuidados.objects.create(
+                paciente=paciente,
+                registrado_por=request.user
+            )
+
+            # Procesar cuidados marcados
+            for cuidado in receta_actual.cuidados.all():
+                if request.POST.get(f'cuidado_{cuidado.id}') == 'on':
+                    RegistroCuidado.objects.create(
+                        seguimiento=seguimiento,
+                        cuidado=cuidado,
+                        completado=True,
+                        fecha_completado=timezone.now()
+                    )
+
+            # Procesar medicamentos marcados
+            for medicamento in receta_actual.detalles.all():
+                if request.POST.get(f'medicamento_{medicamento.id}') == 'on':
+                    RegistroMedicamento.objects.create(
+                        seguimiento=seguimiento,
+                        medicamento=medicamento,
+                        administrado=True,
+                        fecha_administracion=timezone.now()
+                    )
+
+            messages.success(request, 'Registro guardado exitosamente')
+            return redirect('enfermeria:cuidados_paciente', paciente_id=paciente_id)
+
+        except Exception as e:
+            messages.error(request, f'Error al guardar el registro: {str(e)}')
+            return redirect('enfermeria:cuidados_paciente', paciente_id=paciente_id)
+
+    # Para GET request
+    context = {
+        'paciente': paciente,
+        'receta': receta_actual,
+        'padecimientos': RecetaPadecimiento.objects.filter(receta=receta_actual).select_related('padecimiento') if receta_actual else None,
+        'cuidados': RecetaCuidado.objects.filter(receta=receta_actual).select_related('cuidado') if receta_actual else None,
+        'medicamentos': DetalleReceta.objects.filter(receta=receta_actual).select_related('medicamento') if receta_actual else None,
+        'registros_recientes': SeguimientoCuidados.objects.filter(
+            paciente=paciente
+        ).order_by('-fecha_registro')[:5],
+        'ultimo_registro': SeguimientoCuidados.objects.filter(
+            paciente=paciente
+        ).order_by('-fecha_registro').first()
+    }
+
+    return render(request, 'usuarioEnfermeria/cuidados_paciente.html', context)
+
 def formulario_paciente(request):
     return render(request, 'usuarioEnfermeria/formulario_paciente.html')  # Agregado usuarioEnfermeria/
-
-def cuidados_paciente(request):
-    return render(request, 'usuarioEnfermeria/cuidados_paciente.html')  # Agregado usuarioEnfermeria/

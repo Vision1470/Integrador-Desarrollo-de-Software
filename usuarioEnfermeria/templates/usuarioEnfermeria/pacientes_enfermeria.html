@@ -37,10 +37,11 @@
                     <td>{{ paciente.area }}</td>
                     <td>{{ paciente.doctor_actual.first_name }} {{ paciente.doctor_actual.apellidos }}</td>
                     <td>
-                        <a href="{% url 'enfermeria:cuidados_paciente' %}?paciente_id={{ paciente.id }}">Ver Cuidados</a>
+                        <a href="{% url 'enfermeria:cuidados_paciente' paciente.id %}">Ver Cuidados</a>
                         <a href="{% url 'enfermeria:formulario_paciente' %}?paciente_id={{ paciente.id }}">Llenar Formulario</a>
                     </td>
                 </tr>
+                
                 {% endfor %}
             </tbody>
         </table>
