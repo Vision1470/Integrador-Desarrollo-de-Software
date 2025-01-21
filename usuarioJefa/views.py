@@ -203,6 +203,24 @@ def detalle_historial(request, paciente_id):
     
     return render(request, 'usuarioJefa/detalle_historial.html', context)
 
+@csrf_exempt
+def reactivar_paciente(request, paciente_id):
+    if request.method == 'POST':
+        try:
+            paciente = Paciente.objects.get(id=paciente_id)
+            if not paciente.esta_activo:
+                paciente.esta_activo = True
+                paciente.estado = 'ACTIVO'
+                paciente.numero_ingresos += 1
+                paciente.fecha_ingreso = timezone.now()
+                paciente.fecha_alta = None
+                paciente.save()
+                return JsonResponse({'status': 'success'})
+            return JsonResponse({'status': 'error', 'message': 'El paciente ya está activo'})
+        except Paciente.DoesNotExist:
+            return JsonResponse({'status': 'error', 'message': 'Paciente no encontrado'}, status=404)
+    return JsonResponse({'status': 'error', 'message': 'Método no permitido'}, status=405)
+
 def calendario_(request):
     return render(request, 'usuarioJefa/calendario.html')  
 

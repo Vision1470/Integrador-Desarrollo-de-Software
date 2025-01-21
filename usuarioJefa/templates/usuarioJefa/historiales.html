@@ -3,6 +3,41 @@
 <head>
     <meta charset="UTF-8">
     <title>Historiales</title>
+    <script>
+        function confirmarReactivacion(pacienteId) {
+            if (confirm('¿Está seguro que desea reactivar a este paciente?')) {
+                fetch(`/jefa/reactivar_paciente/${pacienteId}/`, {
+                    method: 'POST',
+                    headers: {
+                        'X-CSRFToken': getCookie('csrftoken'),
+                    },
+                })
+                .then(response => response.json())
+                .then(data => {
+                    if (data.status === 'success') {
+                        location.reload();
+                    } else {
+                        alert('Error al reactivar al paciente');
+                    }
+                });
+            }
+        }
+        
+        function getCookie(name) {
+            let cookieValue = null;
+            if (document.cookie && document.cookie !== '') {
+                const cookies = document.cookie.split(';');
+                for (let i = 0; i < cookies.length; i++) {
+                    const cookie = cookies[i].trim();
+                    if (cookie.substring(0, name.length + 1) === (name + '=')) {
+                        cookieValue = decodeURIComponent(cookie.substring(name.length + 1));
+                        break;
+                    }
+                }
+            }
+            return cookieValue;
+        }
+        </script>
 </head>
 <body>
     <h1>Historiales</h1>
@@ -41,6 +76,7 @@
         <th>Último Diagnóstico</th>
         <th>Último Seguimiento</th>
         <th>Ver Detalles</th>
+        <th>Acciones</th>
     </tr>
 </thead>
 <tbody>
@@ -80,6 +116,11 @@
             </td>
             <td>
                 <a href="{% url 'jefa:detalle_historial' paciente.id %}">Ver Detalles</a>
+            </td>
+            <td>
+                {% if not paciente.esta_activo %}
+                    <button onclick="confirmarReactivacion('{{ paciente.id }}')">Agregar</button>
+                {% endif %}
             </td>
         </tr>
     {% empty %}
