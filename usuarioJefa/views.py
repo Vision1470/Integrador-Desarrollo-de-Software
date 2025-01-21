@@ -13,6 +13,12 @@ from django.views.decorators.csrf import csrf_exempt
 from datetime import datetime
 from usuarioDoctor.models import *
 from usuarioEnfermeria.models import *
+from django.shortcuts import render, get_object_or_404
+from django.db.models import Q
+from .models import Paciente
+from usuarioEnfermeria.models import SeguimientoCuidados, FormularioSeguimiento
+from django.utils import timezone
+
 
 def menu_jefa(request):
     return render(request, 'usuarioJefa/menu_jefa.html')
@@ -190,11 +196,6 @@ def historial_pacientes(request):
     
     return render(request, 'usuarioJefa/historial_pacientes.html', context) 
 
-from django.shortcuts import render, get_object_or_404
-from django.db.models import Q
-from .models import Paciente
-from usuarioEnfermeria.models import SeguimientoCuidados, FormularioSeguimiento
-from django.utils import timezone
 
 def detalle_historial(request, paciente_id):
     paciente = get_object_or_404(Paciente, id=paciente_id)
@@ -256,9 +257,55 @@ def calendario_(request):
     return render(request, 'usuarioJefa/calendario.html')  
 
 def usuarios_(request):
+    # Datos para gestionar usuarios
     usuarios_activos = Usuarios.objects.filter(estaActivo=True)
     areas = AreaEspecialidad.objects.all()
     fortalezas = Fortaleza.objects.all()
+
+    if request.method == 'POST':
+        # Procesar formulario de creación de usuarios
+        nombre = request.POST.get('nombre')
+        apellidos = request.POST.get('apellidos')
+        edad = request.POST.get('edad')
+        fecha_nacimiento = request.POST.get('fecha_nacimiento')
+        area_especialidad_id = request.POST.get('area_especialidad')
+        fortalezas_ids = request.POST.getlist('fortalezas')
+        tipo_usuario = request.POST.get('tipo_usuario')
+        cedula = request.POST.get('cedula')
+        nombre_temporal = request.POST.get('nombre_temporal')
+        contraseña = request.POST.get('contraseña')
+
+        try:
+            # Obtener el área de especialidad
+            area_especialidad = AreaEspecialidad.objects.get(id=area_especialidad_id)
+
+            # Crear el usuario
+            usuario = Usuarios.objects.create(
+                first_name=nombre,
+                apellidos=apellidos,
+                edad=edad,
+                fechaNacimiento=fecha_nacimiento,
+                areaEspecialidad=area_especialidad,
+                tipoUsuario=tipo_usuario,
+                cedula=cedula,
+                username=nombre_temporal,
+                estaActivo=True,
+                primerIngreso=True
+            )
+
+            # Asignar la contraseña al usuario
+            usuario.set_password(contraseña)
+            usuario.save()
+
+            # Asignar las fortalezas al usuario
+            usuario.fortalezas.set(fortalezas_ids)
+
+            messages.success(request, 'Usuario creado exitosamente.')
+            return redirect('jefa:usuarios_')  # Recargar la página principal
+        except AreaEspecialidad.DoesNotExist:
+            messages.error(request, 'El área de especialidad seleccionada no existe.')
+        except Exception as e:
+            messages.error(request, f'Error al crear el usuario: {str(e)}')
 
     return render(request, 'usuarioJefa/usuarios_.html', {
         'usuarios': usuarios_activos,
@@ -273,52 +320,59 @@ def gestionar_usuarios(request):
 
 def crear_usuarios(request):
     if request.method == 'POST':
-        try:
-            # Datos básicos
-            nombre = request.POST.get('nombre')
-            apellidos = request.POST.get('apellidos')
-            edad = request.POST.get('edad')
-            fecha_nacimiento = request.POST.get('fecha_nacimiento')
+        # Obtener los datos del formulario
+        nombre = request.POST.get('nombre')
+        apellidos = request.POST.get('apellidos')
+        edad = request.POST.get('edad')
+        fecha_nacimiento = request.POST.get('fecha_nacimiento')
+        area_especialidad_id = request.POST.get('area_especialidad')
+        fortalezas_ids = request.POST.getlist('fortalezas')
+        tipo_usuario = request.POST.get('tipo_usuario')
+        cedula = request.POST.get('cedula')
+        nombre_temporal = request.POST.get('nombre_temporal')
+        contraseña = request.POST.get('contraseña')
 
-            # Área de especialidad
-            area_especialidad_id = request.POST.get('area_especialidad')
+        try:
+            # Obtener el área de especialidad
             area_especialidad = AreaEspecialidad.objects.get(id=area_especialidad_id)
-            
-            # Crear usuario
-            usuario = Usuarios.objects.create_user(
-                username=request.POST.get('nombre_temporal'),
-                password=request.POST.get('contraseña'),
+
+            # Crear el usuario
+            usuario = Usuarios.objects.create(
                 first_name=nombre,
                 apellidos=apellidos,
                 edad=edad,
                 fechaNacimiento=fecha_nacimiento,
                 areaEspecialidad=area_especialidad,
+                tipoUsuario=tipo_usuario,
+                cedula=cedula,
+                username=nombre_temporal,
                 estaActivo=True,
                 primerIngreso=True
             )
-            
-            # Agregar fortalezas
-            fortalezas_ids = request.POST.getlist('fortalezas')
-            if len(fortalezas_ids) > 4:
-                raise ValueError("No se pueden seleccionar más de 4 fortalezas")
-            usuario.fortalezas.set(fortalezas_ids)
-            
-            usuario.tipoUsuario = request.POST.get('tipo_usuario')
-            usuario.cedula = request.POST.get('cedula')
 
-            messages.success(request, 'Usuario creado exitosamente')
-            return redirect(request, 'usuarioJefa/usuarios_.html')
-            
+            # Asignar la contraseña al usuario
+            usuario.set_password(contraseña)
+            usuario.save()
+
+            # Asignar las fortalezas al usuario
+            usuario.fortalezas.set(fortalezas_ids)
+
+            messages.success(request, 'Usuario creado exitosamente.')
+            return redirect('jefa:usuarios_')
+
+        except AreaEspecialidad.DoesNotExist:
+            messages.error(request, 'El área de especialidad seleccionada no existe.')
         except Exception as e:
             messages.error(request, f'Error al crear el usuario: {str(e)}')
-            return redirect(request, 'usuarioJefa/usuarios_.html')
-    
-    # GET: mostrar formulario
+
+    areas = AreaEspecialidad.objects.all()
+    fortalezas = Fortaleza.objects.all()
+
     context = {
-        'areas': AreaEspecialidad.objects.all(),
-        'fortalezas': Fortaleza.objects.all(),
+        'areas': areas,
+        'fortalezas': fortalezas,
     }
-    return redirect(request, 'usuarioJefa/crear_usuarios.html', context)
+    return render(request, 'usuarioJefa/crear_usuarios.html', context)
 
 def editar_usuario(request, usuario_id):
     usuario = get_object_or_404(Usuarios, id=usuario_id)
