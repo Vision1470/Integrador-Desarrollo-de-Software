@@ -23,7 +23,9 @@ class PacienteForm(forms.ModelForm):
             ),
             'num_seguridad_social': forms.TextInput(
                 attrs={'placeholder': 'Ingrese el número de seguridad social'}
-            )
+            ),
+            'hospital_origen': forms.TextInput(attrs={'class': 'form-control'}
+            ),
         }
 
     def __init__(self, *args, **kwargs):

@@ -8,25 +8,46 @@ from usuarioJefa.forms import PacienteForm
 from django.contrib.auth.decorators import login_required
 from .models import *
 from django.urls import reverse
+from django.http import JsonResponse
+from django.views.decorators.csrf import csrf_exempt 
+from datetime import datetime
 
 def menu_jefa(request):
     return render(request, 'usuarioJefa/menu_jefa.html')
 
 def pacientes_jefa(request):
-    # Obtener todos los pacientes
-    print("Número de pacientes:", Paciente.objects.count())  # Para debug
     pacientes = Paciente.objects.select_related(
         'area', 
         'doctor_actual', 
         'enfermero_actual'
-    ).all()
+    ).filter(esta_activo=True)
+    
+    print(f"Número de pacientes activos: {pacientes.count()}")  # Debug
     
     context = {
         'pacientes': pacientes,
     }
-    
-    print("Contexto:", context)  # Para debug
     return render(request, 'usuarioJefa/pacientes_jefa.html', context)
+
+@csrf_exempt  # Temporal para pruebas
+def dar_alta_paciente(request, paciente_id):
+    if request.method == 'POST':
+        try:
+            paciente = Paciente.objects.get(id=paciente_id)
+            print(f"Dando de alta al paciente: {paciente.id}")  # Debug
+            paciente.esta_activo = False
+            paciente.estado = 'INACTIVO'
+            paciente.fecha_alta = timezone.now()
+            paciente.save()
+            print(f"Estado actualizado: activo={paciente.esta_activo}, estado={paciente.estado}")  # Debug
+            return JsonResponse({'status': 'success'})
+        except Paciente.DoesNotExist:
+            print(f"Paciente no encontrado: {paciente_id}")  # Debug
+            return JsonResponse({'status': 'error', 'message': 'Paciente no encontrado'}, status=404)
+        except Exception as e:
+            print(f"Error al dar de alta: {str(e)}")  # Debug
+            return JsonResponse({'status': 'error', 'message': str(e)}, status=500)
+    return JsonResponse({'status': 'error', 'message': 'Método no permitido'}, status=405)
 
 def agregar_pacientes(request):
     if request.method == 'POST':
@@ -70,6 +91,7 @@ def historial_empleados(request):
     })
 
 def historial_pacientes(request):
+
     return render(request, 'usuarioJefa/historial_pacientes.html') 
 
 def calendario_(request):
@@ -310,8 +332,6 @@ def eliminar_instrumento(request, instrumento_id):
         except Exception as e:
             messages.error(request, f'Error al eliminar instrumento: {str(e)}')
     return redirect(f'{reverse('jefa:almacen_')}?tipo=instrumentos')
-
-from django.http import JsonResponse
 
 @login_required
 def get_medicamento(request, medicamento_id):

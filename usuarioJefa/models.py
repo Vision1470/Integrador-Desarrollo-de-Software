@@ -2,6 +2,7 @@ from django.db import models
 from django.utils import timezone
 from django.db.models import Q
 from login.models import Usuarios, AreaEspecialidad
+from usuarioEnfermeria.models import *
 
 class Hospital(models.Model):
     nombre = models.CharField(max_length=200)
@@ -50,9 +51,10 @@ class Paciente(models.Model):
     )
     
     # Datos de traslado
-    hospital_origen = models.ForeignKey(Hospital, on_delete=models.SET_NULL, null=True, blank=True)
+    hospital_origen = models.CharField(max_length=200, blank=True, null=True)
     
     # Control de estado
+    numero_ingresos = models.PositiveIntegerField(default=1)
     esta_activo = models.BooleanField(default=True)
     fecha_alta = models.DateTimeField(null=True, blank=True)
 
@@ -60,15 +62,13 @@ class Paciente(models.Model):
         return f"{self.nombres} {self.apellidos}"
 
     def dar_alta(self):
+        print(f"Ejecutando dar_alta para paciente {self.id}")  # Debug
         self.esta_activo = False
         self.estado = 'INACTIVO'
         self.fecha_alta = timezone.now()
         self.save()
-        
-        HistorialDoctores.objects.filter(
-            paciente=self,
-            fecha_fin__isnull=True
-        ).update(fecha_fin=timezone.now())
+        print(f"Alta completada: activo={self.esta_activo}, estado={self.estado}")  # Debug
+        return True
 
 class HistorialMedico(models.Model):
     paciente = models.ForeignKey(Paciente, on_delete=models.CASCADE, related_name='historial_medico')
@@ -170,3 +170,4 @@ class Instrumento(models.Model):
     class Meta:
         verbose_name = 'Instrumento'
         verbose_name_plural = 'Instrumentos'
+

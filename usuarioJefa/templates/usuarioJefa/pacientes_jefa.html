@@ -3,6 +3,52 @@
 <head>
     <meta charset="UTF-8">
     <title>Pacientes</title>
+    <script>
+        function confirmarAlta(pacienteId) {
+    if (confirm('¿Está seguro que desea dar de alta a este paciente?')) {
+        console.log('Intentando dar de alta al paciente:', pacienteId); // Debug
+        fetch(`{% url 'jefa:dar_alta_paciente' 0 %}`.replace('0', pacienteId), {
+            method: 'POST',
+            headers: {
+                'X-CSRFToken': getCookie('csrftoken'),
+                'Content-Type': 'application/json',
+            },
+        })
+        .then(response => {
+            console.log('Respuesta recibida:', response); // Debug
+            return response.json();
+        })
+        .then(data => {
+            console.log('Datos recibidos:', data); // Debug
+            if (data.status === 'success') {
+                alert('Paciente dado de alta exitosamente');
+                location.reload();
+            } else {
+                alert('Error al dar de alta al paciente: ' + (data.message || 'Error desconocido'));
+            }
+        })
+        .catch(error => {
+            console.error('Error en la petición:', error); // Debug
+            alert('Error en la petición: ' + error);
+        });
+    }
+}
+
+        function getCookie(name) {
+            let cookieValue = null;
+            if (document.cookie && document.cookie !== '') {
+                const cookies = document.cookie.split(';');
+                for (let i = 0; i < cookies.length; i++) {
+                    const cookie = cookies[i].trim();
+                    if (cookie.substring(0, name.length + 1) === (name + '=')) {
+                        cookieValue = decodeURIComponent(cookie.substring(name.length + 1));
+                        break;
+                    }
+                }
+            }
+            return cookieValue;
+        }
+    </script>
 </head>
 <body>
     <h1>Pacientes</h1>
@@ -19,6 +65,9 @@
                 <th>Doctor</th>
                 <th>Enfermero/a</th>
                 <th>Hospital Origen</th>
+                <th>Número de Ingresos</th>
+                <th>Fecha de Ingreso</th>
+                <th>Acciones</th>
             </tr>
         </thead>
         <tbody>
@@ -34,11 +83,16 @@
                         <td>{{ paciente.doctor_actual }}</td>
                         <td>{{ paciente.enfermero_actual }}</td>
                         <td>{{ paciente.hospital_origen|default:"-" }}</td>
+                        <td>{{ paciente.numero_ingresos }}</td>
+                        <td>{{ paciente.fecha_ingreso|date:"d/m/Y H:i" }}</td>
+                        <td>
+                            <button onclick="confirmarAlta('{{ paciente.id }}')">Dar de alta</button>
+                        </td>
                     </tr>
                 {% endfor %}
             {% else %}
                 <tr>
-                    <td colspan="9">No hay pacientes registrados</td>
+                    <td colspan="12">No hay pacientes registrados</td>
                 </tr>
             {% endif %}
         </tbody>

@@ -41,3 +41,4 @@ class HistorialEnfermerosAdmin(admin.ModelAdmin):
     list_filter = ('enfermero',)
     search_fields = ['paciente__nombres', 'paciente__apellidos']
     date_hierarchy = 'fecha_asignacion'
+
