@@ -44,6 +44,7 @@ class Diagnostico(models.Model):
     fecha_modificacion = models.DateTimeField(auto_now=True)
     aprobado_por_jefa = models.BooleanField(default=False)
     activo = models.BooleanField(default=True)
+    numero_ingreso = models.PositiveIntegerField(default=1)
 
     class Meta:
         ordering = ['-fecha_creacion']
@@ -72,6 +73,7 @@ class Receta(models.Model):
     fecha_modificacion = models.DateTimeField(auto_now=True)
     aprobado_por_jefa = models.BooleanField(default=False)
     activa = models.BooleanField(default=True)
+    numero_ingreso = models.PositiveIntegerField(default=1)
 
 class RecetaPadecimiento(models.Model):
     receta = models.ForeignKey(Receta, on_delete=models.CASCADE, related_name='padecimientos')

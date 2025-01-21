@@ -39,19 +39,21 @@ def receta_paciente(request, paciente_id):
                 receta_actual.activa = False
                 receta_actual.save()
 
-            # Crear diagnóstico
+            # Crear diagnóstico con número de ingreso
             diagnostico = Diagnostico.objects.create(
                 paciente=paciente,
                 doctor=request.user,
                 descripcion=request.POST.get('descripcion_diagnostico', ''),
-                cuidados_especificos=''
+                cuidados_especificos='',
+                numero_ingreso=paciente.numero_ingresos  # Añadido
             )
 
-            # Crear nueva receta
+            # Crear nueva receta con número de ingreso
             receta = Receta.objects.create(
                 paciente=paciente,
                 doctor=request.user,
-                diagnostico=diagnostico
+                diagnostico=diagnostico,
+                numero_ingreso=paciente.numero_ingresos  # Añadido
             )
 
             # Procesar padecimientos (modificado)

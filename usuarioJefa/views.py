@@ -190,15 +190,46 @@ def historial_pacientes(request):
     
     return render(request, 'usuarioJefa/historial_pacientes.html', context) 
 
+from django.shortcuts import render, get_object_or_404
+from django.db.models import Q
+from .models import Paciente
+from usuarioEnfermeria.models import SeguimientoCuidados, FormularioSeguimiento
+from django.utils import timezone
+
 def detalle_historial(request, paciente_id):
     paciente = get_object_or_404(Paciente, id=paciente_id)
     
+    # Obtener todos los números de ingreso únicos
+    numeros_ingreso = set()
+    numeros_ingreso.update(
+        paciente.diagnosticos.values_list('numero_ingreso', flat=True),
+        paciente.recetas_doctor.values_list('numero_ingreso', flat=True),
+        SeguimientoCuidados.objects.filter(paciente=paciente).values_list('numero_ingreso', flat=True),
+        FormularioSeguimiento.objects.filter(paciente=paciente).values_list('numero_ingreso', flat=True)
+    )
+    numeros_ingreso = sorted(numeros_ingreso, reverse=True)  # Ordenado de más reciente a más antiguo
+
+    # Crear un diccionario con la información por ingreso
+    historiales_por_ingreso = []
+    for num_ingreso in numeros_ingreso:
+        historial = {
+            'numero_ingreso': num_ingreso,
+            'diagnosticos': paciente.diagnosticos.filter(numero_ingreso=num_ingreso).order_by('-fecha_creacion'),
+            'recetas': paciente.recetas_doctor.filter(numero_ingreso=num_ingreso).order_by('-fecha_creacion'),
+            'seguimientos': SeguimientoCuidados.objects.filter(
+                paciente=paciente, 
+                numero_ingreso=num_ingreso
+            ).order_by('-fecha_registro'),
+            'formularios': FormularioSeguimiento.objects.filter(
+                paciente=paciente, 
+                numero_ingreso=num_ingreso
+            ).order_by('-fecha_registro')
+        }
+        historiales_por_ingreso.append(historial)
+
     context = {
         'paciente': paciente,
-        'recetas': paciente.recetas_doctor.all().order_by('-fecha_creacion'),
-        'diagnosticos': paciente.diagnosticos.all().order_by('-fecha_creacion'),
-        'seguimientos': SeguimientoCuidados.objects.filter(paciente=paciente).order_by('-fecha_registro'),
-        'formularios': FormularioSeguimiento.objects.filter(paciente=paciente).order_by('-fecha_registro'),
+        'historiales_por_ingreso': historiales_por_ingreso,
     }
     
     return render(request, 'usuarioJefa/detalle_historial.html', context)

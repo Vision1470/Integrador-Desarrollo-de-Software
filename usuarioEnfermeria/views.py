@@ -27,7 +27,6 @@ def pacientes_enfermeria(request):
 
 @login_required
 def cuidados_paciente(request, paciente_id):
-    # Verificar permisos
     if request.user.tipoUsuario not in ['EN', 'JP']:
         messages.error(request, 'No tienes permiso para acceder a esta sección')
         return redirect('login')
@@ -41,10 +40,11 @@ def cuidados_paciente(request, paciente_id):
     if request.method == 'POST':
         print("POST Data:", request.POST)
         try:
-            # Crear el registro de seguimiento
+            # Crear el registro de seguimiento con número de ingreso
             seguimiento = SeguimientoCuidados.objects.create(
                 paciente=paciente,
-                registrado_por=request.user
+                registrado_por=request.user,
+                numero_ingreso=paciente.numero_ingresos  # Añadido
             )
 
             # Procesar cuidados marcados
@@ -93,7 +93,6 @@ def cuidados_paciente(request, paciente_id):
 
 @login_required
 def formulario_paciente(request, paciente_id):
-    # Verificar permisos
     if request.user.tipoUsuario not in ['EN', 'JP']:
         messages.error(request, 'No tienes permiso para acceder a esta sección')
         return redirect('login')
@@ -106,11 +105,12 @@ def formulario_paciente(request, paciente_id):
 
     if request.method == 'POST':
         try:
-            # Crear nuevo formulario de seguimiento
+            # Crear nuevo formulario de seguimiento con número de ingreso
             formulario = FormularioSeguimiento.objects.create(
                 paciente=paciente,
                 enfermero=request.user,
-                notas_generales=request.POST.get('notas_generales', '')
+                notas_generales=request.POST.get('notas_generales', ''),
+                numero_ingreso=paciente.numero_ingresos  # Añadido
             )
 
             # Procesar evaluación de padecimientos

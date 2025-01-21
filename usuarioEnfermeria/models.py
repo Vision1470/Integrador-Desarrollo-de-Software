@@ -7,6 +7,7 @@ from usuarioDoctor.models import RecetaPadecimiento, RecetaCuidado, DetalleRecet
 class SeguimientoCuidados(models.Model):
     paciente = models.ForeignKey('usuarioJefa.Paciente', on_delete=models.CASCADE)
     fecha_registro = models.DateTimeField(auto_now_add=True)
+    numero_ingreso = models.PositiveIntegerField(default=1)
     registrado_por = models.ForeignKey(
         Usuarios,
         on_delete=models.PROTECT,
@@ -46,6 +47,7 @@ class FormularioSeguimiento(models.Model):
     )
     fecha_registro = models.DateTimeField(auto_now_add=True)
     notas_generales = models.TextField(blank=True)
+    numero_ingreso = models.PositiveIntegerField(default=1)
 
     class Meta:
         ordering = ['-fecha_registro']

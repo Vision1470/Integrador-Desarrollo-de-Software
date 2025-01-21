@@ -24,213 +24,211 @@
                 <td>{{ paciente.fecha_nacimiento|date:"d/m/Y" }}</td>
             </tr>
             <tr>
-                <th>Número de Ingresos:</th>
+                <th>Número Total de Ingresos:</th>
                 <td>{{ paciente.numero_ingresos }}</td>
             </tr>
             <tr>
-                <th>Estado:</th>
-                <td>{{ paciente.get_estado_display }}</td>
-            </tr>
-            <tr>
-                <th>Fecha de Ingreso:</th>
-                <td>{{ paciente.fecha_ingreso|date:"d/m/Y H:i" }}</td>
-            </tr>
-            <tr>
-                <th>Fecha de Alta:</th>
-                <td>{{ paciente.fecha_alta|date:"d/m/Y H:i"|default:"-" }}</td>
+                <th>Estado Actual:</th>
+                <td>{{ paciente.estado }}</td>
             </tr>
         </table>
     </section>
 
-    <!-- Historial de Diagnósticos -->
-    <section>
-        <h2>Historial de Diagnósticos</h2>
-        <table border="1">
-            <thead>
-                <tr>
-                    <th>Fecha</th>
-                    <th>Doctor</th>
-                    <th>Descripción</th>
-                    <th>Cuidados Específicos</th>
-                </tr>
-            </thead>
-            <tbody>
-                {% for diagnostico in diagnosticos %}
+    {% for historial in historiales_por_ingreso %}
+        <h2>Ingreso #{{ historial.numero_ingreso }}</h2>
+        
+        <!-- Historial de Diagnósticos -->
+        <section>
+            <h3>Diagnósticos</h3>
+            <table border="1">
+                <thead>
                     <tr>
-                        <td>{{ diagnostico.fecha_creacion|date:"d/m/Y H:i" }}</td>
-                        <td>{{ diagnostico.doctor.first_name }} {{ diagnostico.doctor.apellidos }}</td>
-                        <td>{{ diagnostico.descripcion }}</td>
-                        <td>{{ diagnostico.cuidados_especificos }}</td>
+                        <th>Fecha</th>
+                        <th>Doctor</th>
+                        <th>Descripción</th>
+                        <th>Cuidados Específicos</th>
                     </tr>
-                {% empty %}
-                    <tr>
-                        <td colspan="4">No hay diagnósticos registrados</td>
-                    </tr>
-                {% endfor %}
-            </tbody>
-        </table>
-    </section>
+                </thead>
+                <tbody>
+                    {% for diagnostico in historial.diagnosticos %}
+                        <tr>
+                            <td>{{ diagnostico.fecha_creacion|date:"d/m/Y H:i" }}</td>
+                            <td>{{ diagnostico.doctor.first_name }} {{ diagnostico.doctor.apellidos }}</td>
+                            <td>{{ diagnostico.descripcion }}</td>
+                            <td>{{ diagnostico.cuidados_especificos }}</td>
+                        </tr>
+                    {% empty %}
+                        <tr>
+                            <td colspan="4">No hay diagnósticos para este ingreso</td>
+                        </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </section>
 
-    <!-- Historial de Recetas -->
-    <section>
-        <h2>Historial de Recetas</h2>
-        <table border="1">
-            <thead>
-                <tr>
-                    <th>Fecha</th>
-                    <th>Doctor</th>
-                    <th>Padecimientos</th>
-                    <th>Medicamentos</th>
-                    <th>Cuidados</th>
-                </tr>
-            </thead>
-            <tbody>
-                {% for receta in recetas %}
+        <!-- Historial de Recetas -->
+        <section>
+            <h3>Recetas</h3>
+            <table border="1">
+                <thead>
                     <tr>
-                        <td>{{ receta.fecha_creacion|date:"d/m/Y H:i" }}</td>
-                        <td>{{ receta.doctor.first_name }} {{ receta.doctor.apellidos }}</td>
-                        <td>
-                            <ul>
-                            {% for padecimiento in receta.padecimientos.all %}
-                                <li>{{ padecimiento.padecimiento.nombre }} - {{ padecimiento.get_nivel_gravedad_display }}</li>
-                            {% endfor %}
-                            </ul>
-                        </td>
-                        <td>
-                            <ul>
-                            {% for detalle in receta.detalles.all %}
-                                <li>{{ detalle.medicamento.nombre }} - {{ detalle.cantidad_por_toma }}{{ detalle.get_unidad_medida_display }} 
-                                    cada {{ detalle.frecuencia_horas }} horas por {{ detalle.dias_tratamiento }} días</li>
-                            {% endfor %}
-                            </ul>
-                        </td>
-                        <td>
-                            <ul>
-                            {% for cuidado in receta.cuidados.all %}
-                                <li>{{ cuidado.cuidado.nombre }} 
-                                    {% if cuidado.completado %}
-                                        ✓ ({{ cuidado.fecha_completado|date:"d/m/Y H:i" }})
-                                    {% endif %}
-                                </li>
-                            {% endfor %}
-                            </ul>
-                        </td>
+                        <th>Fecha</th>
+                        <th>Doctor</th>
+                        <th>Padecimientos</th>
+                        <th>Medicamentos</th>
+                        <th>Cuidados</th>
                     </tr>
-                {% empty %}
-                    <tr>
-                        <td colspan="5">No hay recetas registradas</td>
-                    </tr>
-                {% endfor %}
-            </tbody>
-        </table>
-    </section>
+                </thead>
+                <tbody>
+                    {% for receta in historial.recetas %}
+                        <tr>
+                            <td>{{ receta.fecha_creacion|date:"d/m/Y H:i" }}</td>
+                            <td>{{ receta.doctor.first_name }} {{ receta.doctor.apellidos }}</td>
+                            <td>
+                                <ul>
+                                {% for padecimiento in receta.padecimientos.all %}
+                                    <li>{{ padecimiento.padecimiento.nombre }} - {{ padecimiento.get_nivel_gravedad_display }}</li>
+                                {% endfor %}
+                                </ul>
+                            </td>
+                            <td>
+                                <ul>
+                                {% for detalle in receta.detalles.all %}
+                                    <li>{{ detalle.medicamento.nombre }} - {{ detalle.cantidad_por_toma }}{{ detalle.get_unidad_medida_display }} 
+                                        cada {{ detalle.frecuencia_horas }} horas por {{ detalle.dias_tratamiento }} días</li>
+                                {% endfor %}
+                                </ul>
+                            </td>
+                            <td>
+                                <ul>
+                                {% for cuidado in receta.cuidados.all %}
+                                    <li>{{ cuidado.cuidado.nombre }} 
+                                        {% if cuidado.completado %}
+                                            ✓ ({{ cuidado.fecha_completado|date:"d/m/Y H:i" }})
+                                        {% endif %}
+                                    </li>
+                                {% endfor %}
+                                </ul>
+                            </td>
+                        </tr>
+                    {% empty %}
+                        <tr>
+                            <td colspan="5">No hay recetas para este ingreso</td>
+                        </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </section>
 
-    <!-- Historial de Seguimientos de Enfermería -->
-    <section>
-        <h2>Historial de Seguimientos</h2>
-        <table border="1">
-            <thead>
-                <tr>
-                    <th>Fecha</th>
-                    <th>Enfermero/a</th>
-                    <th>Cuidados Realizados</th>
-                    <th>Medicamentos Administrados</th>
-                    <th>Notas</th>
-                </tr>
-            </thead>
-            <tbody>
-                {% for seguimiento in seguimientos %}
+        <!-- Seguimientos de Enfermería -->
+        <section>
+            <h3>Seguimientos</h3>
+            <table border="1">
+                <thead>
                     <tr>
-                        <td>{{ seguimiento.fecha_registro|date:"d/m/Y H:i" }}</td>
-                        <td>{{ seguimiento.registrado_por.first_name }} {{ seguimiento.registrado_por.apellidos }}</td>
-                        <td>
-                            <ul>
-                            {% for registro in seguimiento.registrocuidado_set.all %}
-                                <li>{{ registro.cuidado.cuidado.nombre }}
-                                    {% if registro.completado %}
-                                        ✓ ({{ registro.fecha_completado|date:"d/m/Y H:i" }})
-                                    {% endif %}
-                                </li>
-                            {% endfor %}
-                            </ul>
-                        </td>
-                        <td>
-                            <ul>
-                            {% for registro in seguimiento.registromedicamento_set.all %}
-                                <li>{{ registro.medicamento.medicamento.nombre }}
-                                    {% if registro.administrado %}
-                                        ✓ ({{ registro.fecha_administracion|date:"d/m/Y H:i" }})
-                                    {% endif %}
-                                </li>
-                            {% endfor %}
-                            </ul>
-                        </td>
-                        <td>{{ registro.notas|default:"-" }}</td>
+                        <th>Fecha</th>
+                        <th>Enfermero/a</th>
+                        <th>Cuidados Realizados</th>
+                        <th>Medicamentos Administrados</th>
+                        <th>Notas</th>
                     </tr>
-                {% empty %}
-                    <tr>
-                        <td colspan="5">No hay seguimientos registrados</td>
-                    </tr>
-                {% endfor %}
-            </tbody>
-        </table>
-    </section>
+                </thead>
+                <tbody>
+                    {% for seguimiento in historial.seguimientos %}
+                        <tr>
+                            <td>{{ seguimiento.fecha_registro|date:"d/m/Y H:i" }}</td>
+                            <td>{{ seguimiento.registrado_por.first_name }} {{ seguimiento.registrado_por.apellidos }}</td>
+                            <td>
+                                <ul>
+                                {% for registro in seguimiento.registrocuidado_set.all %}
+                                    <li>{{ registro.cuidado.cuidado.nombre }}
+                                        {% if registro.completado %}
+                                            ✓ ({{ registro.fecha_completado|date:"d/m/Y H:i" }})
+                                        {% endif %}
+                                    </li>
+                                {% endfor %}
+                                </ul>
+                            </td>
+                            <td>
+                                <ul>
+                                {% for registro in seguimiento.registromedicamento_set.all %}
+                                    <li>{{ registro.medicamento.medicamento.nombre }}
+                                        {% if registro.administrado %}
+                                            ✓ ({{ registro.fecha_administracion|date:"d/m/Y H:i" }})
+                                        {% endif %}
+                                    </li>
+                                {% endfor %}
+                                </ul>
+                            </td>
+                            <td>{{ seguimiento.notas|default:"-" }}</td>
+                        </tr>
+                    {% empty %}
+                        <tr>
+                            <td colspan="5">No hay seguimientos para este ingreso</td>
+                        </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </section>
 
-    <!-- Formularios de Seguimiento -->
-    <section>
-        <h2>Formularios de Seguimiento</h2>
-        <table border="1">
-            <thead>
-                <tr>
-                    <th>Fecha</th>
-                    <th>Enfermero/a</th>
-                    <th>Evaluación de Padecimientos</th>
-                    <th>Cuidados Faltantes</th>
-                    <th>Medicamentos Faltantes</th>
-                    <th>Notas Generales</th>
-                </tr>
-            </thead>
-            <tbody>
-                {% for formulario in formularios %}
+        <!-- Formularios de Seguimiento -->
+        <section>
+            <h3>Formularios de Seguimiento</h3>
+            <table border="1">
+                <thead>
                     <tr>
-                        <td>{{ formulario.fecha_registro|date:"d/m/Y H:i" }}</td>
-                        <td>{{ formulario.enfermero.first_name }} {{ formulario.enfermero.apellidos }}</td>
-                        <td>
-                            <ul>
-                            {% for evaluacion in formulario.evaluacionpadecimiento_set.all %}
-                                <li>{{ evaluacion.padecimiento.padecimiento.nombre }}: 
-                                    {{ evaluacion.get_estado_display }}
-                                    {% if evaluacion.notas %}
-                                        ({{ evaluacion.notas }})
-                                    {% endif %}
-                                </li>
-                            {% endfor %}
-                            </ul>
-                        </td>
-                        <td>
-                            <ul>
-                            {% for cuidado in formulario.cuidadofaltante_set.all %}
-                                <li>{{ cuidado.cuidado.cuidado.nombre }}: {{ cuidado.motivo }}</li>
-                            {% endfor %}
-                            </ul>
-                        </td>
-                        <td>
-                            <ul>
-                            {% for medicamento in formulario.medicamentofaltante_set.all %}
-                                <li>{{ medicamento.medicamento.medicamento.nombre }}: {{ medicamento.motivo }}</li>
-                            {% endfor %}
-                            </ul>
-                        </td>
-                        <td>{{ formulario.notas_generales|default:"-" }}</td>
+                        <th>Fecha</th>
+                        <th>Enfermero/a</th>
+                        <th>Evaluación de Padecimientos</th>
+                        <th>Cuidados Faltantes</th>
+                        <th>Medicamentos Faltantes</th>
+                        <th>Notas Generales</th>
                     </tr>
-                {% empty %}
-                    <tr>
-                        <td colspan="6">No hay formularios de seguimiento registrados</td>
-                    </tr>
-                {% endfor %}
-            </tbody>
-        </table>
-    </section>
+                </thead>
+                <tbody>
+                    {% for formulario in historial.formularios %}
+                        <tr>
+                            <td>{{ formulario.fecha_registro|date:"d/m/Y H:i" }}</td>
+                            <td>{{ formulario.enfermero.first_name }} {{ formulario.enfermero.apellidos }}</td>
+                            <td>
+                                <ul>
+                                {% for evaluacion in formulario.evaluacionpadecimiento_set.all %}
+                                    <li>{{ evaluacion.padecimiento.padecimiento.nombre }}: 
+                                        {{ evaluacion.get_estado_display }}
+                                        {% if evaluacion.notas %}
+                                            ({{ evaluacion.notas }})
+                                        {% endif %}
+                                    </li>
+                                {% endfor %}
+                                </ul>
+                            </td>
+                            <td>
+                                <ul>
+                                {% for cuidado in formulario.cuidadofaltante_set.all %}
+                                    <li>{{ cuidado.cuidado.cuidado.nombre }}: {{ cuidado.motivo }}</li>
+                                {% endfor %}
+                                </ul>
+                            </td>
+                            <td>
+                                <ul>
+                                {% for medicamento in formulario.medicamentofaltante_set.all %}
+                                    <li>{{ medicamento.medicamento.medicamento.nombre }}: {{ medicamento.motivo }}</li>
+                                {% endfor %}
+                                </ul>
+                            </td>
+                            <td>{{ formulario.notas_generales|default:"-" }}</td>
+                        </tr>
+                    {% empty %}
+                        <tr>
+                            <td colspan="6">No hay formularios de seguimiento para este ingreso</td>
+                        </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </section>
+
+        <hr>
+    {% endfor %}
 
     <br>
     <a href="{% url 'jefa:historiales_' %}?tipo=pacientes">Volver a Historiales</a>
