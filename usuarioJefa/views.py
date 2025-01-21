@@ -11,6 +11,8 @@ from django.urls import reverse
 from django.http import JsonResponse
 from django.views.decorators.csrf import csrf_exempt 
 from datetime import datetime
+from usuarioDoctor.models import *
+from usuarioEnfermeria.models import *
 
 def menu_jefa(request):
     return render(request, 'usuarioJefa/menu_jefa.html')
@@ -69,15 +71,74 @@ def agregar_pacientes(request):
     })
 
 def historiales_(request):
-    # Obtener todos los usuarios
-    usuarios = Usuarios.objects.all().select_related('areaEspecialidad').prefetch_related('fortalezas')
-    
-    # Ordenar por fecha de registro
-    usuarios = usuarios.order_by('-fechaRegistro')
+    tipo_historial = request.GET.get('tipo', 'pacientes')
+    busqueda = request.GET.get('busqueda', '')
+    fecha_inicio = request.GET.get('fecha_inicio')
+    fecha_fin = request.GET.get('fecha_fin')
 
-    return render(request, 'usuarioJefa/historiales.html', {
-        'usuarios': usuarios
-    }) 
+    if tipo_historial == 'pacientes':
+        # Query para pacientes
+        registros = Paciente.objects.all().select_related(
+            'area',
+            'doctor_actual',
+            'enfermero_actual'
+        ).prefetch_related(
+            'recetas_doctor',
+            'diagnosticos'
+        )
+
+        if busqueda:
+            registros = registros.filter(
+                Q(nombres__icontains=busqueda) |
+                Q(apellidos__icontains=busqueda) |
+                Q(num_seguridad_social__icontains=busqueda)
+            )
+
+        if fecha_inicio:
+            registros = registros.filter(fecha_ingreso__gte=fecha_inicio)
+        
+        if fecha_fin:
+            registros = registros.filter(fecha_ingreso__lte=fecha_fin)
+            
+        context = {
+            'registros': registros,
+            'tipo_historial': tipo_historial
+        }
+    else:
+        # Query para empleados separados por tipo
+        enfermeros = Usuarios.objects.filter(tipoUsuario='EN')
+        doctores = Usuarios.objects.filter(tipoUsuario='DR')
+        jefas = Usuarios.objects.filter(tipoUsuario='JP')
+        cocina = Usuarios.objects.filter(tipoUsuario='CO')
+
+        if busqueda:
+            enfermeros = enfermeros.filter(
+                Q(first_name__icontains=busqueda) |
+                Q(apellidos__icontains=busqueda)
+            )
+            doctores = doctores.filter(
+                Q(first_name__icontains=busqueda) |
+                Q(apellidos__icontains=busqueda)
+            )
+            jefas = jefas.filter(
+                Q(first_name__icontains=busqueda) |
+                Q(apellidos__icontains=busqueda)
+            )
+            cocina = cocina.filter(
+                Q(first_name__icontains=busqueda) |
+                Q(apellidos__icontains=busqueda)
+            )
+
+        context = {
+            'enfermeros': enfermeros.select_related('areaEspecialidad').prefetch_related('fortalezas'),
+            'doctores': doctores.select_related('areaEspecialidad').prefetch_related('fortalezas'),
+            'jefas': jefas.select_related('areaEspecialidad'),
+            'cocina': cocina.select_related('areaEspecialidad'),
+            'tipo_historial': tipo_historial,
+            'busqueda': busqueda
+        }
+
+    return render(request, 'usuarioJefa/historiales.html', context)
 
 def historial_empleados(request):
     # Obtener todos los usuarios
@@ -91,8 +152,56 @@ def historial_empleados(request):
     })
 
 def historial_pacientes(request):
+    busqueda = request.GET.get('busqueda', '')
+    fecha_inicio = request.GET.get('fecha_inicio')
+    fecha_fin = request.GET.get('fecha_fin')
 
-    return render(request, 'usuarioJefa/historial_pacientes.html') 
+    # Query base
+    pacientes = Paciente.objects.all()
+
+    # Aplicar filtros
+    if busqueda:
+        pacientes = pacientes.filter(
+            Q(nombres__icontains=busqueda) | 
+            Q(apellidos__icontains=busqueda) |
+            Q(num_seguridad_social__icontains=busqueda)
+        )
+
+    if fecha_inicio:
+        fecha_inicio = datetime.strptime(fecha_inicio, '%Y-%m-%d')
+        pacientes = pacientes.filter(fecha_ingreso__gte=fecha_inicio)
+
+    if fecha_fin:
+        fecha_fin = datetime.strptime(fecha_fin, '%Y-%m-%d')
+        pacientes = pacientes.filter(fecha_ingreso__lte=fecha_fin)
+
+    # Prefetch related para optimizar consultas
+    pacientes = pacientes.prefetch_related(
+        'recetas_doctor',
+        'diagnosticos',
+        'recetas_doctor__detalles',
+        'recetas_doctor__padecimientos',
+        'recetas_doctor__cuidados'
+    )
+
+    context = {
+        'pacientes': pacientes,
+    }
+    
+    return render(request, 'usuarioJefa/historial_pacientes.html', context) 
+
+def detalle_historial(request, paciente_id):
+    paciente = get_object_or_404(Paciente, id=paciente_id)
+    
+    context = {
+        'paciente': paciente,
+        'recetas': paciente.recetas_doctor.all().order_by('-fecha_creacion'),
+        'diagnosticos': paciente.diagnosticos.all().order_by('-fecha_creacion'),
+        'seguimientos': SeguimientoCuidados.objects.filter(paciente=paciente).order_by('-fecha_registro'),
+        'formularios': FormularioSeguimiento.objects.filter(paciente=paciente).order_by('-fecha_registro'),
+    }
+    
+    return render(request, 'usuarioJefa/detalle_historial.html', context)
 
 def calendario_(request):
     return render(request, 'usuarioJefa/calendario.html')  

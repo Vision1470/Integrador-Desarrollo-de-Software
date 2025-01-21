@@ -5,7 +5,7 @@ from usuarioJefa.models import Paciente
 from usuarioDoctor.models import RecetaPadecimiento, RecetaCuidado, DetalleReceta
 
 class SeguimientoCuidados(models.Model):
-    paciente = models.ForeignKey(Paciente, on_delete=models.CASCADE)
+    paciente = models.ForeignKey('usuarioJefa.Paciente', on_delete=models.CASCADE)
     fecha_registro = models.DateTimeField(auto_now_add=True)
     registrado_por = models.ForeignKey(
         Usuarios,
@@ -38,7 +38,7 @@ class FormularioSeguimiento(models.Model):
         ('S', 'Sin cambios')
     ]
 
-    paciente = models.ForeignKey(Paciente, on_delete=models.CASCADE)
+    paciente = models.ForeignKey('usuarioJefa.Paciente', on_delete=models.CASCADE)
     enfermero = models.ForeignKey(
         Usuarios,
         on_delete=models.PROTECT,

@@ -2,7 +2,7 @@ from django.db import models
 from django.utils import timezone
 from django.db.models import Q
 from login.models import Usuarios, AreaEspecialidad
-from usuarioEnfermeria.models import *
+from django.apps import apps
 
 class Hospital(models.Model):
     nombre = models.CharField(max_length=200)
@@ -22,19 +22,14 @@ class Paciente(models.Model):
         ('INACTIVO', 'Inactivo'),
     ]
 
-    # Datos personales
     nombres = models.CharField(max_length=100)
     apellidos = models.CharField(max_length=100)
     fecha_nacimiento = models.DateField()
     sexo = models.CharField(max_length=1, choices=SEXO_CHOICES)
     num_seguridad_social = models.CharField(max_length=20, unique=True)
-    
-    # Datos de ingreso
     fecha_ingreso = models.DateTimeField(default=timezone.now)
     estado = models.CharField(max_length=10, choices=ESTADO_CHOICES, default='ACTIVO')
-    area = models.ForeignKey(AreaEspecialidad, on_delete=models.PROTECT)
-    
-    # Relaciones con el personal
+    area = models.ForeignKey('login.AreaEspecialidad', on_delete=models.PROTECT)  # Referenciamos a login.AreaEspecialidad
     doctor_actual = models.ForeignKey(
         Usuarios, 
         on_delete=models.SET_NULL, 
@@ -49,26 +44,19 @@ class Paciente(models.Model):
         related_name='pacientes_enfermero',
         limit_choices_to={'tipoUsuario': 'EN'}
     )
-    
-    # Datos de traslado
     hospital_origen = models.CharField(max_length=200, blank=True, null=True)
-    
-    # Control de estado
-    numero_ingresos = models.PositiveIntegerField(default=1)
     esta_activo = models.BooleanField(default=True)
     fecha_alta = models.DateTimeField(null=True, blank=True)
+    numero_ingresos = models.PositiveIntegerField(default=1)
 
     def __str__(self):
         return f"{self.nombres} {self.apellidos}"
 
     def dar_alta(self):
-        print(f"Ejecutando dar_alta para paciente {self.id}")  # Debug
         self.esta_activo = False
         self.estado = 'INACTIVO'
         self.fecha_alta = timezone.now()
         self.save()
-        print(f"Alta completada: activo={self.esta_activo}, estado={self.estado}")  # Debug
-        return True
 
 class HistorialMedico(models.Model):
     paciente = models.ForeignKey(Paciente, on_delete=models.CASCADE, related_name='historial_medico')
@@ -171,3 +159,21 @@ class Instrumento(models.Model):
         verbose_name = 'Instrumento'
         verbose_name_plural = 'Instrumentos'
 
+class HistorialCompletoPaciente(models.Model):
+    paciente = models.OneToOneField(Paciente, on_delete=models.CASCADE, related_name='historial_completo')
+    
+    def get_recetas(self):
+        Receta = apps.get_model('usuarioDoctor', 'Receta')
+        return Receta.objects.filter(paciente=self.paciente).order_by('-fecha_creacion')
+    
+    def get_diagnosticos(self):
+        Diagnostico = apps.get_model('usuarioDoctor', 'Diagnostico')
+        return Diagnostico.objects.filter(paciente=self.paciente).order_by('-fecha_creacion')
+    
+    def get_seguimientos(self):
+        SeguimientoCuidados = apps.get_model('usuarioEnfermeria', 'SeguimientoCuidados')
+        return SeguimientoCuidados.objects.filter(paciente=self.paciente).order_by('-fecha_registro')
+    
+    def get_formularios(self):
+        FormularioSeguimiento = apps.get_model('usuarioEnfermeria', 'FormularioSeguimiento')
+        return FormularioSeguimiento.objects.filter(paciente=self.paciente).order_by('-fecha_registro')

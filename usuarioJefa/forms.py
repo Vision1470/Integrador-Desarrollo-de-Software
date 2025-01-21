@@ -32,9 +32,9 @@ class PacienteForm(forms.ModelForm):
         super().__init__(*args, **kwargs)
         
         # Configurar los campos
-        self.fields['area'].required = True
-        self.fields['doctor_actual'].required = True
-        self.fields['enfermero_actual'].required = True
+        self.fields['area'].queryset = AreaEspecialidad.objects.all()
+        self.fields['doctor_actual'].queryset = Usuarios.objects.filter(tipoUsuario='DR')
+        self.fields['enfermero_actual'].queryset = Usuarios.objects.filter(tipoUsuario='EN')
         self.fields['hospital_origen'].required = False
         
         # Filtrar doctores y enfermeros

@@ -23,4 +23,5 @@ urlpatterns = [
     path('get-medicamento/<int:medicamento_id>/', views.get_medicamento, name='get_medicamento'),
     path('get-instrumento/<int:instrumento_id>/', views.get_instrumento, name='get_instrumento'),
     path('dar_alta_paciente/<int:paciente_id>/', views.dar_alta_paciente, name='dar_alta_paciente'),
+    path('historial/<int:paciente_id>/', views.detalle_historial, name='detalle_historial'),
 ]

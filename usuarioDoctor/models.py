@@ -32,7 +32,7 @@ class Diagnostico(models.Model):
         (3, 'Grave')
     ]
 
-    paciente = models.ForeignKey(Paciente, on_delete=models.CASCADE, related_name='diagnosticos')
+    paciente = models.ForeignKey('usuarioJefa.Paciente', on_delete=models.CASCADE, related_name='diagnosticos')
     doctor = models.ForeignKey(
         Usuarios, 
         on_delete=models.PROTECT, 
@@ -61,7 +61,7 @@ class HistorialDiagnostico(models.Model):
 
 
 class Receta(models.Model):
-    paciente = models.ForeignKey(Paciente, on_delete=models.CASCADE, related_name='recetas_doctor')
+    paciente = models.ForeignKey('usuarioJefa.Paciente', on_delete=models.CASCADE, related_name='recetas_doctor')
     doctor = models.ForeignKey(
         Usuarios, 
         on_delete=models.PROTECT,

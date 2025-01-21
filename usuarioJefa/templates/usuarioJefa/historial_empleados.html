@@ -133,41 +133,5 @@
     </tbody>
 </table>
 
-<!-- Sección de Cocina -->
-<h3>Cocina</h3>
-<table border="1">
-    <thead>
-        <tr>
-            <th>Nombre</th>
-            <th>Cédula</th>
-            <th>Estado</th>
-            <th>Fecha de Registro</th>
-            <th>Fecha de Baja</th>
-            <th>Acciones</th>
-        </tr>
-    </thead>
-    <tbody>
-        {% for usuario in usuarios %}
-            {% if usuario.tipoUsuario == 'CO' %}
-                <tr>
-                    <td>{{ usuario.first_name }} {{ usuario.apellidos }}</td>
-                    <td>{{ usuario.cedula }}</td>
-                    <td>{% if usuario.estaActivo %}Activo{% else %}Inactivo{% endif %}</td>
-                    <td>{{ usuario.fechaRegistro|date:"d/m/Y" }}</td>
-                    <td>{% if usuario.fechaEliminacion %}{{ usuario.fechaEliminacion|date:"d/m/Y" }}{% else %}-{% endif %}</td>
-                    <td>
-                        {% if not usuario.estaActivo %}
-                            <form method="POST" action="{% url 'jefa:toggle_usuario' usuario.id %}" style="display: inline;">
-                                {% csrf_token %}
-                                <button type="submit" name="action" value="activar">Activar</button>
-                            </form>
-                        {% endif %}
-                    </td>
-                </tr>
-            {% endif %}
-        {% endfor %}
-    </tbody>
-</table>
-
 </tbody>
 </html>
