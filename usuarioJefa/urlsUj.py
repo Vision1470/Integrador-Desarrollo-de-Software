@@ -9,7 +9,13 @@ urlpatterns = [
     path('historiales-/', views.historiales_, name='historiales_'),
     path('historial-pacientes/', views.historial_pacientes, name='historial_pacientes'),
     path('historial-empleados/', views.historial_empleados, name='historial_empleados'),
-    path('calendario-/', views.calendario_, name='calendario_'),
+    
+    path('calendario-/', views.calendario_area, name='calendario_area'),
+    path('calendario/crear/', views.crear_asignacion, name='crear_asignacion'),
+    path('calendario/modificar/', views.modificar_asignacion, name='modificar_asignacion'), 
+    path('calendario/eliminar/<int:asignacion_id>/', views.eliminar_asignacion, name='eliminar_asignacion'),
+
+    
     path('usuarios-/', views.usuarios_, name='usuarios_'),
     path('crear-usuarios/', views.crear_usuarios, name='crear_usuarios'),
     path('gestionar-usuarios/', views.gestionar_usuarios, name='gestionar_usuarios'),

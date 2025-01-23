@@ -160,6 +160,7 @@ class Instrumento(models.Model):
         verbose_name_plural = 'Instrumentos'
 
 class HistorialCompletoPaciente(models.Model):
+
     paciente = models.OneToOneField(Paciente, on_delete=models.CASCADE, related_name='historial_completo')
     
     def get_recetas(self):
@@ -177,3 +178,18 @@ class HistorialCompletoPaciente(models.Model):
     def get_formularios(self):
         FormularioSeguimiento = apps.get_model('usuarioEnfermeria', 'FormularioSeguimiento')
         return FormularioSeguimiento.objects.filter(paciente=self.paciente).order_by('-fecha_registro')
+    
+# models.py
+from django.db import models
+
+class AsignacionCalendario(models.Model):
+    enfermero = models.ForeignKey('login.Usuarios', on_delete=models.PROTECT)
+    area = models.ForeignKey('login.AreaEspecialidad', on_delete=models.PROTECT)
+    fecha_inicio = models.DateField()
+    fecha_fin = models.DateField()
+    bimestre = models.IntegerField()
+    year = models.IntegerField()
+    activo = models.BooleanField(default=True)
+
+    class Meta:
+        unique_together = ['enfermero', 'fecha_inicio', 'fecha_fin']

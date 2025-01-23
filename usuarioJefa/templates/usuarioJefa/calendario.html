@@ -1,119 +1,126 @@
 <!DOCTYPE html>
-
 <html lang="en">
-<meta charset="UTF-8" />
- 
+<head>
+   <meta charset="UTF-8" />
+</head>
 <body>
-    <h1> Quemados    
-    <select id="area", name="Area"> <option> Area </option> </select>
-    </h1>
-    <text> Relacion de pacientes:
-        <select> <option> 1 </option></select> a
-        <select> <option> 2 </option></select> 
-        <button type="submit" >  Aceptar </button>
-    </text>
+   <form method="GET" action="">
+       <h1>
+           <select id="area" name="area" onchange="this.form.submit()">
+               <option value="">Seleccionar área</option>
+               {% for area in areas %}
+                   <option value="{{ area.id }}" {% if area_seleccionada.id == area.id %}selected{% endif %}>
+                       {{ area.nombre }}
+                   </option>
+               {% endfor %}
+           </select>
+       </h1>
 
-    <h2 align="center" style="color: orange;"> Enero 2024 </h2>
-    <br />
-     
-    <table bgcolor="lightgrey" align="center"
-        cellspacing="21" cellpadding="21">
-        <caption align="top">
-        </caption>
-        <thead>
-            <tr>
-                <th> Domingo </th>
-                <th> Lunes </th>
-                <th> Martes </th>
-                <th> Miercoles </th>
-                <th> Jueves </th>
-                <th> Viernes </th>
-                <th> Sabado </th>
-            </tr>
-        </thead>
-         
-        <tbody>
-            <tr>
-                <td></td>
-                <td></td>
-                <td></td>
-                <td></td>
-                <td></td>
-                <td>1</td>
-                <td>2</td>
-            </tr>
-            <tr></tr>
-            <tr>
-                <td>3</td>
-                <td>4</td>
-                <td>5</td>
-                <td>6</td>
-                <td>7</td>
-                <td>8</td>
-                <td>9</td>
-            </tr>
-            <tr>
-                <td>10</td>
-                <td>11</td>
-                <td>12</td>
-                <td>13</td>
-                <td>14</td>
-                <td>15</td>
-                <td>16</td>
-            </tr>
-            <tr>
-                <td>17</td>
-                <td>18</td>
-                <td>19</td>
-                <td>20</td>
-                <td>21</td>
-                <td>22</td>
-                <td>23</td>
-            </tr>
-            <tr>
-                <td>24</td>
-                <td>25</td>
-                <td>26</td>
-                <td>27</td>
-                <td>28</td>
-                <td>29</td>
-                <td>30</td>
-            </tr>
-            <tr>
-                <td>31</td>
-                <td>1</td>
-                <td>2</td>
-                <td>3</td>
-                <td>4</td>
-                <td>5</td>
-                <td>6</td>
-            </tr>
-        </tbody>
-    </table>
+       {% if area_seleccionada %}
+       <text> Relacion de pacientes:
+           <select> <option> 1 </option></select> a
+           <select> <option> 2 </option></select> 
+           <button type="submit">Aceptar</button>
+       </text>
 
-    <h4> Planeacion de tareas </h4>
-    <select id="enfermeria", name="Enfermeria"> <option> Empleado </option></select>
-    <select id="area", name="Area"> <option> Area </option></select>
-    <select id="bimestre", name="Bimestre"> <option> Bimestre 1 </option></select>
-    <button type="submit" >  Aceptar </button>
-
+       <h2 align="center" style="color: orange;">{{ mes_actual }} {{ año_actual }}</h2>
+       <br />
     
-    <h4> Modificar tareas </h4>
-    <select id="enfermeria", name="Enfermeria"> <option> Empleado </option></select>
-    <select id="area", name="Area"> <option> Area </option></select>
-    <select id="fecha_inicio", name="Fecha_inicio"> <option> Fecha de inicio </option></select>
-    <select id="fecha_fin", name="Fecha_fin"> <option> Fecha de fin </option></select>
-    <select id="cuidadosFaltantes" name="CuidadosFaltantes" multiple>  
-        <option value="Cuidado 1"> Camilla 1</option>
-        <option value="Cuidado 2"> Camilla 2</option>
-        <option value="Cuidado 3"> Camilla 3 </option>
+       <table bgcolor="lightgrey" align="center" cellspacing="21" cellpadding="21">
+           <thead>
+               <tr>
+                   <th>Domingo</th>
+                   <th>Lunes</th>
+                   <th>Martes</th>
+                   <th>Miercoles</th>
+                   <th>Jueves</th>
+                   <th>Viernes</th>
+                   <th>Sabado</th>
+               </tr>
+           </thead>
+           <tbody>
+               {% for semana in calendario %}
+               <tr>
+                   {% for dia in semana %}
+                   <td>
+                       {% if dia != 0 %}
+                           {{ dia }}
+                           {% for asignacion in asignaciones %}
+                               {% if asignacion.fecha_inicio|date:"j" <= dia and asignacion.fecha_fin|date:"j" >= dia %}
+                               <div>{{ asignacion.enfermero.nombre }}</div>
+                               {% endif %}
+                           {% endfor %}
+                       {% endif %}
+                   </td>
+                   {% endfor %}
+               </tr>
+               {% endfor %}
+           </tbody>
+       </table>
+       {% endif %}
+   </form>
+
+   <h4>Planeación de tareas</h4>
+   <form method="POST" action="{% url 'jefa:crear_asignacion' %}">
+       {% csrf_token %}
+       <select id="enfermeria" name="enfermero" required>
+        <option value="">Seleccionar empleado</option>
+        {% for enfermero in enfermeros %}
+            <option value="{{ enfermero.id }}">
+                {{ enfermero.username }} - {{ enfermero.tipoUsuario }}
+            </option>
+        {% endfor %}
     </select>
-    <button type="submit" >  Modificar </button>
+       
+       <select id="area" name="area" required>
+           <option value="">Seleccionar área</option>
+           {% for area in areas %}
+               <option value="{{ area.id }}">{{ area.nombre }}</option>
+           {% endfor %}
+       </select>
 
-    <br><br><br>
+       <select id="bimestre" name="bimestre" required>
+           {% for i in "12345"|make_list %}
+               <option value="{{ i }}">Bimestre {{ i }}</option>
+           {% endfor %}
+       </select>
+       
+       <button type="submit">Aceptar</button>
+   </form>
 
-    <a href="{% url 'jefa:menu_jefa' %}" class="button"> Volver </a> 
+   <h4>Modificar tareas</h4>
+   <form method="POST" action="{% url 'jefa:modificar_asignacion' %}">
+       {% csrf_token %}
+       <select id="enfermeria" name="enfermero" required>
+        <option value="">Seleccionar empleado</option>
+        {% for enfermero in enfermeros %}
+            <option value="{{ enfermero.id }}">
+                {{ enfermero.username }} - {{ enfermero.tipoUsuario }}
+            </option>
+        {% endfor %}
+    </select>
+
+       <select id="area" name="area" required>
+           <option value="">Seleccionar área</option>
+           {% for area in areas %}
+               <option value="{{ area.id }}">{{ area.nombre }}</option>
+           {% endfor %}
+       </select>
+
+       <input type="date" name="fecha_inicio" required>
+       <input type="date" name="fecha_fin" required>
+
+       <select id="cuidadosFaltantes" name="cuidados" multiple>  
+           {% for cuidado in cuidados %}
+           <option value="{{ cuidado.id }}">{{ cuidado.nombre }}</option>
+           {% endfor %}
+       </select>
+
+       <button type="submit">Modificar</button>
+   </form>
+
+   <br><br><br>
+   <a href="{% url 'jefa:menu_jefa' %}" class="button">Volver</a> 
 
 </body>
- 
 </html>

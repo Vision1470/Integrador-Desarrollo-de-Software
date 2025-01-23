@@ -1,5 +1,5 @@
 from django.contrib import admin
-from .models import Hospital, Paciente, HistorialMedico, RecetaMedica, HistorialDoctores, HistorialEnfermeros
+from .models import *
 
 @admin.register(Hospital)
 class HospitalAdmin(admin.ModelAdmin):
@@ -42,3 +42,9 @@ class HistorialEnfermerosAdmin(admin.ModelAdmin):
     search_fields = ['paciente__nombres', 'paciente__apellidos']
     date_hierarchy = 'fecha_asignacion'
 
+@admin.register(AsignacionCalendario)
+class AsignacionCalendarioAdmin(admin.ModelAdmin):
+   list_display = ['enfermero', 'area', 'fecha_inicio', 'fecha_fin', 'bimestre', 'year']
+   list_filter = ['area', 'bimestre', 'year']
+   search_fields = ['enfermero__username', 'area__nombre']
+   ordering = ['-year', 'bimestre']
