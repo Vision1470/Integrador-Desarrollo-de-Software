@@ -5,6 +5,12 @@
     <title>Mis Pacientes - Enfermería</title>
 </head>
 <body>
+    {% if area_asignada %}
+        <div style="background-color: #f0f0f0; padding: 10px; margin-bottom: 20px;">
+            <h4>Área Asignada Actual: {{ area_asignada.nombre }}</h4>
+        </div>
+    {% endif %}
+
     <h1>Mis Pacientes</h1>
     <h3>Enfermero/a: {{ enfermero.first_name }} {{ enfermero.apellidos }}</h3>
 
@@ -40,9 +46,7 @@
                         <a href="{% url 'enfermeria:cuidados_paciente' paciente.id %}">Ver Cuidados</a>
                         <a href="{% url 'enfermeria:formulario_paciente' paciente.id %}">Llenar Formulario</a>
                     </td>
-                    
                 </tr>
-                
                 {% endfor %}
             </tbody>
         </table>
@@ -51,7 +55,6 @@
     {% endif %}
 
     <br><br>
-    <!-- Botón de cerrar sesión -->
     <form action="{% url 'login:login' %}" method="POST">
         {% csrf_token %}
         <button type="submit">Cerrar Sesión</button>

@@ -4,7 +4,7 @@ from .models import Usuarios, AreaEspecialidad, Fortaleza
 
 class CustomUserAdmin(UserAdmin):
     model = Usuarios
-    list_display = ['username', 'first_name', 'email', 'tipoUsuario', 'primerIngreso']
+    list_display = ['username', 'first_name', 'email', 'tipoUsuario', 'primerIngreso', 'edad']
     fieldsets = (
         (None, {'fields': ('username', 'password')}),
         ('Información Personal', {'fields': ('first_name', 'email', 'telefono', 'direccion')}),

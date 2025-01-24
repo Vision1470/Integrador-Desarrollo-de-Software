@@ -338,6 +338,7 @@ def crear_usuarios(request):
 
         try:
             # Validar la fecha de nacimiento y calcular la edad
+            edad = None  # Valor por defecto
             if fecha_nacimiento:
                 nacimiento = date.fromisoformat(fecha_nacimiento)
                 hoy = date.today()
@@ -354,7 +355,7 @@ def crear_usuarios(request):
             usuario = Usuarios.objects.create(
                 first_name=nombre,
                 apellidos=apellidos,
-                edad=edad,
+                edad=edad,  # Ahora puede ser None
                 fechaNacimiento=fecha_nacimiento,
                 areaEspecialidad=area_especialidad,
                 tipoUsuario=tipo_usuario,

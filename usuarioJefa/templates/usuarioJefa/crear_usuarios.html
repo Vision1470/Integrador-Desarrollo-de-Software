@@ -46,7 +46,7 @@
 
             <p>
                 <label for="edad">Edad:</label>
-                <input type="number" id="edad" name="edad" readonly>
+                <input type="text" id="edad" name="edad" style="background-color: #f0f0f0;" readonly>
             </p>
 
             <p>
@@ -85,7 +85,6 @@
                     <option value="EN">Enfermería</option>
                     <option value="DR">Doctor</option>
                     <option value="JP">Jefa de piso</option>
-                    <option value="CO">Cocina</option>
                 </select>
             </p>
 
@@ -115,48 +114,67 @@
     <br><br>
     <a href="{% url 'jefa:usuarios_' %}">Volver al Menú</a>
 
-    <script>
-        document.addEventListener('DOMContentLoaded', () => {
-            const fechaNacimientoInput = document.getElementById('fecha_nacimiento');
-            const edadInput = document.getElementById('edad');
-            const errorMessage = document.getElementById('error-message');
-            const submitButton = document.getElementById('submit-button');
+    Vamos a hacer algunos ajustes para asegurarnos que la edad se calcule y muestre automáticamente. Probemos con esta versión modificada del script:
+htmlCopy<!DOCTYPE html>
+<html lang="en">
+<!-- ... (resto del head y comienzo del body igual) ... -->
 
-            // Función para calcular edad
-            function calcularEdad(fechaNacimiento) {
-                const hoy = new Date();
-                const nacimiento = new Date(fechaNacimiento);
-                let edad = hoy.getFullYear() - nacimiento.getFullYear();
-                const mes = hoy.getMonth() - nacimiento.getMonth();
+Vamos a probar una versión más simple y directa del script. Aquí está la versión corregida:
+htmlCopy<!DOCTYPE html>
+<html lang="en">
+<!-- (El resto del código HTML se mantiene igual hasta el script) -->
 
-                if (mes < 0 || (mes === 0 && hoy.getDate() < nacimiento.getDate())) {
-                    edad--;
-                }
-                return edad;
+<script>
+    // Esperar a que el documento esté completamente cargado
+    window.onload = function() {
+        // Obtener los elementos del DOM
+        const fechaNacimiento = document.getElementById('fecha_nacimiento');
+        const edad = document.getElementById('edad');
+        const errorMessage = document.getElementById('error-message');
+        const submitButton = document.getElementById('submit-button');
+
+        // Función para calcular la edad
+        function calcularEdad() {
+            // Obtener la fecha seleccionada
+            const fechaSeleccionada = new Date(fechaNacimiento.value);
+            const hoy = new Date();
+            
+            // Calcular la diferencia de años
+            let años = hoy.getFullYear() - fechaSeleccionada.getFullYear();
+            
+            // Ajustar por mes y día
+            if (hoy.getMonth() < fechaSeleccionada.getMonth() || 
+                (hoy.getMonth() === fechaSeleccionada.getMonth() && 
+                 hoy.getDate() < fechaSeleccionada.getDate())) {
+                años--;
             }
+            
+            // Actualizar el campo de edad
+            edad.value = años;
 
-            // Evento para calcular la edad y validar la fecha de nacimiento
-            fechaNacimientoInput.addEventListener('input', function () {
-                const fechaNacimiento = fechaNacimientoInput.value;
+            // Validar la edad
+            if (años < 18) {
+                errorMessage.textContent = "El usuario debe ser mayor de 18 años";
+                submitButton.disabled = true;
+            } else if (años > 100) {
+                errorMessage.textContent = "Por favor, verifique la fecha de nacimiento";
+                submitButton.disabled = true;
+            } else {
+                errorMessage.textContent = "";
+                submitButton.disabled = false;
+            }
+        }
 
-                if (fechaNacimiento) {
-                    const edad = calcularEdad(fechaNacimiento);
-                    edadInput.value = edad;
+        // Agregar el event listener
+        fechaNacimiento.onchange = calcularEdad;
 
-                    if (edad < 18) {
-                        errorMessage.textContent = 'El usuario debe ser mayor de 18 años.';
-                        submitButton.disabled = true;
-                    } else {
-                        errorMessage.textContent = '';
-                        submitButton.disabled = false;
-                    }
-                } else {
-                    edadInput.value = '';
-                    errorMessage.textContent = '';
-                    submitButton.disabled = false;
-                }
-            });
-        });
-    </script>
+        // Establecer la fecha máxima como hoy
+        const hoy = new Date();
+        const dd = String(hoy.getDate()).padStart(2, '0');
+        const mm = String(hoy.getMonth() + 1).padStart(2, '0');
+        const yyyy = hoy.getFullYear();
+        fechaNacimiento.max = yyyy + '-' + mm + '-' + dd;
+    };
+</script>
 </body>
 </html>

@@ -37,19 +37,17 @@ class Usuarios(AbstractUser):
     jefaPiso = 'JP'
     enfermeria = 'EN'
     doctor = 'DR'
-    cocina = 'CO'
     
     rolesUsuario = [
         (jefaPiso, 'Jefa de Piso'),
         (enfermeria, 'Enfermería'),
         (doctor, 'Doctor'),
-        (cocina, 'Cocina'),
     ]
 
     # Datos personales
     tipoUsuario = models.CharField(max_length=2, choices=rolesUsuario, default=enfermeria)
     apellidos = models.CharField(max_length=150)
-    edad = models.IntegerField(default=18)
+    edad = models.IntegerField(null=True, blank=True)
     fechaNacimiento = models.DateField(null=True, blank=True)
     areaEspecialidad = models.ForeignKey(AreaEspecialidad, on_delete=models.SET_NULL, null=True)
     fortalezas = models.ManyToManyField(Fortaleza)

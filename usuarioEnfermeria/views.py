@@ -12,17 +12,34 @@ def pacientes_enfermeria(request):
     enfermero_actual = request.user
     print("Enfermero actual:", enfermero_actual.username, enfermero_actual.tipoUsuario)  # Debug
     
-    pacientes_asignados = Paciente.objects.filter(
-        enfermero_actual=enfermero_actual,
-        esta_activo=True
-    ).select_related('area', 'doctor_actual')
+    # Obtener el área asignada actual del calendario
+    from usuarioJefa.models import AsignacionCalendario
+    from datetime import date
+    
+    asignacion_actual = AsignacionCalendario.objects.filter(
+        enfermero=enfermero_actual,
+        fecha_inicio__lte=date.today(),
+        fecha_fin__gte=date.today(),
+        activo=True
+    ).select_related('area').first()
+    
+    # Filtrar pacientes por área asignada y enfermero actual
+    if asignacion_actual:
+        pacientes_asignados = Paciente.objects.filter(
+            enfermero_actual=enfermero_actual,
+            esta_activo=True,
+            area=asignacion_actual.area  # Filtro adicional por área asignada
+        ).select_related('area', 'doctor_actual')
+    else:
+        pacientes_asignados = Paciente.objects.none()  # Devolver queryset vacío si no hay asignación
     
     print("Número de pacientes:", pacientes_asignados.count())  # Debug
     print("Query SQL:", pacientes_asignados.query)  # Debug
     
     return render(request, 'usuarioEnfermeria/pacientes_enfermeria.html', {
         'pacientes': pacientes_asignados,
-        'enfermero': enfermero_actual
+        'enfermero': enfermero_actual,
+        'area_asignada': asignacion_actual.area if asignacion_actual else None
     })
 
 @login_required
