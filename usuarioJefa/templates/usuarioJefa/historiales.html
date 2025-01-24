@@ -2,7 +2,192 @@
 <html lang="es">
 <head>
     <meta charset="UTF-8">
-    <title>Historiales</title>
+    <title>Historiales</title>>
+    <style>
+        :root {
+            --primary-color: #0A2342;
+            --secondary-color: #2E4057;
+            --accent-color: #1E90FF;
+            --background-color: #EBF0F5;
+            --table-background: #F0F4F7;
+            --text-color: #333333;
+            --white: #FFFFFF;
+            --border-color: #D1D1D1;
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: 'Roboto', 'Arial', sans-serif;
+        }
+
+        body {
+            background-color: var(--background-color);
+            color: var(--text-color);
+            line-height: 1.6;
+            padding: 20px;
+        }
+
+        .container {
+            background-color: var(--white);
+            border-radius: 8px;
+            box-shadow: 0 15px 30px rgba(0,0,0,0.15);
+            padding: 30px;
+            width: 100%;
+            max-width: 1200px;
+            border-left: 5px solid var(--primary-color);
+        }
+
+        .header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 20px;
+        }
+
+        .header h1 {
+            font-size: 2rem;
+            color: var(--primary-color);
+            font-weight: 700;
+        }
+
+        .menu-buttons {
+            display: flex;
+            gap: 15px;
+        }
+
+        .menu-button {
+            background-color: var(--primary-color);
+            color: var(--white);
+            text-decoration: none;
+            padding: 10px 15px;
+            border-radius: 4px;
+            font-size: 0.9rem;
+            font-weight: 600;
+            text-transform: uppercase;
+            transition: background-color 0.3s ease;
+        }
+
+        .menu-button:hover {
+            background-color: var(--secondary-color);
+        }
+
+        .tabs {
+            margin-bottom: 20px;
+        }
+
+        .tabs a {
+            text-decoration: none;
+            color: var(--text-color);
+            padding: 10px 15px;
+            border-radius: 4px;
+            transition: background-color 0.3s ease;
+        }
+
+        .tabs a.active {
+            background-color: var(--primary-color);
+            color: var(--white);
+            font-weight: bold;
+        }
+
+        .filters {
+            margin-bottom: 20px;
+        }
+
+        .filters input, .filters button {
+            padding: 8px 12px;
+            border: 1px solid var(--border-color);
+            border-radius: 4px;
+            font-size: 0.9rem;
+        }
+
+        .filters button {
+            background-color: var(--primary-color);
+            color: var(--white);
+            border-color: var(--primary-color);
+            cursor: pointer;
+            transition: background-color 0.3s ease;
+        }
+
+        .filters button:hover {
+            background-color: var(--secondary-color);
+        }
+
+        .table-container {
+            overflow-x: auto;
+        }
+
+        .patients-table, .employees-table {
+            width: 100%;
+            border-collapse: separate;
+            border-spacing: 0;
+            margin-bottom: 30px;
+            border-radius: 6px;
+            overflow: hidden;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+            border: 2px solid var(--primary-color);
+            background-color: var(--table-background);
+        }
+
+        .patients-table th, .employees-table th {
+            background-color: var(--primary-color);
+            color: var(--white);
+            padding: 12px;
+            text-align: left;
+            font-weight: 600;
+            border-bottom: 2px solid var(--primary-color);
+        }
+
+        .patients-table td, .employees-table td {
+            padding: 12px;
+            border-bottom: 2px solid var(--primary-color);
+            border-right: 2px solid var(--primary-color);
+        }
+
+        .patients-table tr:last-child td, .employees-table tr:last-child td {
+            border-bottom: none;
+        }
+
+        .patients-table td:last-child, .employees-table td:last-child {
+            border-right: none;
+        }
+
+        .patients-table tr:nth-child(even), .employees-table tr:nth-child(even) {
+            background-color: #F6F9F7;
+        }
+
+        .patients-table tr:hover, .employees-table tr:hover {
+            background-color: #E6EAE7;
+        }
+
+        .action-button {
+            background-color: var(--secondary-color);
+            color: var(--white);
+            border: none;
+            padding: 8px 12px;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 0.9rem;
+            font-weight: 600;
+            text-transform: uppercase;
+            transition: background-color 0.3s ease;
+        }
+
+        .action-button:hover {
+            background-color: var(--accent-color);
+        }
+
+        @media (max-width: 768px) {
+            .container {
+                padding: 20px;
+            }
+
+            .patients-table, .employees-table {
+                font-size: 0.9rem;
+            }
+        }
+    </style>
     <script>
         function confirmarReactivacion(pacienteId) {
             if (confirm('¿Está seguro que desea reactivar a este paciente?')) {

@@ -2,133 +2,287 @@
 <html lang="es">
 <head>
     <meta charset="UTF-8">
-    <title>Cuidados del paciente</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Sistema Hospitalario - Cuidados del Paciente</title>
+    <style>
+        :root {
+            --primary-color: #4A4A4A;
+            --secondary-color: #6D4C41;
+            --accent-color: #8D6E63;
+            --background-color: #E9ECEF;
+            --text-color: #333333;
+            --white: #FFFFFF;
+            --border-color: #5A5A5A;
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: 'Roboto', 'Arial', sans-serif;
+        }
+
+        body {
+            background-color: var(--background-color);
+            color: var(--text-color);
+            line-height: 1.6;
+            padding: 20px;
+        }
+
+        .container {
+            background-color: var(--white);
+            border-radius: 6px;
+            box-shadow: 0 15px 30px rgba(0,0,0,0.15);
+            padding: 40px;
+            max-width: 1200px;
+            margin: 0 auto;
+            border-left: 6px solid var(--primary-color);
+            position: relative;
+        }
+
+        .container::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            height: 6px;
+            background: linear-gradient(to right, var(--primary-color), var(--accent-color));
+        }
+
+        .header {
+            margin-bottom: 30px;
+        }
+
+        .header h1 {
+            color: var(--primary-color);
+            font-size: 2.2rem;
+            margin-bottom: 10px;
+        }
+
+        .messages {
+            margin-bottom: 25px;
+        }
+
+        .message {
+            padding: 12px;
+            margin-bottom: 15px;
+            background-color: #E6E6E6;
+            border-left: 4px solid var(--primary-color);
+            font-weight: 500;
+        }
+
+        .patients-table {
+            width: 100%;
+            border-collapse: separate;
+            border-spacing: 0;
+            margin-bottom: 30px;
+            border: 3px solid var(--primary-color);
+            border-radius: 6px;
+            overflow: hidden;
+        }
+
+        .patients-table th {
+            background-color: var(--primary-color);
+            color: var(--white);
+            padding: 12px;
+            text-align: left;
+            font-weight: 600;
+        }
+
+        .patients-table td {
+            padding: 12px;
+            border-bottom: 3px solid var(--border-color);
+            border-right: 3px solid var(--border-color);
+            background-color: #F1F3F5;
+        }
+
+        .patients-table tr:last-child td {
+            border-bottom: none;
+        }
+
+        .patients-table td:last-child {
+            border-right: none;
+        }
+
+        .checkbox-container {
+            display: flex;
+            align-items: center;
+            margin-bottom: 10px;
+        }
+
+        .checkbox-container input[type="checkbox"] {
+            margin-right: 10px;
+        }
+
+        .completion-info {
+            font-size: 0.9rem;
+            color: var(--secondary-color);
+            margin-top: 5px;
+        }
+
+        .recent-records {
+            background-color: #F1F3F5;
+            border: 3px solid var(--border-color);
+            border-radius: 6px;
+            padding: 20px;
+        }
+
+        .btn {
+            display: inline-block;
+            background-color: var(--primary-color);
+            color: var(--white);
+            text-decoration: none;
+            padding: 12px 24px;
+            border-radius: 4px;
+            transition: all 0.3s ease;
+        }
+
+        .btn:hover {
+            background-color: var(--secondary-color);
+            transform: translateY(-2px);
+        }
+
+        @media (max-width: 768px) {
+            .container {
+                padding: 20px;
+                border-left: none;
+                border-top: 6px solid var(--primary-color);
+            }
+
+            .patients-table {
+                font-size: 0.9rem;
+            }
+        }
+    </style>
 </head>
 <body>
-    <h1>Cuidados del Paciente: {{ paciente.nombres }} {{ paciente.apellidos }}</h1>
+    <div class="container">
+        <div class="header">
+            <h1>Cuidados del Paciente: {{ paciente.nombres }} {{ paciente.apellidos }}</h1>
+        </div>
 
-    {% if messages %}
-    <div>
-        {% for message in messages %}
-            <div>{{ message }}</div>
-        {% endfor %}
-    </div>
-    {% endif %}
+        {% if messages %}
+        <div class="messages">
+            {% for message in messages %}
+                <div>{{ message }}</div>
+            {% endfor %}
+        </div>
+        {% endif %}
 
-    {% if receta %}
-        <table border="1">
-            <tr>
-                <th>Padecimientos</th>
-                <th>Cuidados</th>
-                <th>Medicamentos</th>
-            </tr>
-            <tr>
-                <td>
-                    {% for padecimiento in padecimientos %}
-                        <div>
-                            {{ padecimiento.padecimiento.nombre }}
-                            ({{ padecimiento.get_nivel_gravedad_display }})
-                        </div>
-                    {% endfor %}
-                </td>
-                <td>
-                    {% for cuidado in cuidados %}
-                        <div>
-                            <input type="checkbox" 
-                                   disabled
-                                   {% if ultimo_registro %}
-                                       {% for registro in ultimo_registro.registrocuidado_set.all %}
-                                           {% if registro.cuidado_id == cuidado.id and registro.completado %}
-                                               checked
-                                           {% endif %}
-                                       {% endfor %}
-                                   {% endif %}>
-                            <label>{{ cuidado.cuidado.nombre }}</label>
+        {% if receta %}
+            <table class="patients-table">
+                <tr>
+                    <th>Padecimientos</th>
+                    <th>Cuidados</th>
+                    <th>Medicamentos</th>
+                </tr>
+                <tr>
+                    <td>
+                        {% for padecimiento in padecimientos %}
+                            <div>
+                                {{ padecimiento.padecimiento.nombre }}
+                                ({{ padecimiento.get_nivel_gravedad_display }})
+                            </div>
+                        {% endfor %}
+                    </td>
+                    <td>
+                        {% for cuidado in cuidados %}
+                            <div class="checkbox-container">
+                                <input type="checkbox" 
+                                       disabled
+                                       {% if ultimo_registro %}
+                                           {% for registro in ultimo_registro.registrocuidado_set.all %}
+                                               {% if registro.cuidado_id == cuidado.id and registro.completado %}
+                                                   checked
+                                               {% endif %}
+                                           {% endfor %}
+                                       {% endif %}>
+                                <label>{{ cuidado.cuidado.nombre }}</label>
+                            </div>
                             {% if ultimo_registro %}
                                 {% for registro in ultimo_registro.registrocuidado_set.all %}
                                     {% if registro.cuidado_id == cuidado.id and registro.completado %}
-                                        <div>
+                                        <div class="completion-info">
                                             Completado por: {{ ultimo_registro.registrado_por.get_full_name }}
                                             el {{ ultimo_registro.fecha_registro|date:"d/m/Y H:i" }}
                                         </div>
                                     {% endif %}
                                 {% endfor %}
                             {% endif %}
-                        </div>
-                    {% endfor %}
-                </td>
-                <td>
-                    {% for medicamento in medicamentos %}
-                        <div>
-                            <input type="checkbox" 
-                                   disabled
-                                   {% if ultimo_registro %}
-                                       {% for registro in ultimo_registro.registromedicamento_set.all %}
-                                           {% if registro.medicamento_id == medicamento.id and registro.administrado %}
-                                               checked
-                                           {% endif %}
-                                       {% endfor %}
-                                   {% endif %}>
-                            <label>
-                                {{ medicamento.medicamento.nombre }} - {{ medicamento.cantidad_por_toma }}
-                                {{ medicamento.get_unidad_medida_display }}
-                            </label>
+                        {% endfor %}
+                    </td>
+                    <td>
+                        {% for medicamento in medicamentos %}
+                            <div class="checkbox-container">
+                                <input type="checkbox" 
+                                       disabled
+                                       {% if ultimo_registro %}
+                                           {% for registro in ultimo_registro.registromedicamento_set.all %}
+                                               {% if registro.medicamento_id == medicamento.id and registro.administrado %}
+                                                   checked
+                                               {% endif %}
+                                           {% endfor %}
+                                       {% endif %}>
+                                <label>
+                                    {{ medicamento.medicamento.nombre }} - {{ medicamento.cantidad_por_toma }}
+                                    {{ medicamento.get_unidad_medida_display }}
+                                </label>
+                            </div>
                             {% if ultimo_registro %}
                                 {% for registro in ultimo_registro.registromedicamento_set.all %}
                                     {% if registro.medicamento_id == medicamento.id and registro.administrado %}
-                                        <div>
+                                        <div class="completion-info">
                                             Administrado por: {{ ultimo_registro.registrado_por.get_full_name }}
                                             el {{ ultimo_registro.fecha_registro|date:"d/m/Y H:i" }}
                                         </div>
                                     {% endif %}
                                 {% endfor %}
                             {% endif %}
-                        </div>
-                    {% endfor %}
-                </td>
-            </tr>
-        </table>
-    {% else %}
-    <p>No hay una receta activa para este paciente.</p>
-    {% endif %}
+                        {% endfor %}
+                    </td>
+                </tr>
+            </table>
+        {% else %}
+        <p>No hay una receta activa para este paciente.</p>
+        {% endif %}
 
-    {% if registros_recientes %}
-    <div>
-        <h3>Últimos Registros</h3>
-        <table border="1">
-            <tr>
-                <th>Fecha</th>
-                <th>Registrado por</th>
-                <th>Cuidados Completados</th>
-                <th>Medicamentos Administrados</th>
-            </tr>
-            {% for registro in registros_recientes %}
-            <tr>
-                <td>{{ registro.fecha_registro|date:"d/m/Y H:i" }}</td>
-                <td>{{ registro.registrado_por.get_full_name }}</td>
-                <td>
-                    {% for cuidado in registro.registrocuidado_set.all %}
-                        {% if cuidado.completado %}
-                            - {{ cuidado.cuidado.cuidado.nombre }}<br>
-                        {% endif %}
-                    {% endfor %}
-                </td>
-                <td>
-                    {% for medicamento in registro.registromedicamento_set.all %}
-                        {% if medicamento.administrado %}
-                            - {{ medicamento.medicamento.medicamento.nombre }}<br>
-                        {% endif %}
-                    {% endfor %}
-                </td>
-            </tr>
-            {% endfor %}
-        </table>
+        {% if registros_recientes %}
+        <div class="recent-records">
+            <h3>Últimos Registros</h3>
+            <table class="patients-table">
+                <tr>
+                    <th>Fecha</th>
+                    <th>Registrado por</th>
+                    <th>Cuidados Completados</th>
+                    <th>Medicamentos Administrados</th>
+                </tr>
+                {% for registro in registros_recientes %}
+                <tr>
+                    <td>{{ registro.fecha_registro|date:"d/m/Y H:i" }}</td>
+                    <td>{{ registro.registrado_por.get_full_name }}</td>
+                    <td>
+                        {% for cuidado in registro.registrocuidado_set.all %}
+                            {% if cuidado.completado %}
+                                - {{ cuidado.cuidado.cuidado.nombre }}<br>
+                            {% endif %}
+                        {% endfor %}
+                    </td>
+                    <td>
+                        {% for medicamento in registro.registromedicamento_set.all %}
+                            {% if medicamento.administrado %}
+                                - {{ medicamento.medicamento.medicamento.nombre }}<br>
+                            {% endif %}
+                        {% endfor %}
+                    </td>
+                </tr>
+                {% endfor %}
+            </table>
+        </div>
+        {% endif %}
+
+        <br><br>
+        <a href="{% url 'doctor:pacientes_doctor' %}" class="btn">Volver</a>
     </div>
-    {% endif %}
-
-    <br><br>
-    <a href="{% url 'doctor:pacientes_doctor' %}">
-        <button type="button">Volver</button>
-    </a>
 </body>
 </html>

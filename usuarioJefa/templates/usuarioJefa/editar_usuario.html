@@ -4,105 +4,202 @@
     <meta charset="UTF-8">
     <title>Editar Usuario</title>
     <style>
+        :root {
+            --primary-color: #0A2342;
+            --secondary-color: #2E4057;
+            --accent-color: #1E90FF;
+            --background-color: #EBF0F5;
+            --table-background: #F0F4F7;
+            --text-color: #333333;
+            --white: #FFFFFF;
+            --border-color: #D1D1D1;
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: 'Roboto', 'Arial', sans-serif;
+        }
+
+        body {
+            background-color: var(--background-color);
+            color: var(--text-color);
+            line-height: 1.6;
+            padding: 20px;
+        }
+
+        .container {
+            background-color: var(--white);
+            border-radius: 8px;
+            box-shadow: 0 15px 30px rgba(0,0,0,0.15);
+            padding: 30px;
+            width: 100%;
+            max-width: 800px;
+            border-left: 5px solid var(--primary-color);
+        }
+
+        .header {
+            margin-bottom: 20px;
+        }
+
+        .header h1 {
+            font-size: 2rem;
+            color: var(--primary-color);
+            font-weight: 700;
+        }
+
+        .messages {
+            margin-bottom: 20px;
+        }
+
+        .message {
+            padding: 10px;
+            margin-bottom: 10px;
+            border-radius: 4px;
+        }
+
+        .error {
+            background-color: #ffe6e6;
+            border: 1px solid #ff9999;
+            color: #cc0000;
+        }
+
+        .success {
+            background-color: #e6ffe6;
+            border: 1px solid #99ff99;
+            color: #006600;
+        }
+
         .form-section {
             margin-bottom: 20px;
             padding: 10px;
-            border: 1px solid #ccc;
+            border: 1px solid var(--border-color);
+            border-radius: 4px;
+        }
+
+        .form-section h3 {
+            color: var(--primary-color);
+            margin-bottom: 10px;
+        }
+
+        input, select {
+            width: 100%;
+            padding: 10px;
+            border: 1px solid var(--border-color);
+            border-radius: 4px;
+            font-size: 1rem;
+        }
+
+        button {
+            background-color: var(--primary-color);
+            color: var(--white);
+            border: none;
+            padding: 10px 20px;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 0.9rem;
+            font-weight: 600;
+            text-transform: uppercase;
+            transition: background-color 0.3s ease;
+        }
+
+        button:hover {
+            background-color: var(--secondary-color);
+        }
+
+        @media (max-width: 768px) {
+            .container {
+                padding: 20px;
+            }
         }
     </style>
 </head>
 <body>
-    <h1>Editar Usuario</h1>
+    <div class="container">
+        <div class="header">
+            <h1>Editar Usuario</h1>
+        </div>
 
-    {% if messages %}
-    <div class="messages">
-        {% for message in messages %}
-            <div class="message {% if message.tags %}{{ message.tags }}{% endif %}">
-                {{ message }}
+        {% if messages %}
+        <div class="messages">
+            {% for message in messages %}
+                <div class="message {% if message.tags %}{{ message.tags }}{% endif %}">
+                    {{ message }}
+                </div>
+            {% endfor %}
+        </div>
+        {% endif %}
+
+        <form method="POST">
+            {% csrf_token %}
+
+            <div class="form-section">
+                <h3>Datos Personales</h3>
+                <div>
+                    <label for="nombre">Nombre:</label>
+                    <input type="text" id="nombre" name="nombre" value="{{ usuario.first_name }}">
+                </div>
+                <div>
+                    <label for="apellidos">Apellidos:</label>
+                    <input type="text" id="apellidos" name="apellidos" value="{{ usuario.apellidos }}">
+                </div>
+                <div>
+                    <label for="edad">Edad:</label>
+                    <input type="number" id="edad" name="edad" min="18" value="{{ usuario.edad }}">
+                </div>
+                <div>
+                    <label for="fecha_nacimiento">Fecha de Nacimiento:</label>
+                    <input type="date" id="fecha_nacimiento" name="fecha_nacimiento" value="{{ usuario.fechaNacimiento|date:'Y-m-d' }}">
+                </div>
             </div>
-        {% endfor %}
-    </div>
-    {% endif %}
 
-    <form method="POST">
-        {% csrf_token %}
-        
-        <!-- Datos Personales -->
-        <div class="form-section">
-            <h3>Datos Personales</h3>
-            <p>
-                <label for="nombre">Nombre:</label>
-                <input type="text" id="nombre" name="nombre" value="{{ usuario.first_name }}">
-            </p>
-
-            <p>
-                <label for="apellidos">Apellidos:</label>
-                <input type="text" id="apellidos" name="apellidos" value="{{ usuario.apellidos }}">
-            </p>
-
-            <p>
-                <label for="edad">Edad:</label>
-                <input type="number" id="edad" name="edad" min="18" value="{{ usuario.edad }}">
-            </p>
-
-            <p>
-                <label for="fecha_nacimiento">Fecha de Nacimiento:</label>
-                <input type="date" id="fecha_nacimiento" name="fecha_nacimiento" 
-                       value="{{ usuario.fechaNacimiento|date:'Y-m-d' }}">
-            </p>
-        </div>
-
-        <!-- Datos Profesionales -->
-        <div class="form-section">
-            <h3>Datos Profesionales</h3>
-            <p>
-                <label for="area_especialidad">Área de Especialidad:</label>
-                <select id="area_especialidad" name="area_especialidad">
-                    <option value="">Seleccione un área</option>
-                    {% for area in areas %}
-                        <option value="{{ area.id }}" 
-                            {% if usuario.areaEspecialidad.id == area.id %}selected{% endif %}>
-                            {{ area.nombre }}
-                        </option>
+            <div class="form-section">
+                <h3>Datos Profesionales</h3>
+                <div>
+                    <label for="area_especialidad">Área de Especialidad:</label>
+                    <select id="area_especialidad" name="area_especialidad">
+                        <option value="">Seleccione un área</option>
+                        {% for area in areas %}
+                            <option value="{{ area.id }}" {% if usuario.areaEspecialidad.id == area.id %}selected{% endif %}>
+                                {{ area.nombre }}
+                            </option>
+                        {% endfor %}
+                    </select>
+                </div>
+                <div>
+                    <label>Fortalezas (máx. 4):</label>
+                    {% for fortaleza in fortalezas %}
+                        <label>
+                            <input type="checkbox" name="fortalezas" value="{{ fortaleza.id }}" {% if fortaleza in usuario.fortalezas.all %}checked{% endif %}>
+                            {{ fortaleza.nombre }}
+                        </label>
                     {% endfor %}
-                </select>
-            </p>
+                </div>
+                <div>
+                    <label for="cedula">Cédula:</label>
+                    <input type="text" id="cedula" name="cedula" value="{{ usuario.cedula }}">
+                </div>
+                <div>
+                    <label for="tipo_usuario">Tipo de Usuario:</label>
+                    <select id="tipo_usuario" name="tipo_usuario">
+                        <option value="EN" {% if usuario.tipoUsuario == 'EN' %}selected{% endif %}>Enfermería</option>
+                        <option value="DR" {% if usuario.tipoUsuario == 'DR' %}selected{% endif %}>Doctor</option>
+                        <option value="JP" {% if usuario.tipoUsuario == 'JP' %}selected{% endif %}>Jefa de piso</option>
+                        <option value="CO" {% if usuario.tipoUsuario == 'CO' %}selected{% endif %}>Cocina</option>
+                    </select>
+                </div>
+            </div>
 
-            <p>
-                <label>Fortalezas (seleccione máximo 4):</label><br>
-                {% for fortaleza in fortalezas %}
-                    <label>
-                        <input type="checkbox" name="fortalezas" value="{{ fortaleza.id }}"
-                            {% if fortaleza in usuario.fortalezas.all %}checked{% endif %}>
-                        {{ fortaleza.nombre }}
-                    </label><br>
-                {% endfor %}
-            </p>
+            <button type="submit">Guardar cambios</button>
+        </form>
 
-            <p>
-                <label for="cedula">Cédula:</label>
-                <input type="text" id="cedula" name="cedula" value="{{ usuario.cedula }}">
-            </p>
-
-            <p>
-                <label for="tipo_usuario">Tipo de Usuario:</label>
-                <select id="tipo_usuario" name="tipo_usuario">
-                    <option value="EN" {% if usuario.tipoUsuario == 'EN' %}selected{% endif %}>Enfermería</option>
-                    <option value="DR" {% if usuario.tipoUsuario == 'DR' %}selected{% endif %}>Doctor</option>
-                    <option value="JP" {% if usuario.tipoUsuario == 'JP' %}selected{% endif %}>Jefa de piso</option>
-                    <option value="CO" {% if usuario.tipoUsuario == 'CO' %}selected{% endif %}>Cocina</option>
-                </select>
-            </p>
+        <div class="back-link">
+            <a href="{% url 'jefa:usuarios_' %}">Volver</a>
         </div>
-
-        <button type="submit">Guardar cambios</button>
-    </form>
-
-    <br><br>
-    <a href="{% url 'jefa:usuarios_' %}">Volver</a>
+    </div>
 
     <script>
-        // Validación de fortalezas
         const maxFortalezas = 4;
         const checkboxes = document.querySelectorAll('input[name="fortalezas"]');
         

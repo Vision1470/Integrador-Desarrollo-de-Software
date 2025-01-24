@@ -14,11 +14,12 @@ from datetime import datetime, timedelta
 from usuarioDoctor.models import *
 from usuarioEnfermeria.models import *
 from django.shortcuts import render, get_object_or_404
-from django.db.models import Q
+from django.db.models import Q, Count
 from .models import Paciente
 from usuarioEnfermeria.models import SeguimientoCuidados, FormularioSeguimiento
 from django.utils import timezone
 import calendar
+from .forms import *
 
 
 def menu_jefa(request):
@@ -971,3 +972,105 @@ def eliminar_asignacion(request, asignacion_id):
         messages.error(request, f'Error al eliminar asignación: {str(e)}')
     
     return redirect('calendario_area')
+
+#SObrecarga
+#Sobrecarga
+#Sobrecarha
+
+def calcular_carga_trabajo(area):
+    """
+    Calcula la carga de trabajo actual en un área específica.
+    Retorna un diccionario con métricas relevantes.
+    """
+    # Obtener total de pacientes por nivel de gravedad
+    pacientes_por_gravedad = GravedadPaciente.objects.filter(
+        paciente__area=area
+    ).values('nivel_gravedad').annotate(
+        total=Count('id')
+    )
+    
+    # Obtener enfermeros activos en el área
+    enfermeros_activos = AsignacionCalendario.objects.filter(
+        area=area,
+        activo=True,
+        fecha_inicio__lte=timezone.now(),
+        fecha_fin__gte=timezone.now()
+    ).count()
+    
+    # Calcular métricas
+    total_pacientes = sum(item['total'] for item in pacientes_por_gravedad)
+    ratio_pacientes_enfermero = total_pacientes / enfermeros_activos if enfermeros_activos > 0 else float('inf')
+    
+    return {
+        'total_pacientes': total_pacientes,
+        'enfermeros_activos': enfermeros_activos,
+        'ratio_pacientes_enfermero': ratio_pacientes_enfermero,
+        'pacientes_por_gravedad': dict(
+            (item['nivel_gravedad'], item['total']) for item in pacientes_por_gravedad
+        )
+    }
+
+def activar_sobrecarga(request):
+    if request.method == 'POST':
+        form = ActivarSobrecargaForm(request.POST)
+        if form.is_valid():
+            area = form.cleaned_data['area']
+            
+            # Verificar si ya existe una sobrecarga activa para esta área
+            sobrecarga_existente = AreaSobrecarga.objects.filter(
+                area=area,
+                activo=True
+            ).first()
+            
+            if not sobrecarga_existente:
+                # Crear nueva sobrecarga
+                AreaSobrecarga.objects.create(
+                    area=area,
+                    fecha_inicio=timezone.now(),
+                    activo=True
+                )
+                messages.success(request, f'Área {area.nombre} marcada en sobrecarga.')
+            else:
+                messages.error(request, f'El área {area.nombre} ya está en sobrecarga.')
+            
+            return redirect('lista_areas_sobrecarga')
+    else:
+        form = ActivarSobrecargaForm()
+    
+    return render(request, 'usuarioJefa/activar_sobrecarga.html', {'form': form})
+
+def desactivar_sobrecarga(request, sobrecarga_id):
+    sobrecarga = get_object_or_404(AreaSobrecarga, id=sobrecarga_id, activo=True)
+    if request.method == 'POST':
+        sobrecarga.activo = False
+        sobrecarga.fecha_fin = timezone.now()
+        sobrecarga.save()
+        messages.success(request, f'Sobrecarga en {sobrecarga.area.nombre} desactivada.')
+        return redirect('lista_areas_sobrecarga')
+    
+    return render(request, 'usuarioJefa/confirmar_desactivar_sobrecarga.html', 
+                 {'sobrecarga': sobrecarga})
+
+def lista_areas_sobrecarga(request):
+    areas_sobrecarga = AreaSobrecarga.objects.filter(activo=True)
+    metricas_areas = {}
+    
+    for sobrecarga in areas_sobrecarga:
+        metricas_areas[sobrecarga.area.id] = calcular_carga_trabajo(sobrecarga.area)
+    
+    return render(request, 'usuarioJefa/lista_areas_sobrecarga.html', {
+        'areas_sobrecarga': areas_sobrecarga,
+        'metricas_areas': metricas_areas,
+    })
+
+def asignar_nivel_prioridad(request):
+    if request.method == 'POST':
+        form = NivelPrioridadAreaForm(request.POST)
+        if form.is_valid():
+            form.save()
+            messages.success(request, 'Nivel de prioridad asignado correctamente.')
+            return redirect('lista_areas_sobrecarga')
+    else:
+        form = NivelPrioridadAreaForm()
+    
+    return render(request, 'usuarioJefa/asignar_nivel_prioridad.html', {'form': form})

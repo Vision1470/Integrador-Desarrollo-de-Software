@@ -2,37 +2,174 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Pacientes</title>
+    <style>
+        :root {
+            --primary-color: #0A2342;
+            --secondary-color: #2E4057;
+            --accent-color: #1E90FF;
+            --background-color: #EBF0F5;
+            --table-background: #F0F4F7;
+            --text-color: #333333;
+            --white: #FFFFFF;
+            --border-color: #D1D1D1;
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: 'Roboto', 'Arial', sans-serif;
+        }
+
+        body {
+            background-color: var(--background-color);
+            color: var(--text-color);
+            line-height: 1.6;
+            padding: 20px;
+        }
+
+        .container {
+            background-color: var(--white);
+            border-radius: 8px;
+            box-shadow: 0 15px 30px rgba(0,0,0,0.15);
+            padding: 30px;
+            width: 100%;
+            max-width: 1200px;
+            border-left: 5px solid var(--primary-color);
+        }
+
+        .header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 20px;
+        }
+
+        .header h1 {
+            font-size: 2rem;
+            color: var(--primary-color);
+            font-weight: 700;
+        }
+
+        .menu-buttons {
+            display: flex;
+            gap: 15px;
+        }
+
+        .menu-button {
+            background-color: var(--primary-color);
+            color: var(--white);
+            text-decoration: none;
+            padding: 10px 15px;
+            border-radius: 4px;
+            font-size: 0.9rem;
+            font-weight: 600;
+            text-transform: uppercase;
+            transition: background-color 0.3s ease;
+        }
+
+        .menu-button:hover {
+            background-color: var(--secondary-color);
+        }
+
+        .patients-table {
+            width: 100%;
+            border-collapse: separate;
+            border-spacing: 0;
+            margin-bottom: 30px;
+            border-radius: 6px;
+            overflow: hidden;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+            border: 2px solid var(--primary-color);
+            background-color: var(--table-background);
+        }
+
+        .patients-table th {
+            background-color: var(--primary-color);
+            color: var(--white);
+            padding: 12px;
+            text-align: left;
+            font-weight: 600;
+            border-bottom: 2px solid var(--primary-color);
+        }
+
+        .patients-table td {
+            padding: 12px;
+            border-bottom: 2px solid var(--primary-color);
+            border-right: 2px solid var(--primary-color);
+        }
+
+        .patients-table tr:last-child td {
+            border-bottom: none;
+        }
+
+        .patients-table td:last-child {
+            border-right: none;
+        }
+
+        .patients-table tr:nth-child(even) {
+            background-color: #F6F9F7;
+        }
+
+        .patients-table tr:hover {
+            background-color: #E6EAE7;
+        }
+
+        .action-button {
+            background-color: var(--secondary-color);
+            color: var(--white);
+            border: none;
+            padding: 8px 12px;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 0.9rem;
+            font-weight: 600;
+            text-transform: uppercase;
+            transition: background-color 0.3s ease;
+        }
+
+        .action-button:hover {
+            background-color: var(--accent-color);
+        }
+
+        @media (max-width: 768px) {
+            .container {
+                padding: 20px;
+            }
+
+            .patients-table {
+                font-size: 0.9rem;
+            }
+        }
+    </style>
     <script>
         function confirmarAlta(pacienteId) {
-    if (confirm('¿Está seguro que desea dar de alta a este paciente?')) {
-        console.log('Intentando dar de alta al paciente:', pacienteId); // Debug
-        fetch(`{% url 'jefa:dar_alta_paciente' 0 %}`.replace('0', pacienteId), {
-            method: 'POST',
-            headers: {
-                'X-CSRFToken': getCookie('csrftoken'),
-                'Content-Type': 'application/json',
-            },
-        })
-        .then(response => {
-            console.log('Respuesta recibida:', response); // Debug
-            return response.json();
-        })
-        .then(data => {
-            console.log('Datos recibidos:', data); // Debug
-            if (data.status === 'success') {
-                alert('Paciente dado de alta exitosamente');
-                location.reload();
-            } else {
-                alert('Error al dar de alta al paciente: ' + (data.message || 'Error desconocido'));
+            if (confirm('¿Está seguro que desea dar de alta a este paciente?')) {
+                console.log('Intentando dar de alta al paciente:', pacienteId);
+                fetch(`{% url 'jefa:dar_alta_paciente' 0 %}`.replace('0', pacienteId), {
+                    method: 'POST',
+                    headers: {
+                        'X-CSRFToken': getCookie('csrftoken'),
+                        'Content-Type': 'application/json',
+                    },
+                })
+                .then(response => response.json())
+                .then(data => {
+                    if (data.status === 'success') {
+                        alert('Paciente dado de alta exitosamente');
+                        location.reload();
+                    } else {
+                        alert('Error al dar de alta al paciente: ' + (data.message || 'Error desconocido'));
+                    }
+                })
+                .catch(error => {
+                    console.error('Error en la petición:', error);
+                    alert('Error en la petición: ' + error);
+                });
             }
-        })
-        .catch(error => {
-            console.error('Error en la petición:', error); // Debug
-            alert('Error en la petición: ' + error);
-        });
-    }
-}
+        }
 
         function getCookie(name) {
             let cookieValue = null;
@@ -51,67 +188,72 @@
     </script>
 </head>
 <body>
-    <div class="menu-container">
-        <h1>Menu Jefa de piso</h1>
-        <a href="{% url 'jefa:pacientes_jefa' %}" class="button">Pacientes</a>
-        <a href="{% url 'jefa:calendario_area' %}" class="button">Calendario</a>
-        <a href="{% url 'jefa:historiales_' %}" class="button">Historiales</a>
-        <a href="{% url 'jefa:almacen_' %}" class="button">Almacen</a>
-        <a href="{% url 'jefa:usuarios_' %}" class="button">Usuarios</a>
-        <a href="{% url 'jefa:areas_fortalezas' %}" class="button">Areas</a>
-        <br><br>
-        <a href="{% url 'login:login' %}" class="button">Cerrar sesión</a>
+    <h1>Menu Jefa de Piso</h1>
+    <div class="menu-buttons">
+        <a href="{% url 'jefa:pacientes_jefa' %}" class="menu-button">Pacientes</a>
+        <a href="{% url 'jefa:calendario_area' %}" class="menu-button">Calendario</a>
+        <a href="{% url 'jefa:historiales_' %}" class="menu-button">Historiales</a>
+        <a href="{% url 'jefa:almacen_' %}" class="menu-button">Almacen</a>
+        <a href="{% url 'jefa:usuarios_' %}" class="menu-button">Usuarios</a>
+        <a href="{% url 'jefa:areas_fortalezas' %}" class="menu-button">Areas</a>
+        <form action="{% url 'login:login' %}" method="POST">
+            {% csrf_token %}
+            <button type="submit" class="menu-button">Cerrar Sesión</button>
+        </form>
     </div>
-    <h1>Pacientes</h1>
-    
-    <table border="1">
-        <thead>
-            <tr>
-                <th>Nombre</th>
-                <th>Apellidos</th>
-                <th>Número SS</th>
-                <th>Fecha Nacimiento</th>
-                <th>Sexo</th>
-                <th>Área</th>
-                <th>Doctor</th>
-                <th>Enfermero/a</th>
-                <th>Hospital Origen</th>
-                <th>Número de Ingresos</th>
-                <th>Fecha de Ingreso</th>
-                <th>Acciones</th>
-            </tr>
-        </thead>
-        <tbody>
-            {% if pacientes %}
-                {% for paciente in pacientes %}
-                    <tr>
-                        <td>{{ paciente.nombres }}</td>
-                        <td>{{ paciente.apellidos }}</td>
-                        <td>{{ paciente.num_seguridad_social }}</td>
-                        <td>{{ paciente.fecha_nacimiento|date:"d/m/Y" }}</td>
-                        <td>{{ paciente.sexo }}</td>
-                        <td>{{ paciente.area }}</td>
-                        <td>{{ paciente.doctor_actual }}</td>
-                        <td>{{ paciente.enfermero_actual }}</td>
-                        <td>{{ paciente.hospital_origen|default:"-" }}</td>
-                        <td>{{ paciente.numero_ingresos }}</td>
-                        <td>{{ paciente.fecha_ingreso|date:"d/m/Y H:i" }}</td>
-                        <td>
-                            <button onclick="confirmarAlta('{{ paciente.id }}')">Dar de alta</button>
-                        </td>
-                    </tr>
-                {% endfor %}
-            {% else %}
-                <tr>
-                    <td colspan="12">No hay pacientes registrados</td>
-                </tr>
-            {% endif %}
-        </tbody>
-    </table>
+    <div class="container">
+        <div class="header">
+            <h1>Pacientes</h1>
+            <div class="menu-buttons">
+                <a href="{% url 'jefa:menu_jefa' %}" class="menu-button">Volver al Menú</a>
+                <a href="{% url 'jefa:agregar_pacientes' %}" class="menu-button">Agregar Paciente</a>
+            </div>
+        </div>
 
-    <br><br>
-    <a href="{% url 'jefa:agregar_pacientes' %}">Agregar Paciente</a>
-    <br><br>
-    <a href="{% url 'jefa:menu_jefa' %}">Volver al Menú</a>
+        <table class="patients-table">
+            <thead>
+                <tr>
+                    <th>Nombre</th>
+                    <th>Apellidos</th>
+                    <th>Número SS</th>
+                    <th>Fecha Nacimiento</th>
+                    <th>Sexo</th>
+                    <th>Área</th>
+                    <th>Doctor</th>
+                    <th>Enfermero/a</th>
+                    <th>Hospital Origen</th>
+                    <th>Número de Ingresos</th>
+                    <th>Fecha de Ingreso</th>
+                    <th>Acciones</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% if pacientes %}
+                    {% for paciente in pacientes %}
+                        <tr>
+                            <td>{{ paciente.nombres }}</td>
+                            <td>{{ paciente.apellidos }}</td>
+                            <td>{{ paciente.num_seguridad_social }}</td>
+                            <td>{{ paciente.fecha_nacimiento|date:"d/m/Y" }}</td>
+                            <td>{{ paciente.sexo }}</td>
+                            <td>{{ paciente.area }}</td>
+                            <td>{{ paciente.doctor_actual }}</td>
+                            <td>{{ paciente.enfermero_actual }}</td>
+                            <td>{{ paciente.hospital_origen|default:"-" }}</td>
+                            <td>{{ paciente.numero_ingresos }}</td>
+                            <td>{{ paciente.fecha_ingreso|date:"d/m/Y H:i" }}</td>
+                            <td>
+                                <button class="action-button" onclick="confirmarAlta('{{ paciente.id }}')">Dar de alta</button>
+                            </td>
+                        </tr>
+                    {% endfor %}
+                {% else %}
+                    <tr>
+                        <td colspan="12">No hay pacientes registrados</td>
+                    </tr>
+                {% endif %}
+            </tbody>
+        </table>
+    </div>
 </body>
 </html>

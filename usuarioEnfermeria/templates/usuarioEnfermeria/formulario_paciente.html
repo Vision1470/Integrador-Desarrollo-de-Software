@@ -2,171 +2,366 @@
 <html lang="es">
 <head>
     <meta charset="UTF-8" />
-    <title>Formulario paciente</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Sistema Hospitalario - Formulario Paciente</title>
+    <style>
+        :root {
+            --primary-color: #3C8D6D;
+            --secondary-color: #4CAF50;
+            --accent-color: #6ECB63;
+            --background-color: #F0F4F2;
+            --text-color: #2C3E50;
+            --white: #FFFFFF;
+            --border-color: #3C8D6D;
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: 'Roboto', 'Arial', sans-serif;
+        }
+
+        body {
+            background-color: var(--background-color);
+            color: var(--text-color);
+            line-height: 1.6;
+            padding: 20px;
+        }
+
+        .container {
+            background-color: var(--white);
+            border-radius: 6px;
+            box-shadow: 0 15px 30px rgba(0,0,0,0.15);
+            padding: 40px;
+            max-width: 1200px;
+            margin: 0 auto;
+            border-left: 6px solid var(--primary-color);
+            position: relative;
+        }
+
+        .container::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            height: 6px;
+            background: linear-gradient(to right, var(--primary-color), var(--accent-color));
+        }
+
+        .header {
+            margin-bottom: 30px;
+        }
+
+        .header h1 {
+            color: var(--primary-color);
+            font-size: 2.2rem;
+            margin-bottom: 10px;
+        }
+
+        .messages {
+            margin-bottom: 25px;
+        }
+
+        .message {
+            padding: 12px;
+            margin-bottom: 15px;
+            background-color: #E6EAE7;
+            border-left: 4px solid var(--primary-color);
+            font-weight: 500;
+        }
+
+        .form-section {
+            margin-bottom: 30px;
+        }
+
+        .form-section h3 {
+            color: var(--primary-color);
+            border-bottom: 2px solid var(--primary-color);
+            padding-bottom: 10px;
+            margin-bottom: 15px;
+        }
+
+        .form-group {
+            margin-bottom: 15px;
+        }
+
+        .form-group label {
+            display: block;
+            margin-bottom: 5px;
+            font-weight: 600;
+        }
+
+        .form-group input[type="text"],
+        .form-group select,
+        textarea {
+            width: 100%;
+            padding: 10px;
+            border: 2px solid var(--primary-color);
+            border-radius: 4px;
+            transition: all 0.3s ease;
+        }
+
+        .form-group select {
+            appearance: none;
+            background-image: linear-gradient(45deg, transparent 50%, var(--primary-color) 50%),
+                              linear-gradient(135deg, var(--primary-color) 50%, transparent 50%);
+            background-position: calc(100% - 20px) calc(1em + 2px),
+                                 calc(100% - 15px) calc(1em + 2px);
+            background-size: 5px 5px,
+                             5px 5px;
+            background-repeat: no-repeat;
+            cursor: pointer;
+        }
+
+        textarea {
+            resize: vertical;
+            min-height: 150px;
+            max-height: 300px;
+        }
+
+        .form-group input[type="text"]:focus,
+        .form-group select:focus,
+        textarea:focus {
+            outline: none;
+            border-color: var(--accent-color);
+            box-shadow: 0 0 8px rgba(110,203,99,0.3);
+        }
+
+        .form-group select:hover {
+            background-image: linear-gradient(45deg, transparent 50%, var(--accent-color) 50%),
+                              linear-gradient(135deg, var(--accent-color) 50%, transparent 50%);
+        }
+
+        .patients-table {
+            width: 100%;
+            border-collapse: separate;
+            border-spacing: 0;
+            margin-bottom: 30px;
+            border: 2px solid var(--primary-color);
+            border-radius: 6px;
+            overflow: hidden;
+        }
+
+        .patients-table th {
+            background-color: var(--primary-color);
+            color: var(--white);
+            padding: 12px;
+            text-align: left;
+            font-weight: 600;
+        }
+
+        .patients-table td {
+            padding: 12px;
+            border-bottom: 2px solid var(--primary-color);
+            border-right: 2px solid var(--primary-color);
+        }
+
+        .patients-table tr:last-child td {
+            border-bottom: none;
+        }
+
+        .patients-table td:last-child {
+            border-right: none;
+        }
+
+        .btn {
+            background-color: var(--primary-color);
+            color: var(--white);
+            border: none;
+            padding: 12px 24px;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 1rem;
+            font-weight: 600;
+            transition: background-color 0.3s ease;
+        }
+
+        .btn:hover {
+            background-color: var(--secondary-color);
+        }
+
+        .recent-records {
+            background-color: #F6F9F7;
+            border: 2px solid var(--primary-color);
+            border-radius: 6px;
+            padding: 20px;
+        }
+
+        @media (max-width: 768px) {
+            .container {
+                padding: 20px;
+                border-left: none;
+                border-top: 6px solid var(--primary-color);
+            }
+        }
+    </style>
 </head>
 <body>
-    <h1>Formulario paciente: {{ paciente.nombres }} {{ paciente.apellidos }}</h1>
-
-    {% if messages %}
-    <div>
-        {% for message in messages %}
-            <div>{{ message }}</div>
-        {% endfor %}
-    </div>
-    {% endif %}
-
-    {% if receta %}
-    <form method="POST" action="{% url 'enfermeria:formulario_paciente' paciente.id %}">
-        {% csrf_token %}
-        
-        <!-- Sección de Cuidados No Realizados -->
-        <div>
-            <h3>Cuidados Faltantes</h3>
-            {% if cuidados_no_realizados %}
-                {% for cuidado in cuidados_no_realizados %}
-                <div>
-                    <!-- Input oculto para marcar automáticamente el cuidado como faltante -->
-                    <input type="hidden" 
-                           name="cuidado_faltante_{{ cuidado.id }}" 
-                           value="on">
-                    <label>
-                        {{ cuidado.cuidado.nombre }}
-                    </label>
-                    <br>
-                    <input type="text" 
-                           name="motivo_cuidado_{{ cuidado.id }}" 
-                           placeholder="Motivo por el que no se realizó..."
-                           required>
-                </div>
-                {% endfor %}
-            {% else %}
-                <p>Se completaron todos los cuidados requeridos.</p>
-            {% endif %}
+    <div class="container">
+        <div class="header">
+            <h1>Formulario Paciente: {{ paciente.nombres }} {{ paciente.apellidos }}</h1>
         </div>
 
-        <!-- Sección de Medicamentos No Administrados -->
-        <div>
-            <h3>Medicamentos Faltantes</h3>
-            {% if medicamentos_no_administrados %}
-                {% for medicamento in medicamentos_no_administrados %}
-                <div>
-                    <!-- Input oculto para marcar automáticamente el medicamento como faltante -->
-                    <input type="hidden" 
-                           name="medicamento_faltante_{{ medicamento.id }}" 
-                           value="on">
-                    <label>
-                        {{ medicamento.medicamento.nombre }} - 
-                        {{ medicamento.cantidad_por_toma }} 
-                        {{ medicamento.get_unidad_medida_display }}
-                    </label>
-                    <br>
-                    <input type="text" 
-                           name="motivo_medicamento_{{ medicamento.id }}" 
-                           placeholder="Motivo por el que no se administró..."
-                           required>
-                </div>
-                {% endfor %}
-            {% else %}
-                <p>Se administraron todos los medicamentos requeridos.</p>
-            {% endif %}
-        </div>
-
-        <!-- Sección de Padecimientos -->
-        <h3>Evaluación de Padecimientos</h3>
-        <table border="1">
-            <tr>
-                <th>Padecimiento</th>
-                <th>Estado</th>
-                <th>Notas</th>
-            </tr>
-            {% for padecimiento in padecimientos %}
-            <tr>
-                <td>{{ padecimiento.padecimiento.nombre }}</td>
-                <td>
-                    <select name="estado_padecimiento_{{ padecimiento.id }}" required>
-                        <option value="">Seleccione estado</option>
-                        {% for estado in estados_padecimiento %}
-                            <option value="{{ estado.0 }}">{{ estado.1 }}</option>
-                        {% endfor %}
-                    </select>
-                </td>
-                <td>
-                    <input type="text" 
-                           name="notas_padecimiento_{{ padecimiento.id }}" 
-                           placeholder="Notas sobre el padecimiento...">
-                </td>
-            </tr>
+        {% if messages %}
+        <div class="messages">
+            {% for message in messages %}
+                <div class="message">{{ message }}</div>
             {% endfor %}
-        </table>
+        </div>
+        {% endif %}
 
-        <!-- Notas Generales -->
-        <h3>Notas Generales</h3>
-        <textarea name="notas_generales" rows="4" placeholder="Comentarios generales sobre el paciente..."></textarea>
-
-        <br><br>
-        <button type="submit">Guardar Formulario</button>
-    </form>
-
-    <!-- Últimos Registros -->
-    {% if registros_recientes %}
-    <div>
-        <h3>Últimos Registros</h3>
-        <table border="1">
-            <tr>
-                <th>Fecha</th>
-                <th>Registrado por</th>
-                <th>Estado de Padecimientos</th>
-                <th>Cuidados Faltantes</th>
-                <th>Medicamentos Faltantes</th>
-                <th>Notas Generales</th>
-            </tr>
-            {% for registro in registros_recientes %}
-            <tr>
-                <td>{{ registro.fecha_registro|date:"d/m/Y H:i" }}</td>
-                <td>{{ registro.enfermero.get_full_name }}</td>
-                <td>
-                    {% for evaluacion in registro.evaluacionpadecimiento_set.all %}
-                        - {{ evaluacion.padecimiento.padecimiento.nombre }}: 
-                        {{ evaluacion.get_estado_display }}
-                        {% if evaluacion.notas %}
-                            ({{ evaluacion.notas }})
-                        {% endif %}
-                        <br>
+        {% if receta %}
+        <form method="POST" action="{% url 'enfermeria:formulario_paciente' paciente.id %}">
+            {% csrf_token %}
+            
+            <!-- Sección de Cuidados No Realizados -->
+            <div class="form-section">
+                <h3>Cuidados Faltantes</h3>
+                {% if cuidados_no_realizados %}
+                    {% for cuidado in cuidados_no_realizados %}
+                    <div class="form-group">
+                        <input type="hidden" 
+                               name="cuidado_faltante_{{ cuidado.id }}" 
+                               value="on">
+                        <label>{{ cuidado.cuidado.nombre }}</label>
+                        <input type="text" 
+                               name="motivo_cuidado_{{ cuidado.id }}" 
+                               placeholder="Motivo por el que no se realizó..."
+                               required>
+                    </div>
                     {% endfor %}
-                </td>
-                <td>
-                    {% for faltante in registro.cuidadofaltante_set.all %}
-                        {% if faltante.cuidado %}
-                            - {{ faltante.cuidado.cuidado.nombre }}: 
+                {% else %}
+                    <p>Se completaron todos los cuidados requeridos.</p>
+                {% endif %}
+            </div>
+
+            <!-- Sección de Medicamentos No Administrados -->
+            <div class="form-section">
+                <h3>Medicamentos Faltantes</h3>
+                {% if medicamentos_no_administrados %}
+                    {% for medicamento in medicamentos_no_administrados %}
+                    <div class="form-group">
+                        <input type="hidden" 
+                               name="medicamento_faltante_{{ medicamento.id }}" 
+                               value="on">
+                        <label>
+                            {{ medicamento.medicamento.nombre }} - 
+                            {{ medicamento.cantidad_por_toma }} 
+                            {{ medicamento.get_unidad_medida_display }}
+                        </label>
+                        <input type="text" 
+                               name="motivo_medicamento_{{ medicamento.id }}" 
+                               placeholder="Motivo por el que no se administró..."
+                               required>
+                    </div>
+                    {% endfor %}
+                {% else %}
+                    <p>Se administraron todos los medicamentos requeridos.</p>
+                {% endif %}
+            </div>
+
+            <!-- Sección de Padecimientos -->
+            <div class="form-section">
+                <h3>Evaluación de Padecimientos</h3>
+                <table class="patients-table">
+                    <tr>
+                        <th>Padecimiento</th>
+                        <th>Estado</th>
+                        <th>Notas</th>
+                    </tr>
+                    {% for padecimiento in padecimientos %}
+                    <tr>
+                        <td>{{ padecimiento.padecimiento.nombre }}</td>
+                        <td>
+                            <select name="estado_padecimiento_{{ padecimiento.id }}" required>
+                                <option value="">Seleccione estado</option>
+                                {% for estado in estados_padecimiento %}
+                                    <option value="{{ estado.0 }}">{{ estado.1 }}</option>
+                                {% endfor %}
+                            </select>
+                        </td>
+                        <td>
+                            <input type="text" 
+                                   name="notas_padecimiento_{{ padecimiento.id }}" 
+                                   placeholder="Notas sobre el padecimiento...">
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </table>
+            </div>
+
+            <!-- Notas Generales -->
+            <div class="form-section">
+                <h3>Notas Generales</h3>
+                <textarea name="notas_generales" rows="4" placeholder="Comentarios generales sobre el paciente..."></textarea>
+            </div>
+
+            <button type="submit" class="btn">Guardar Formulario</button>
+        </form>
+
+        <!-- Últimos Registros -->
+        {% if registros_recientes %}
+        <div class="form-section recent-records">
+            <h3>Últimos Registros</h3>
+            <table class="patients-table">
+                <tr>
+                    <th>Fecha</th>
+                    <th>Registrado por</th>
+                    <th>Estado de Padecimientos</th>
+                    <th>Cuidados Faltantes</th>
+                    <th>Medicamentos Faltantes</th>
+                    <th>Notas Generales</th>
+                </tr>
+                {% for registro in registros_recientes %}
+                <tr>
+                    <td>{{ registro.fecha_registro|date:"d/m/Y H:i" }}</td>
+                    <td>{{ registro.enfermero.get_full_name }}</td>
+                    <td>
+                        {% for evaluacion in registro.evaluacionpadecimiento_set.all %}
+                            - {{ evaluacion.padecimiento.padecimiento.nombre }}: 
+                            {{ evaluacion.get_estado_display }}
+                            {% if evaluacion.notas %}
+                                ({{ evaluacion.notas }})
+                            {% endif %}
+                            <br>
+                        {% endfor %}
+                    </td>
+                    <td>
+                        {% for faltante in registro.cuidadofaltante_set.all %}
+                            {% if faltante.cuidado %}
+                                - {{ faltante.cuidado.cuidado.nombre }}: 
+                                {{ faltante.motivo }}
+                                <br>
+                            {% endif %}
+                        {% empty %}
+                            No hubo
+                        {% endfor %}
+                    </td>
+                    <td>
+                        {% for faltante in registro.medicamentofaltante_set.all %}
+                            - {{ faltante.medicamento.medicamento.nombre }}: 
                             {{ faltante.motivo }}
                             <br>
-                        {% endif %}
-                    {% empty %}
-                        No hubo
-                    {% endfor %}
-                </td>
-                <td>
-                    {% for faltante in registro.medicamentofaltante_set.all %}
-                        - {{ faltante.medicamento.medicamento.nombre }}: 
-                        {{ faltante.motivo }}
-                        <br>
-                    {% empty %}
-                        No hubo
-                    {% endfor %}
-                </td>
-                <td>{{ registro.notas_generales }}</td>
-            </tr>
-            {% endfor %}
-        </table>
-    </div>
-    {% endif %}
-    {% else %}
-    <p>No hay una receta activa para este paciente.</p>
-    {% endif %}
+                        {% empty %}
+                            No hubo
+                        {% endfor %}
+                    </td>
+                    <td>{{ registro.notas_generales }}</td>
+                </tr>
+                {% endfor %}
+            </table>
+        </div>
+        {% endif %}
+        {% else %}
+        <p>No hay una receta activa para este paciente.</p>
+        {% endif %}
 
-    <br><br>
-    <a href="{% url 'enfermeria:pacientes_enfermeria' %}">
-        <button type="button">Volver</button>
-    </a>
+        <br><br>
+        <a href="{% url 'enfermeria:pacientes_enfermeria' %}">
+            <button type="button" class="btn">Volver</button>
+        </a>
+    </div>
 </body>
 </html>

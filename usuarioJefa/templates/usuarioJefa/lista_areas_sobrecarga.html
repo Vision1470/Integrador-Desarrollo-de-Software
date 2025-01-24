@@ -1,0 +1,265 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <title>Áreas en Sobrecarga</title>
+    <style>
+        .menu-container {
+            margin-bottom: 20px;
+        }
+        .button {
+            margin: 5px;
+            padding: 10px 20px;
+            text-decoration: none;
+            background-color: #007bff;
+            color: white;
+            border-radius: 4px;
+        }
+        .card {
+            border: 1px solid #dee2e6;
+            border-radius: 8px;
+            margin-bottom: 20px;
+            background: white;
+        }
+        .card-header {
+            padding: 15px;
+            background: #f8f9fa;
+            border-bottom: 1px solid #dee2e6;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        .card-body {
+            padding: 20px;
+        }
+        .badge {
+            padding: 5px 10px;
+            border-radius: 4px;
+            font-size: 12px;
+        }
+        .badge-danger {
+            background: #dc3545;
+            color: white;
+        }
+        .grid-container {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+            gap: 20px;
+            padding: 20px;
+        }
+        .alert {
+            padding: 15px;
+            margin-bottom: 20px;
+            border: 1px solid transparent;
+            border-radius: 4px;
+        }
+        .alert-info {
+            background-color: #cce5ff;
+            border-color: #b8daff;
+            color: #004085;
+        }
+        .btn {
+            padding: 8px 16px;
+            border-radius: 4px;
+            cursor: pointer;
+            border: none;
+        }
+        .btn-danger {
+            background-color: #dc3545;
+            color: white;
+        }
+        .btn-primary {
+            background-color: #007bff;
+            color: white;
+        }
+    </style>
+</head>
+<body>
+    <div class="menu-container">
+        <h1>Menú Jefa de piso</h1>
+        <a href="{% url 'jefa:pacientes_jefa' %}" class="button">Pacientes</a>
+        <a href="{% url 'jefa:calendario_area' %}" class="button">Calendario</a>
+        <a href="{% url 'jefa:historiales_' %}" class="button">Historiales</a>
+        <a href="{% url 'jefa:almacen_' %}" class="button">Almacen</a>
+        <a href="{% url 'jefa:usuarios_' %}" class="button">Usuarios</a>
+        <a href="{% url 'jefa:areas_fortalezas' %}" class="button">Areas</a>
+        <br><br>
+    </div>
+
+    <div style="padding: 20px;">
+        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
+            <h1 style="margin: 0;">Áreas en Sobrecarga</h1>
+            <div>
+                <a href="{% url 'activar_sobrecarga' %}" class="btn btn-primary">Activar Sobrecarga</a>
+                <a href="{% url 'asignar_nivel_prioridad' %}" class="btn btn-primary" style="margin-left: 10px;">Asignar Prioridad</a>
+            </div>
+        </div>
+
+        {% if messages %}
+            {% for message in messages %}
+                <div class="alert alert-{{ message.tags }}">
+                    {{ message }}
+                </div>
+            {% endfor %}
+        {% endif %}
+
+        {% if areas_sobrecarga %}
+            <div class="grid-container">
+                {% for sobrecarga in areas_sobrecarga %}
+                    <div class="card">
+                        <div class="card-header">
+                            <h3 style="margin: 0;">{{ sobrecarga.area.nombre }}</h3>
+                            <span class="badge badge-danger">Sobrecarga Activa</span>
+                        </div>
+                        <div class="card-body">
+                            {% with metricas=metricas_areas|get_item:sobrecarga.area.id %}
+                            <div style="margin-bottom: 15px;">
+                                <p><strong>Total Pacientes:</strong> {{ metricas.total_pacientes }}</p>
+                                <p><strong>Enfermeros Activos:</strong> {{ metricas.enfermeros_activos }}</p>
+                                <p><strong>Ratio Pacientes/Enfermero:</strong> {{ metricas.ratio_pacientes_enfermero|floatformat:2 }}</p>
+                                <div>
+                                    <strong>Pacientes por Gravedad:</strong>
+                                    <ul style="margin: 10px 0; padding-left: 20px;">
+                                        <li>Alta: {{ metricas.pacientes_por_gravedad.3|default:0 }}</li>
+                                        <li>Media: {{ metricas.pacientes_por_gravedad.2|default:0 }}</li>
+                                        <li>Baja: {{ metricas.pacientes_por_gravedad.1|default:0 }}</li>
+                                    </ul>
+                                </div>
+                            </div>
+                            {% endwith %}
+                            
+                            <form method="post" action="{% url 'desactivar_sobrecarga' sobrecarga.id %}">
+                                {% csrf_token %}
+                                <button type="submit" class="btn btn-danger" style="width: 100%;">
+                                    Desactivar Sobrecarga
+                                </button>
+                            </form>
+                        </div>
+                    </div>
+                {% endfor %}
+            </div>
+        {% else %}
+            <div class="alert alert-info">
+                No hay áreas en sobrecarga actualmente.
+            </div>
+        {% endif %}
+    </div>
+
+    <br><br><br>
+    <a href="{% url 'jefa:menu_jefa' %}" class="button">Volver</a>
+</body>
+</html>
+
+# templates/usuarioJefa/activar_sobrecarga.html
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <title>Activar Sobrecarga</title>
+    <style>
+        .menu-container {
+            margin-bottom: 20px;
+        }
+        .button {
+            margin: 5px;
+            padding: 10px 20px;
+            text-decoration: none;
+            background-color: #007bff;
+            color: white;
+            border-radius: 4px;
+        }
+        .form-container {
+            max-width: 500px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+        .form-group {
+            margin-bottom: 15px;
+        }
+        .form-label {
+            display: block;
+            margin-bottom: 5px;
+            font-weight: bold;
+        }
+        .form-select {
+            width: 100%;
+            padding: 8px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+        }
+        .btn {
+            padding: 10px 20px;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            margin-right: 10px;
+        }
+        .btn-primary {
+            background-color: #007bff;
+            color: white;
+        }
+        .btn-secondary {
+            background-color: #6c757d;
+            color: white;
+        }
+        .alert {
+            padding: 15px;
+            margin-bottom: 15px;
+            border: 1px solid transparent;
+            border-radius: 4px;
+        }
+        .alert-danger {
+            background-color: #f8d7da;
+            border-color: #f5c6cb;
+            color: #721c24;
+        }
+    </style>
+</head>
+<body>
+    <div class="menu-container">
+        <h1>Menú Jefa de piso</h1>
+        <a href="{% url 'jefa:pacientes_jefa' %}" class="button">Pacientes</a>
+        <a href="{% url 'jefa:calendario_area' %}" class="button">Calendario</a>
+        <a href="{% url 'jefa:historiales_' %}" class="button">Historiales</a>
+        <a href="{% url 'jefa:almacen_' %}" class="button">Almacen</a>
+        <a href="{% url 'jefa:usuarios_' %}" class="button">Usuarios</a>
+        <a href="{% url 'jefa:areas_fortalezas' %}" class="button">Areas</a>
+        <br><br>
+    </div>
+
+    <div class="form-container">
+        <h1>Activar Sobrecarga</h1>
+
+        {% if messages %}
+            {% for message in messages %}
+                <div class="alert alert-{{ message.tags }}">
+                    {{ message }}
+                </div>
+            {% endfor %}
+        {% endif %}
+
+        <form method="post">
+            {% csrf_token %}
+            {% for field in form %}
+                <div class="form-group">
+                    <label class="form-label">{{ field.label }}</label>
+                    {{ field }}
+                    {% if field.errors %}
+                        <div class="alert alert-danger">
+                            {{ field.errors }}
+                        </div>
+                    {% endif %}
+                </div>
+            {% endfor %}
+
+            <div style="margin-top: 20px;">
+                <button type="submit" class="btn btn-primary">Activar Sobrecarga</button>
+                <a href="{% url 'lista_areas_sobrecarga' %}" class="btn btn-secondary">Cancelar</a>
+            </div>
+        </form>
+    </div>
+
+    <br><br><br>
+    <a href="{% url 'jefa:menu_jefa' %}" class="button">Volver</a>
+</body>
+</html>

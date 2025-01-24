@@ -180,6 +180,10 @@ class HistorialCompletoPaciente(models.Model):
         return FormularioSeguimiento.objects.filter(paciente=self.paciente).order_by('-fecha_registro')
     
 # models.py
+# models.py
+# models.py
+# models.py
+# models.py
 
 class AsignacionCalendario(models.Model):
     enfermero = models.ForeignKey('login.Usuarios', on_delete=models.PROTECT)
@@ -205,3 +209,54 @@ class HistorialCambios(models.Model):
 
     class Meta:
         ordering = ['-fecha_cambio']
+
+from django.db import models
+from django.core.validators import MinValueValidator, MaxValueValidator
+
+class AreaSobrecarga(models.Model):
+    area = models.ForeignKey('login.AreaEspecialidad', on_delete=models.CASCADE)
+    fecha_inicio = models.DateTimeField(auto_now_add=True)
+    fecha_fin = models.DateTimeField(null=True, blank=True)
+    activo = models.BooleanField(default=True)
+
+    def __str__(self):
+        return f"{self.area.nombre} - Sobrecarga {'Activa' if self.activo else 'Inactiva'}"
+
+    class Meta:
+        verbose_name = "Área en Sobrecarga"
+        verbose_name_plural = "Áreas en Sobrecarga"
+
+class NivelPrioridadArea(models.Model):
+    area = models.OneToOneField('login.AreaEspecialidad', on_delete=models.CASCADE)
+    nivel_prioridad = models.IntegerField(
+        validators=[MinValueValidator(1), MaxValueValidator(5)],
+        help_text="Nivel de prioridad del área (1-5)"
+    )
+
+    def __str__(self):
+        return f"{self.area.nombre} - Prioridad: {self.nivel_prioridad}"
+
+    class Meta:
+        verbose_name = "Nivel de Prioridad de Área"
+        verbose_name_plural = "Niveles de Prioridad de Áreas"
+
+class GravedadPaciente(models.Model):
+    NIVELES_GRAVEDAD = [
+        (1, 'Baja'),
+        (2, 'Media'),
+        (3, 'Alta')
+    ]
+    
+    paciente = models.ForeignKey('usuarioJefa.Paciente', on_delete=models.CASCADE)
+    nivel_gravedad = models.IntegerField(
+        choices=NIVELES_GRAVEDAD,
+        validators=[MinValueValidator(1), MaxValueValidator(3)]
+    )
+    fecha_asignacion = models.DateTimeField(auto_now_add=True)
+    
+    def __str__(self):
+        return f"{self.paciente.nombre} - Gravedad: {self.get_nivel_gravedad_display()}"
+
+    class Meta:
+        verbose_name = "Gravedad de Paciente"
+        verbose_name_plural = "Gravedades de Pacientes"

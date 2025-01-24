@@ -1,6 +1,6 @@
 from django import forms
 from django.db.models import Q
-from .models import Paciente, Hospital
+from .models import *
 from login.models import Usuarios, AreaEspecialidad
 
 class PacienteForm(forms.ModelForm):
@@ -48,3 +48,42 @@ class PacienteForm(forms.ModelForm):
                 self.paciente_inactivo = paciente
                 raise forms.ValidationError('INACTIVO')  # Usamos esto como señal
         return num_seguridad_social
+    
+    ###
+    ###
+    ###
+
+class ActivarSobrecargaForm(forms.ModelForm):
+    class Meta:
+        model = AreaSobrecarga
+        fields = ['area']
+        
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        # Excluir áreas que ya están en sobrecarga activa
+        areas_sobrecargadas = AreaSobrecarga.objects.filter(activo=True).values_list('area', flat=True)
+        self.fields['area'].queryset = AreaEspecialidad.objects.exclude(id__in=areas_sobrecargadas)
+        self.fields['area'].label = "Área a marcar en sobrecarga"
+
+class AsignarGravedadPacienteForm(forms.ModelForm):
+    class Meta:
+        model = GravedadPaciente
+        fields = ['paciente', 'nivel_gravedad']
+        
+    def __init__(self, *args, **kwargs):
+        area = kwargs.pop('area', None)
+        super().__init__(*args, **kwargs)
+        if area:
+            # Filtrar pacientes por área específica
+            self.fields['paciente'].queryset = Paciente.objects.filter(area=area)
+
+class NivelPrioridadAreaForm(forms.ModelForm):
+    class Meta:
+        model = NivelPrioridadArea
+        fields = ['area', 'nivel_prioridad']
+        
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        # Excluir áreas que ya tienen nivel de prioridad asignado
+        areas_con_prioridad = NivelPrioridadArea.objects.values_list('area', flat=True)
+        self.fields['area'].queryset = AreaEspecialidad.objects.exclude(id__in=areas_con_prioridad)

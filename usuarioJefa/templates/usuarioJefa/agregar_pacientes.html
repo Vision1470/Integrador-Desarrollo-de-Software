@@ -3,24 +3,73 @@
 <head>
     <title>Agregar Paciente</title>
     <style>
+        :root {
+            --primary-color: #0A2342;
+            --secondary-color: #2E4057;
+            --accent-color: #1E90FF;
+            --background-color: #EBF0F5;
+            --table-background: #F0F4F7;
+            --text-color: #333333;
+            --white: #FFFFFF;
+            --border-color: #D1D1D1;
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: 'Roboto', 'Arial', sans-serif;
+        }
+
+        body {
+            background-color: var(--background-color);
+            color: var(--text-color);
+            line-height: 1.6;
+            padding: 20px;
+        }
+
+        .container {
+            background-color: var(--white);
+            border-radius: 8px;
+            box-shadow: 0 15px 30px rgba(0,0,0,0.15);
+            padding: 30px;
+            width: 100%;
+            max-width: 800px;
+            border-left: 5px solid var(--primary-color);
+        }
+
+        .header {
+            margin-bottom: 20px;
+        }
+
+        .header h1 {
+            font-size: 2rem;
+            color: var(--primary-color);
+            font-weight: 700;
+        }
+
         .messages {
             margin-bottom: 20px;
         }
+
         .message {
             padding: 10px;
             margin-bottom: 10px;
             border-radius: 4px;
         }
+
         .error {
             background-color: #ffe6e6;
             border: 1px solid #ff9999;
             color: #cc0000;
         }
+
         .success {
             background-color: #e6ffe6;
             border: 1px solid #99ff99;
             color: #006600;
         }
+
         .alert {
             background-color: #fff3cd;
             border: 1px solid #ffeeba;
@@ -29,23 +78,41 @@
             margin-bottom: 20px;
             border-radius: 4px;
         }
+
         .button {
             display: inline-block;
             padding: 8px 16px;
             margin: 5px;
             text-decoration: none;
-            background-color: #f0f0f0;
-            color: #333;
-            border: 1px solid #ccc;
+            background-color: var(--primary-color);
+            color: var(--white);
+            border: 1px solid var(--primary-color);
             border-radius: 4px;
+            transition: background-color 0.3s ease;
         }
+
+        .button:hover {
+            background-color: var(--secondary-color);
+        }
+
         form div {
             margin-bottom: 15px;
         }
+
         label {
             display: block;
             margin-bottom: 5px;
+            font-weight: 600;
         }
+
+        input, select {
+            width: 100%;
+            padding: 10px;
+            border: 1px solid var(--border-color);
+            border-radius: 4px;
+            font-size: 1rem;
+        }
+
         .errorlist {
             color: #cc0000;
             margin-top: 5px;
@@ -55,21 +122,30 @@
     </style>
 </head>
 <body>
-    <h1>{{ titulo }}</h1>
-
-    
-
-    {% if messages %}
-    <div class="messages">
-        {% for message in messages %}
-            <div class="message {% if message.tags %}{{ message.tags }}{% endif %}">
-                {{ message }}
-            </div>
-        {% endfor %}
+    <div class="menu-buttons">
+        <a href="{% url 'jefa:pacientes_jefa' %}" class="menu-button">Pacientes</a>
+        <a href="{% url 'jefa:calendario_area' %}" class="menu-button">Calendario</a>
+        <a href="{% url 'jefa:historiales_' %}" class="menu-button">Historiales</a>
+        <a href="{% url 'jefa:almacen_' %}" class="menu-button">Almacen</a>
+        <a href="{% url 'jefa:usuarios_' %}" class="menu-button">Usuarios</a>
+        <a href="{% url 'jefa:areas_fortalezas' %}" class="menu-button">Areas</a>
     </div>
-    {% endif %}
+    <div class="container">
+        <div class="header">
+            <h1>{{ titulo }}</h1>
+        </div>
 
-    {% if confirmar_reactivacion %}
+        {% if messages %}
+        <div class="messages">
+            {% for message in messages %}
+                <div class="message {% if message.tags %}{{ message.tags }}{% endif %}">
+                    {{ message }}
+                </div>
+            {% endfor %}
+        </div>
+        {% endif %}
+
+        {% if confirmar_reactivacion %}
         <div class="alert">
             <p>Se encontró un paciente inactivo con este número de seguridad social:</p>
             <p><strong>Nombre:</strong> {{ paciente_inactivo.nombres }} {{ paciente_inactivo.apellidos }}</p>
@@ -84,11 +160,10 @@
                 <a href="{% url 'jefa:pacientes_jefa' %}" class="button">Cancelar</a>
             </form>
         </div>
-    {% else %}
+        {% else %}
         <form method="POST">
             {% csrf_token %}
             
-            <!-- Campo Nombres -->
             <div>
                 <label>Nombres:</label>
                 {{ form.nombres }}
@@ -101,7 +176,6 @@
                 {% endif %}
             </div>
 
-            <!-- Campo Apellidos -->
             <div>
                 <label>Apellidos:</label>
                 {{ form.apellidos }}
@@ -114,7 +188,6 @@
                 {% endif %}
             </div>
 
-            <!-- Fecha de Nacimiento -->
             <div>
                 <label>Fecha de Nacimiento:</label>
                 {{ form.fecha_nacimiento }}
@@ -127,7 +200,6 @@
                 {% endif %}
             </div>
 
-            <!-- Sexo -->
             <div>
                 <label>Sexo:</label>
                 {{ form.sexo }}
@@ -140,7 +212,6 @@
                 {% endif %}
             </div>
 
-            <!-- Número de Seguridad Social -->
             <div>
                 <label>Número de Seguridad Social:</label>
                 {{ form.num_seguridad_social }}
@@ -153,7 +224,6 @@
                 {% endif %}
             </div>
 
-            <!-- Área -->
             <div>
                 <label>Área:</label>
                 {{ form.area }}
@@ -166,7 +236,6 @@
                 {% endif %}
             </div>
 
-            <!-- Doctor Actual -->
             <div>
                 <label>Doctor Actual:</label>
                 {{ form.doctor_actual }}
@@ -179,7 +248,6 @@
                 {% endif %}
             </div>
 
-            <!-- Enfermero Actual -->
             <div>
                 <label>Enfermero Actual:</label>
                 {{ form.enfermero_actual }}
@@ -192,7 +260,6 @@
                 {% endif %}
             </div>
 
-            <!-- Hospital de Origen -->
             <div>
                 <label>Hospital de Origen:</label>
                 {{ form.hospital_origen }}
@@ -210,6 +277,7 @@
                 <a href="{% url 'jefa:pacientes_jefa' %}" class="button">Volver</a>
             </div>
         </form>
-    {% endif %}
+        {% endif %}
+    </div>
 </body>
 </html>

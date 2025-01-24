@@ -2,8 +2,77 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <title>Menú de usuarios</title>
+    <title>Menú de Usuarios</title>
     <style>
+        :root {
+            --primary-color: #0A2342;
+            --secondary-color: #2E4057;
+            --accent-color: #1E90FF;
+            --background-color: #EBF0F5;
+            --table-background: #F0F4F7;
+            --text-color: #333333;
+            --white: #FFFFFF;
+            --border-color: #D1D1D1;
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: 'Roboto', 'Arial', sans-serif;
+        }
+
+        body {
+            background-color: var(--background-color);
+            color: var(--text-color);
+            line-height: 1.6;
+            padding: 20px;
+        }
+
+        .container {
+            background-color: var(--white);
+            border-radius: 8px;
+            box-shadow: 0 15px 30px rgba(0,0,0,0.15);
+            padding: 30px;
+            width: 100%;
+            max-width: 1200px;
+            border-left: 5px solid var(--primary-color);
+        }
+
+        .header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 20px;
+        }
+
+        .header h1 {
+            font-size: 2rem;
+            color: var(--primary-color);
+            font-weight: 700;
+        }
+
+        .menu-buttons {
+            display: flex;
+            gap: 15px;
+        }
+
+        .menu-button {
+            background-color: var(--primary-color);
+            color: var(--white);
+            text-decoration: none;
+            padding: 10px 15px;
+            border-radius: 4px;
+            font-size: 0.9rem;
+            font-weight: 600;
+            text-transform: uppercase;
+            transition: background-color 0.3s ease;
+        }
+
+        .menu-button:hover {
+            background-color: var(--secondary-color);
+        }
+
         .tab-container {
             margin-top: 20px;
         }
@@ -12,6 +81,7 @@
             list-style-type: none;
             padding: 0;
             margin: 0;
+            border-bottom: 2px solid var(--primary-color);
         }
 
         .tab-nav li {
@@ -21,20 +91,24 @@
 
         .tab-nav li a {
             text-decoration: none;
-            padding: 5px 10px;
-            background-color: #f1f1f1;
-            color: #333;
+            padding: 8px 16px;
+            color: var(--text-color);
             border-radius: 4px 4px 0 0;
+            transition: background-color 0.3s ease;
         }
 
         .tab-nav li a.active {
-            background-color: #ccc;
+            background-color: var(--primary-color);
+            color: var(--white);
+            font-weight: 600;
         }
 
         .tab-content {
             display: none;
-            padding: 10px;
-            border: 1px solid #ccc;
+            padding: 20px;
+            border: 2px solid var(--primary-color);
+            border-top: none;
+            border-radius: 0 0 8px 8px;
         }
 
         .tab-content.active {
@@ -44,125 +118,139 @@
         .form-section {
             margin-bottom: 20px;
             padding: 10px;
-            border: 1px solid #ccc;
+            border: 1px solid var(--border-color);
+            border-radius: 4px;
+        }
+
+        .form-section h3 {
+            color: var(--primary-color);
+            margin-bottom: 10px;
         }
 
         .error-message {
-            color: red;
+            color: #cc0000;
             font-size: 14px;
+        }
+
+        @media (max-width: 768px) {
+            .container {
+                padding: 20px;
+            }
         }
     </style>
 </head>
 <body>
-    <div class="menu-container">
-        <h1>Menu Jefa de piso</h1>
-        <a href="{% url 'jefa:pacientes_jefa' %}" class="button">Pacientes</a>
-        <a href="{% url 'jefa:calendario_area' %}" class="button">Calendario</a>
-        <a href="{% url 'jefa:historiales_' %}" class="button">Historiales</a>
-        <a href="{% url 'jefa:almacen_' %}" class="button">Almacen</a>
-        <a href="{% url 'jefa:usuarios_' %}" class="button">Usuarios</a>
-        <a href="{% url 'jefa:areas_fortalezas' %}" class="button">Areas</a>
-        <br><br>
-        <a href="{% url 'login:login' %}" class="button">Cerrar sesión</a>
+    <h1>Menu Jefa de Piso</h1>
+    <div class="menu-buttons">
+        <a href="{% url 'jefa:pacientes_jefa' %}" class="menu-button">Pacientes</a>
+        <a href="{% url 'jefa:calendario_area' %}" class="menu-button">Calendario</a>
+        <a href="{% url 'jefa:historiales_' %}" class="menu-button">Historiales</a>
+        <a href="{% url 'jefa:almacen_' %}" class="menu-button">Almacen</a>
+        <a href="{% url 'jefa:usuarios_' %}" class="menu-button">Usuarios</a>
+        <a href="{% url 'jefa:areas_fortalezas' %}" class="menu-button">Areas</a>
+    <form action="{% url 'login:login' %}" method="POST">
+        {% csrf_token %}
+        <button type="submit" class="menu-button">Cerrar Sesión</button>
+    </form>
     </div>
-    <h1>Menú Usuarios</h1>
-    <div class="tab-container">
-        <ul class="tab-nav">
-            <li><a href="#gestionar-usuarios" class="active">Gestionar Usuarios</a></li>
-            <li><a href="#crear-usuarios">Crear Usuarios</a></li>
-        </ul>
-
-        <!-- Pestaña "Gestionar Usuarios" -->
-        <div id="gestionar-usuarios" class="tab-content active">
-            {% include 'usuarioJefa/gestionar_usuarios.html' %}
+    <div class="container">
+        <div class="header">
+            <h1>Menú de Usuarios</h1>
+            <div class="menu-buttons">
+                <a href="{% url 'jefa:menu_jefa' %}" class="menu-button">Volver al Menú</a>
+            </div>
         </div>
 
-        <!-- Pestaña "Crear Usuarios" -->
-        <div id="crear-usuarios" class="tab-content">
-            <form method="POST">
-                {% csrf_token %}
-                
-                <!-- Datos Personales -->
-                <div class="form-section">
-                    <h3>Datos Personales</h3>
-                    <p>
-                        <label for="nombre">Nombre:</label>
-                        <input type="text" id="nombre" name="nombre" required>
-                    </p>
-                    <p>
-                        <label for="apellidos">Apellidos:</label>
-                        <input type="text" id="apellidos" name="apellidos" required>
-                    </p>
-                    <p>
-                        <label for="edad">Edad:</label>
-                        <input type="text" id="edad" name="edad" style="background-color: #f0f0f0;" readonly>
-                        <span id="error-message" class="error-message"></span>
-                    </p>
-                    <p>
-                        <label for="fecha_nacimiento">Fecha de Nacimiento:</label>
-                        <input type="date" id="fecha_nacimiento" name="fecha_nacimiento" required>
-                    </p>
-                </div>
+        <div class="tab-container">
+            <ul class="tab-nav">
+                <li><a href="#gestionar-usuarios" class="active">Gestionar Usuarios</a></li>
+                <li><a href="#crear-usuarios">Crear Usuarios</a></li>
+            </ul>
 
-                <!-- Datos Profesionales -->
-                <div class="form-section">
-                    <h3>Datos Profesionales</h3>
-                    <p>
-                        <label for="area_especialidad">Área de Especialidad:</label>
-                        <select id="area_especialidad" name="area_especialidad" required>
-                            <option value="">Seleccione un área</option>
-                            {% for area in areas %}
-                                <option value="{{ area.id }}">{{ area.nombre }}</option>
+            <div id="gestionar-usuarios" class="tab-content active">
+                {% include 'usuarioJefa/gestionar_usuarios.html' %}
+            </div>
+
+            <div id="crear-usuarios" class="tab-content">
+                <form method="POST">
+                    {% csrf_token %}
+
+                    <div class="form-section">
+                        <h3>Datos Personales</h3>
+                        <div>
+                            <label for="nombre">Nombre:</label>
+                            <input type="text" id="nombre" name="nombre" required>
+                        </div>
+                        <div>
+                            <label for="apellidos">Apellidos:</label>
+                            <input type="text" id="apellidos" name="apellidos" required>
+                        </div>
+                        <div>
+                            <label for="edad">Edad:</label>
+                            <input type="text" id="edad" name="edad" style="background-color: #f0f0f0;" readonly>
+                            <span id="error-message" class="error-message"></span>
+                        </div>
+                        <div>
+                            <label for="fecha_nacimiento">Fecha de Nacimiento:</label>
+                            <input type="date" id="fecha_nacimiento" name="fecha_nacimiento" required>
+                        </div>
+                    </div>
+
+                    <div class="form-section">
+                        <h3>Datos Profesionales</h3>
+                        <div>
+                            <label for="area_especialidad">Área de Especialidad:</label>
+                            <select id="area_especialidad" name="area_especialidad" required>
+                                <option value="">Seleccione un área</option>
+                                {% for area in areas %}
+                                    <option value="{{ area.id }}">{{ area.nombre }}</option>
+                                {% endfor %}
+                            </select>
+                        </div>
+                        <div>
+                            <label>Fortalezas (máx. 4):</label>
+                            {% for fortaleza in fortalezas %}
+                                <label>
+                                    <input type="checkbox" name="fortalezas" value="{{ fortaleza.id }}">
+                                    {{ fortaleza.nombre }}
+                                </label>
                             {% endfor %}
-                        </select>
-                    </p>
-                    <p>
-                        <label>Fortalezas (seleccione máximo 4):</label><br>
-                        {% for fortaleza in fortalezas %}
-                            <label>
-                                <input type="checkbox" name="fortalezas" value="{{ fortaleza.id }}">
-                                {{ fortaleza.nombre }}
-                            </label><br>
-                        {% endfor %}
-                    </p>
-                    <p>
-                        <label for="tipo_usuario">Tipo de Usuario:</label>
-                        <select id="tipo_usuario" name="tipo_usuario" required>
-                            <option value="EN">Enfermería</option>
-                            <option value="DR">Doctor</option>
-                            <option value="JP">Jefa de piso</option>
-                        </select>
-                    </p>
-                    <p>
-                        <label for="cedula">Cédula:</label>
-                        <input type="text" id="cedula" name="cedula" required>
-                    </p>
-                </div>
+                        </div>
+                        <div>
+                            <label for="tipo_usuario">Tipo de Usuario:</label>
+                            <select id="tipo_usuario" name="tipo_usuario" required>
+                                <option value="EN">Enfermería</option>
+                                <option value="DR">Doctor</option>
+                                <option value="JP">Jefa de piso</option>
+                            </select>
+                        </div>
+                        <div>
+                            <label for="cedula">Cédula:</label>
+                            <input type="text" id="cedula" name="cedula" required>
+                        </div>
+                    </div>
 
-                <!-- Datos de Acceso -->
-                <div class="form-section">
-                    <h3>Datos de Acceso</h3>
-                    <p>
-                        <label for="nombre_temporal">Nombre temporal:</label>
-                        <input type="text" id="nombre_temporal" name="nombre_temporal" required>
-                    </p>
-                    <p>
-                        <label for="contraseña">Contraseña temporal:</label>
-                        <input type="password" id="contraseña" name="contraseña" required>
-                    </p>
-                </div>
+                    <div class="form-section">
+                        <h3>Datos de Acceso</h3>
+                        <div>
+                            <label for="nombre_temporal">Nombre temporal:</label>
+                            <input type="text" id="nombre_temporal" name="nombre_temporal" required>
+                        </div>
+                        <div>
+                            <label for="contraseña">Contraseña temporal:</label>
+                            <input type="password" id="contraseña" name="contraseña" required>
+                        </div>
+                    </div>
 
-                <button type="submit" id="submit-button">Crear usuario</button>
-            </form>
+                    <button type="submit" id="submit-button">Crear usuario</button>
+                </form>
+            </div>
         </div>
     </div>
-
-    <br><br>
-    <a href="{% url 'jefa:menu_jefa' %}">Volver</a>
 
     <script>
         document.addEventListener('DOMContentLoaded', function() {
-            // Código existente para las pestañas
+            // Manejo de pestañas
             const tabLinks = document.querySelectorAll('.tab-nav a');
             const tabContents = document.querySelectorAll('.tab-content');
 
@@ -192,7 +280,7 @@
                 });
             });
 
-            // Nuevo código para el cálculo automático de edad
+            // Cálculo automático de edad
             const fechaNacimientoInput = document.getElementById('fecha_nacimiento');
             const edadInput = document.getElementById('edad');
             const errorMessage = document.getElementById('error-message');
@@ -214,7 +302,7 @@
                     errorMessage.textContent = 'El usuario debe ser mayor de 18 años.';
                     submitButton.disabled = true;
                 } else if (edad > 100) {
-                    errorMessage.textContent = 'Por favor, verifique la fecha de nacimiento.';
+                    errorMessage.textContent = 'Verifique la fecha de nacimiento.';
                     submitButton.disabled = true;
                 } else {
                     errorMessage.textContent = '';
@@ -222,10 +310,7 @@
                 }
             }
 
-            // Agregar el event listener para el campo de fecha
             fechaNacimientoInput.addEventListener('input', calcularEdad);
-            
-            // Establecer fecha máxima permitida (hoy)
             const hoy = new Date();
             const fechaMaxima = hoy.toISOString().split('T')[0];
             fechaNacimientoInput.setAttribute('max', fechaMaxima);

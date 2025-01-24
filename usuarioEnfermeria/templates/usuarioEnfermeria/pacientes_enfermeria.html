@@ -2,62 +2,276 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <title>Mis Pacientes - Enfermería</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Sistema Hospitalario - Mis Pacientes</title>
+    <style>
+        :root {
+            --primary-color: #3C8D6D;  /* Verde pistache más claro */
+            --secondary-color: #4CAF50;  /* Verde medio */
+            --accent-color: #6ECB63;  /* Verde claro */
+            --background-color: #F0F4F2;
+            --text-color: #2C3E50;
+            --white: #FFFFFF;
+            --table-border: #9EABA3;
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: 'Roboto', 'Arial', sans-serif;
+        }
+
+        body {
+            background-color: var(--background-color);
+            color: var(--text-color);
+            line-height: 1.6;
+            padding: 20px;
+        }
+
+        .container {
+            background-color: var(--white);
+            border-radius: 12px;
+            box-shadow: 
+                0 10px 25px rgba(0,0,0,0.1),
+                0 20px 40px rgba(0,0,0,0.08);
+            padding: 40px;
+            max-width: 1200px;
+            margin: 0 auto;
+            border-left: 6px solid var(--primary-color);
+            position: relative;
+            overflow: hidden;
+        }
+
+        .container::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            height: 6px;
+            background: linear-gradient(to right, var(--primary-color), var(--accent-color));
+        }
+
+        .header {
+            margin-bottom: 30px;
+        }
+
+        .header-info {
+            background-color: #E6EAE7;
+            border-left: 4px solid var(--secondary-color);
+            padding: 15px;
+            margin-bottom: 20px;
+            border-radius: 4px;
+        }
+
+        .header h1 {
+            color: var(--primary-color);
+            font-size: 2.2rem;
+            margin-bottom: 10px;
+        }
+
+        .header h3 {
+            color: var(--secondary-color);
+            font-size: 1.2rem;
+            font-weight: 400;
+        }
+
+        .messages {
+            margin-bottom: 25px;
+        }
+
+        .message {
+            padding: 12px;
+            margin-bottom: 15px;
+            border-radius: 4px;
+            font-weight: 500;
+        }
+
+        .patients-table {
+            width: 100%;
+            border-collapse: separate;
+            border-spacing: 0;
+            margin-bottom: 30px;
+            border-radius: 6px;
+            overflow: hidden;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+            border: 2px solid var(--primary-color);
+        }
+
+        .patients-table th {
+            background-color: var(--primary-color);
+            color: var(--white);
+            padding: 12px;
+            text-align: left;
+            font-weight: 600;
+            border-bottom: 2px solid var(--primary-color);
+        }
+
+        .patients-table td {
+            padding: 12px;
+            border-bottom: 2px solid var(--primary-color);
+            border-right: 2px solid var(--primary-color);
+        }
+
+        .patients-table tr:last-child td {
+            border-bottom: none;
+        }
+
+        .patients-table td:last-child {
+            border-right: none;
+        }
+
+        .patients-table tr:nth-child(even) {
+            background-color: #F6F9F7;
+        }
+
+        .patients-table tr:hover {
+            background-color: #E6EAE7;
+        }
+
+        .container::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            height: 6px;
+            background: linear-gradient(to right, var(--primary-color), var(--accent-color));
+        }
+
+        .actions {
+            display: flex;
+            gap: 10px;
+        }
+
+        .action-btn {
+            display: inline-block;
+            padding: 8px 15px;
+            background-color: var(--secondary-color);
+            color: var(--white);
+            text-decoration: none;
+            border-radius: 4px;
+            font-size: 0.9rem;
+            transition: background-color 0.3s ease, transform 0.2s ease;
+        }
+
+        .action-btn:hover {
+            background-color: var(--primary-color);
+            transform: translateY(-2px);
+        }
+
+        .action-btn:active {
+            transform: translateY(0);
+        }
+
+        .no-patients {
+            text-align: center;
+            color: var(--secondary-color);
+            padding: 20px;
+            background-color: #E6EAE7;
+            border-radius: 4px;
+        }
+
+        .logout-btn {
+            background-color: var(--primary-color);
+            color: var(--white);
+            border: none;
+            padding: 12px 24px;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 1rem;
+            font-weight: 600;
+            letter-spacing: 1px;
+            text-transform: uppercase;
+            transition: background-color 0.3s ease, transform 0.2s ease;
+            display: block;
+            width: 200px;
+            margin: 0 auto;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+        }
+
+        .logout-btn:hover {
+            background-color: var(--secondary-color);
+            transform: translateY(-2px);
+        }
+
+        .logout-btn:active {
+            transform: translateY(0);
+        }
+
+        @media (max-width: 768px) {
+            .container {
+                padding: 20px;
+                border-left: none;
+            }
+
+            .patients-table {
+                font-size: 0.9rem;
+            }
+        }
+    </style>
 </head>
 <body>
-    {% if area_asignada %}
-        <div style="background-color: #f0f0f0; padding: 10px; margin-bottom: 20px;">
-            <h4>Área Asignada Actual: {{ area_asignada.nombre }}</h4>
-        </div>
-    {% endif %}
-
-    <h1>Mis Pacientes</h1>
-    <h3>Enfermero/a: {{ enfermero.first_name }} {{ enfermero.apellidos }}</h3>
-
-    {% if messages %}
-    <div class="messages">
-        {% for message in messages %}
-            <div class="message {% if message.tags %}{{ message.tags }}{% endif %}">
-                {{ message }}
+    <div class="container">
+        {% if area_asignada %}
+            <div class="header-info">
+                <h4>Área Asignada Actual: {{ area_asignada.nombre }}</h4>
             </div>
-        {% endfor %}
+        {% endif %}
+
+        <div class="header">
+            <h1>Mis Pacientes</h1>
+            <h3>Enfermero/a: {{ enfermero.first_name }} {{ enfermero.apellidos }}</h3>
+        </div>
+
+        {% if messages %}
+        <div class="messages">
+            {% for message in messages %}
+                <div class="message {% if message.tags %}{{ message.tags }}{% endif %}">
+                    {{ message }}
+                </div>
+            {% endfor %}
+        </div>
+        {% endif %}
+
+        {% if pacientes %}
+            <table class="patients-table">
+                <thead>
+                    <tr>
+                        <th>Nombre</th>
+                        <th>Apellidos</th>
+                        <th>Área</th>
+                        <th>Doctor Asignado</th>
+                        <th>Acciones</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for paciente in pacientes %}
+                    <tr>
+                        <td>{{ paciente.nombres }}</td>
+                        <td>{{ paciente.apellidos }}</td>
+                        <td>{{ paciente.area }}</td>
+                        <td>{{ paciente.doctor_actual.first_name }} {{ paciente.doctor_actual.apellidos }}</td>
+                        <td class="actions">
+                            <a href="{% url 'enfermeria:cuidados_paciente' paciente.id %}" class="action-btn">Ver Cuidados</a>
+                            <a href="{% url 'enfermeria:formulario_paciente' paciente.id %}" class="action-btn">Llenar Formulario</a>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        {% else %}
+            <div class="no-patients">
+                <p>No tienes pacientes asignados actualmente.</p>
+            </div>
+        {% endif %}
+
+        <br><br>
+        <form action="{% url 'login:login' %}" method="POST">
+            {% csrf_token %}
+            <button type="submit" class="logout-btn">Cerrar Sesión</button>
+        </form>
     </div>
-    {% endif %}
-
-    {% if pacientes %}
-        <table border="1">
-            <thead>
-                <tr>
-                    <th>Nombre</th>
-                    <th>Apellidos</th>
-                    <th>Área</th>
-                    <th>Doctor Asignado</th>
-                    <th>Acciones</th>
-                </tr>
-            </thead>
-            <tbody>
-                {% for paciente in pacientes %}
-                <tr>
-                    <td>{{ paciente.nombres }}</td>
-                    <td>{{ paciente.apellidos }}</td>
-                    <td>{{ paciente.area }}</td>
-                    <td>{{ paciente.doctor_actual.first_name }} {{ paciente.doctor_actual.apellidos }}</td>
-                    <td>
-                        <a href="{% url 'enfermeria:cuidados_paciente' paciente.id %}">Ver Cuidados</a>
-                        <a href="{% url 'enfermeria:formulario_paciente' paciente.id %}">Llenar Formulario</a>
-                    </td>
-                </tr>
-                {% endfor %}
-            </tbody>
-        </table>
-    {% else %}
-        <p>No tienes pacientes asignados actualmente.</p>
-    {% endif %}
-
-    <br><br>
-    <form action="{% url 'login:login' %}" method="POST">
-        {% csrf_token %}
-        <button type="submit">Cerrar Sesión</button>
-    </form>
 </body>
 </html>
