@@ -9,6 +9,10 @@
             padding: 10px;
             border: 1px solid #ccc;
         }
+        .error-message {
+            color: red;
+            font-size: 14px;
+        }
     </style>
 </head>
 <body>
@@ -26,7 +30,7 @@
 
     <form method="POST">
         {% csrf_token %}
-        
+
         <!-- Datos Personales -->
         <div class="form-section">
             <h3>Datos Personales</h3>
@@ -42,12 +46,13 @@
 
             <p>
                 <label for="edad">Edad:</label>
-                <input type="number" id="edad" name="edad" required min="18">
+                <input type="number" id="edad" name="edad" readonly>
             </p>
 
             <p>
                 <label for="fecha_nacimiento">Fecha de Nacimiento:</label>
                 <input type="date" id="fecha_nacimiento" name="fecha_nacimiento" required>
+                <span id="error-message" class="error-message"></span>
             </p>
         </div>
 
@@ -86,7 +91,7 @@
 
             <p>
                 <label for="cedula">Cédula:</label>
-                <input type="text" id="cedula" name="cedula" value="{{ usuario.cedula }}" required>
+                <input type="text" id="cedula" name="cedula" required>
             </p>
         </div>
 
@@ -104,23 +109,51 @@
             </p>
         </div>
 
-        <button type="submit">Crear usuario</button>
+        <button type="submit" id="submit-button">Crear usuario</button>
     </form>
 
     <br><br>
     <a href="{% url 'jefa:usuarios_' %}">Volver al Menú</a>
 
     <script>
-        // Validación de fortalezas
-        const maxFortalezas = 4;
-        const checkboxes = document.querySelectorAll('input[name="fortalezas"]');
-        
-        checkboxes.forEach(checkbox => {
-            checkbox.addEventListener('change', function() {
-                const checkedBoxes = document.querySelectorAll('input[name="fortalezas"]:checked');
-                if (checkedBoxes.length > maxFortalezas) {
-                    this.checked = false;
-                    alert('Solo puede seleccionar hasta 4 fortalezas');
+        document.addEventListener('DOMContentLoaded', () => {
+            const fechaNacimientoInput = document.getElementById('fecha_nacimiento');
+            const edadInput = document.getElementById('edad');
+            const errorMessage = document.getElementById('error-message');
+            const submitButton = document.getElementById('submit-button');
+
+            // Función para calcular edad
+            function calcularEdad(fechaNacimiento) {
+                const hoy = new Date();
+                const nacimiento = new Date(fechaNacimiento);
+                let edad = hoy.getFullYear() - nacimiento.getFullYear();
+                const mes = hoy.getMonth() - nacimiento.getMonth();
+
+                if (mes < 0 || (mes === 0 && hoy.getDate() < nacimiento.getDate())) {
+                    edad--;
+                }
+                return edad;
+            }
+
+            // Evento para calcular la edad y validar la fecha de nacimiento
+            fechaNacimientoInput.addEventListener('input', function () {
+                const fechaNacimiento = fechaNacimientoInput.value;
+
+                if (fechaNacimiento) {
+                    const edad = calcularEdad(fechaNacimiento);
+                    edadInput.value = edad;
+
+                    if (edad < 18) {
+                        errorMessage.textContent = 'El usuario debe ser mayor de 18 años.';
+                        submitButton.disabled = true;
+                    } else {
+                        errorMessage.textContent = '';
+                        submitButton.disabled = false;
+                    }
+                } else {
+                    edadInput.value = '';
+                    errorMessage.textContent = '';
+                    submitButton.disabled = false;
                 }
             });
         });

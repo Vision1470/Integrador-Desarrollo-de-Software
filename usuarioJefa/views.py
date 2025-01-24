@@ -319,12 +319,15 @@ def gestionar_usuarios(request):
     usuarios = Usuarios.objects.filter(estaActivo=True).order_by('tipoUsuario', 'first_name')
     return render(request, 'usuarioJefa/gestionar_usuarios.html', {'usuarios': usuarios})
 
+from datetime import date
+from django.shortcuts import render, redirect
+from django.contrib import messages
+
 def crear_usuarios(request):
     if request.method == 'POST':
         # Obtener los datos del formulario
         nombre = request.POST.get('nombre')
         apellidos = request.POST.get('apellidos')
-        edad = request.POST.get('edad')
         fecha_nacimiento = request.POST.get('fecha_nacimiento')
         area_especialidad_id = request.POST.get('area_especialidad')
         fortalezas_ids = request.POST.getlist('fortalezas')
@@ -334,6 +337,16 @@ def crear_usuarios(request):
         contraseña = request.POST.get('contraseña')
 
         try:
+            # Validar la fecha de nacimiento y calcular la edad
+            if fecha_nacimiento:
+                nacimiento = date.fromisoformat(fecha_nacimiento)
+                hoy = date.today()
+                edad = hoy.year - nacimiento.year - ((hoy.month, hoy.day) < (nacimiento.month, nacimiento.day))
+
+                if edad < 18:
+                    messages.error(request, 'El usuario debe ser mayor de 18 años.')
+                    return redirect('jefa:crear_usuario')
+
             # Obtener el área de especialidad
             area_especialidad = AreaEspecialidad.objects.get(id=area_especialidad_id)
 
@@ -374,6 +387,7 @@ def crear_usuarios(request):
         'fortalezas': fortalezas,
     }
     return render(request, 'usuarioJefa/crear_usuarios.html', context)
+
 
 def editar_usuario(request, usuario_id):
     usuario = get_object_or_404(Usuarios, id=usuario_id)
@@ -570,10 +584,22 @@ def get_instrumento(request, instrumento_id):
 #////////////////////////////////////////////////////////////////////
 #/777777777777777777777777777777777777777777777777777777777777777777
 
+# views.py
 def calendario_area(request):
     areas = AreaEspecialidad.objects.all()
     enfermeros = Usuarios.objects.filter(tipoUsuario='EN', estaActivo=True)
+    bimestres = range(1,7)
     area_seleccionada = request.GET.get('area')
+
+    # Para cada enfermero, obtener su última área asignada
+    areas_excluidas = {}
+    for enfermero in enfermeros:
+        ultima_asignacion = AsignacionCalendario.objects.filter(
+            enfermero=enfermero
+        ).order_by('-year', '-bimestre').first()
+        
+        if ultima_asignacion:
+            areas_excluidas[enfermero.id] = ultima_asignacion.area.id
     
     if area_seleccionada:
         area = AreaEspecialidad.objects.get(id=area_seleccionada)
@@ -590,24 +616,63 @@ def calendario_area(request):
         area = None
         cal = None
         asignaciones = None
+        mes_actual = datetime.now().month
+        año_actual = datetime.now().year
 
     context = {
         'areas': areas,
+        'all_areas': areas,  # Para el formulario de creación
         'enfermeros': enfermeros,
-        'area_seleccionada': area_seleccionada,
-        'calendario': cal if area_seleccionada else None,
-        'asignaciones': asignaciones if area_seleccionada else None
+        'area_seleccionada': area,
+        'calendario': cal,
+        'asignaciones': asignaciones,
+        'areas_excluidas': areas_excluidas,
+        'bimestres': bimestres,
+        'mes_actual': mes_actual,
+        'año_actual': año_actual
     }
     
     return render(request, 'usuariojefa/calendario.html', context)
 
+def get_dias_bimestre(bimestre, año):
+   """Calcula los días del bimestre considerando año bisiesto"""
+   
+   # Determinar si es año bisiesto
+   es_bisiesto = año % 4 == 0 and (año % 100 != 0 or año % 400 == 0)
+   
+   # Días por mes considerando febrero bisiesto
+   dias_por_mes = [31, 29 if es_bisiesto else 28, 31, 30, 31, 30, 31, 31, 30, 31, 30, 31]
+   
+   # Determinar meses del bimestre
+   mes_inicio = ((bimestre - 1) * 2) + 1
+   mes_fin = mes_inicio + 1 if mes_inicio < 12 else 12
+   
+   # Sumar días de los dos meses
+   total_dias = dias_por_mes[mes_inicio-1] + dias_por_mes[mes_fin-1]
+   
+   return total_dias
+
 def crear_asignacion(request):
    if request.method == 'GET':
-       areas = AreaEspecialidad.objects.all()
        enfermeros = Usuarios.objects.filter(tipoUsuario='EN', estaActivo=True)
+       all_areas = AreaEspecialidad.objects.all()
+       bimestres = range(1,7)
+
+       # Para cada enfermero, obtener su última área asignada
+       areas_excluidas = {}
+       for enfermero in enfermeros:
+           ultima_asignacion = AsignacionCalendario.objects.filter(
+               enfermero=enfermero
+           ).order_by('-year', '-bimestre').first()
+           
+           if ultima_asignacion:
+               areas_excluidas[enfermero.id] = ultima_asignacion.area.id
+
        context = {
-           'areas': areas,
-           'enfermeros': enfermeros
+           'enfermeros': enfermeros,
+           'all_areas': all_areas,
+           'areas_excluidas': areas_excluidas,
+           'bimestres': bimestres
        }
        return render(request, 'usuariojefa/crear_asignacion.html', context)
 
@@ -625,26 +690,30 @@ def crear_asignacion(request):
            messages.error(request, 'El bimestre debe estar entre 1 y 6')
            return redirect('jefa:calendario_area')
 
-       mes_inicio = ((bimestre - 1) * 2) + 1
-       fecha_inicio = datetime(año_actual, mes_inicio, 1)
-       fecha_fin = fecha_inicio + timedelta(days=60)
-
+       # Validar área no repetida
        ultima_asignacion = AsignacionCalendario.objects.filter(
-           enfermero_id=enfermero_id,
-           year=año_actual
-       ).order_by('-bimestre').first()
+           enfermero_id=enfermero_id
+       ).order_by('-year', '-bimestre').first()
 
-       if ultima_asignacion and ultima_asignacion.area_id == area_id:
+       if ultima_asignacion and ultima_asignacion.area_id == int(area_id):
            messages.error(request, 'No se puede asignar la misma área dos bimestres seguidos')
            return redirect('jefa:calendario_area')
 
+       mes_inicio = ((bimestre - 1) * 2) + 1
+       fecha_inicio = datetime(año_actual, mes_inicio, 1)
+       dias_bimestre = get_dias_bimestre(bimestre, año_actual)
+       fecha_fin = fecha_inicio + timedelta(days=dias_bimestre-1)
+
+       # Validar solapamiento
        solapamiento = AsignacionCalendario.objects.filter(
            enfermero_id=enfermero_id,
            fecha_inicio__lt=fecha_fin,
            fecha_fin__gt=fecha_inicio
        ).exists()
 
-       #Aqui se usaba solapamiento if solapamiento:  messages.error(request, 'Ya existe una asignación en ese periodo')return redirect('jefa:calendario_area')
+       if solapamiento:
+           messages.error(request, 'Ya existe una asignación en ese periodo')
+           return redirect('jefa:calendario_area')
 
        try:
            AsignacionCalendario.objects.create(
@@ -663,23 +732,49 @@ def crear_asignacion(request):
 
 def modificar_asignacion(request):
     if request.method == 'POST':
-        asignacion_id = request.POST.get('asignacion')
-        area_nueva_id = request.POST.get('area')
+        enfermero_id = request.POST.get('enfermero')
+        area_id = request.POST.get('area')
         fecha_inicio = request.POST.get('fecha_inicio')
         fecha_fin = request.POST.get('fecha_fin')
 
         try:
-            asignacion = AsignacionCalendario.objects.get(id=asignacion_id)
-            asignacion.area = area_nueva_id
+            # Obtener la asignación actual del enfermero
+            asignacion = AsignacionCalendario.objects.get(
+                enfermero_id=enfermero_id,
+                activo=True,
+                fecha_inicio__lte=timezone.now(),
+                fecha_fin__gte=timezone.now()
+            )
+            
+            # Obtener la nueva área
+            nueva_area = AreaEspecialidad.objects.get(id=area_id)
+            
+            # Actualizar la asignación
+            asignacion.area = nueva_area
             asignacion.fecha_inicio = fecha_inicio
             asignacion.fecha_fin = fecha_fin
             asignacion.save()
             
             messages.success(request, 'Asignación modificada exitosamente')
+        except AsignacionCalendario.DoesNotExist:
+            messages.error(request, 'No se encontró una asignación activa para este enfermero')
+        except AreaEspecialidad.DoesNotExist:
+            messages.error(request, 'El área seleccionada no existe')
         except Exception as e:
             messages.error(request, f'Error al modificar asignación: {str(e)}')
 
         return redirect('jefa:calendario_area')
+    
+    # Si es GET, renderizar el template con los datos necesarios
+    enfermeros = Usuarios.objects.filter(tipoUsuario='Enfermeria')
+    areas = AreaEspecialidad.objects.all()
+    cuidados = cuidados.objects.all()  # Asegúrate de tener este modelo definido
+    
+    return render(request, 'tu_template.html', {
+        'enfermeros': enfermeros,
+        'areas': areas,
+        'cuidados': cuidados
+    })
 
 def eliminar_asignacion(request, asignacion_id):
     try:

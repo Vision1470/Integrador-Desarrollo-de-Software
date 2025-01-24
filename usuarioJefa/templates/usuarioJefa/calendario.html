@@ -61,66 +61,103 @@
    </form>
 
    <h4>Planeación de tareas</h4>
-   <form method="POST" action="{% url 'jefa:crear_asignacion' %}">
-       {% csrf_token %}
-       <select id="enfermeria" name="enfermero" required>
+<form method="POST" action="{% url 'jefa:crear_asignacion' %}">
+    {% csrf_token %}
+    <select id="enfermeria" name="enfermero" required onchange="updateAreas(this.value)">
         <option value="">Seleccionar empleado</option>
         {% for enfermero in enfermeros %}
-            <option value="{{ enfermero.id }}">
-                {{ enfermero.username }} - {{ enfermero.tipoUsuario }}
-            </option>
+            <option value="{{ enfermero.id }}">{{ enfermero.username }}</option>
         {% endfor %}
     </select>
-       
-       <select id="area" name="area" required>
-           <option value="">Seleccionar área</option>
-           {% for area in areas %}
-               <option value="{{ area.id }}">{{ area.nombre }}</option>
-           {% endfor %}
-       </select>
-
-       <select id="bimestre" name="bimestre" required>
-           {% for i in "12345"|make_list %}
-               <option value="{{ i }}">Bimestre {{ i }}</option>
-           {% endfor %}
-       </select>
-       
-       <button type="submit">Aceptar</button>
-   </form>
-
-   <h4>Modificar tareas</h4>
-   <form method="POST" action="{% url 'jefa:modificar_asignacion' %}">
-       {% csrf_token %}
-       <select id="enfermeria" name="enfermero" required>
-        <option value="">Seleccionar empleado</option>
-        {% for enfermero in enfermeros %}
-            <option value="{{ enfermero.id }}">
-                {{ enfermero.username }} - {{ enfermero.tipoUsuario }}
+    
+    <select id="area" name="area" required>
+        <option value="">Seleccionar área</option>
+        {% for area in all_areas %}
+            <option value="{{ area.id }}" 
+                    class="area-option"
+                    data-disabled-for="{% for enf_id, area_id in areas_excluidas.items %}{% if area_id == area.id %}{{ enf_id }} {% endif %}{% endfor %}">
+                {{ area.nombre }}
             </option>
         {% endfor %}
     </select>
 
-       <select id="area" name="area" required>
-           <option value="">Seleccionar área</option>
-           {% for area in areas %}
-               <option value="{{ area.id }}">{{ area.nombre }}</option>
-           {% endfor %}
-       </select>
+    <select id="bimestre" name="bimestre" required>
+        <option value="">Seleccionar bimestre</option>
+        {% for bimestre in bimestres %}
+            <option value="{{ bimestre }}">Bimestre {{ bimestre }}</option>
+        {% endfor %}
+    </select>
+    
+    <button type="submit">Aceptar</button>
+</form>
 
-       <input type="date" name="fecha_inicio" required>
-       <input type="date" name="fecha_fin" required>
+<h4>Modificar tareas</h4>
+<form method="POST" action="{% url 'jefa:modificar_asignacion' %}">
+    {% csrf_token %}
+    
+    <div class="form-group">
+        <label for="enfermero">Seleccionar empleado:</label>
+        <select id="enfermero" name="enfermero" required>
+            <option value="">Seleccionar empleado</option>
+            {% for enfermero in enfermeros %}
+                <option value="{{ enfermero.id }}">
+                    {{ enfermero.username }} - {{ enfermero.tipoUsuario }}
+                </option>
+            {% endfor %}
+        </select>
+    </div>
 
-       <select id="cuidadosFaltantes" name="cuidados" multiple>  
-           {% for cuidado in cuidados %}
-           <option value="{{ cuidado.id }}">{{ cuidado.nombre }}</option>
-           {% endfor %}
-       </select>
+    <div class="form-group">
+        <label for="area">Seleccionar área:</label>
+        <select id="area" name="area" required>
+            <option value="">Seleccionar área</option>
+            {% for area in areas %}
+                <option value="{{ area.id }}">{{ area.nombre }}</option>
+            {% endfor %}
+        </select>
+    </div>
 
-       <button type="submit">Modificar</button>
-   </form>
+    <div class="form-group">
+        <label for="fecha_inicio">Fecha inicio:</label>
+        <input type="date" id="fecha_inicio" name="fecha_inicio" required>
+    </div>
+
+    <div class="form-group">
+        <label for="fecha_fin">Fecha fin:</label>
+        <input type="date" id="fecha_fin" name="fecha_fin" required>
+    </div>
+
+    <div class="form-group">
+        <label for="cuidados">Cuidados:</label>
+        <select id="cuidados" name="cuidados" multiple>  
+            {% for cuidado in cuidados %}
+                <option value="{{ cuidado.id }}">{{ cuidado.nombre }}</option>
+            {% endfor %}
+        </select>
+    </div>
+
+    <button type="submit" class="btn btn-primary">Modificar</button>
+</form>
 
    <br><br><br>
    <a href="{% url 'jefa:menu_jefa' %}" class="button">Volver</a> 
 
+
+   <script>
+function updateAreas(enfermeroId) {
+    document.querySelectorAll('#area option').forEach(option => {
+        option.disabled = false;
+    });
+
+    if (enfermeroId) {
+        document.querySelectorAll('#area option').forEach(option => {
+            const disabledFor = option.getAttribute('data-disabled-for');
+            if (disabledFor && disabledFor.includes(enfermeroId)) {
+                option.disabled = true;
+            }
+        });
+    }
+}
+</script>
 </body>
 </html>
