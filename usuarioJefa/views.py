@@ -602,28 +602,33 @@ def calendario_area(request):
     return render(request, 'usuariojefa/calendario.html', context)
 
 def crear_asignacion(request):
+   if request.method == 'GET':
+       areas = AreaEspecialidad.objects.all()
+       enfermeros = Usuarios.objects.filter(tipoUsuario='EN', estaActivo=True)
+       context = {
+           'areas': areas,
+           'enfermeros': enfermeros
+       }
+       return render(request, 'usuariojefa/crear_asignacion.html', context)
+
    if request.method == 'POST':
        enfermero_id = request.POST.get('enfermero') 
        area_id = request.POST.get('area')
        bimestre = int(request.POST.get('bimestre'))
        año_actual = datetime.now().year
 
-       # Validar campos requeridos
        if not all([enfermero_id, area_id, bimestre]):
            messages.error(request, 'Todos los campos son requeridos')
-           return redirect('calendario_area')
+           return redirect('jefa:calendario_area')
 
-       # Validar bimestre
        if not 1 <= bimestre <= 6:
            messages.error(request, 'El bimestre debe estar entre 1 y 6')
-           return redirect('calendario_area')
+           return redirect('jefa:calendario_area')
 
-       # Calcular fechas
        mes_inicio = ((bimestre - 1) * 2) + 1
        fecha_inicio = datetime(año_actual, mes_inicio, 1)
        fecha_fin = fecha_inicio + timedelta(days=60)
 
-       # Validar área no repetida
        ultima_asignacion = AsignacionCalendario.objects.filter(
            enfermero_id=enfermero_id,
            year=año_actual
@@ -631,18 +636,15 @@ def crear_asignacion(request):
 
        if ultima_asignacion and ultima_asignacion.area_id == area_id:
            messages.error(request, 'No se puede asignar la misma área dos bimestres seguidos')
-           return redirect('calendario_area')
+           return redirect('jefa:calendario_area')
 
-       # Validar solapamiento
        solapamiento = AsignacionCalendario.objects.filter(
            enfermero_id=enfermero_id,
            fecha_inicio__lt=fecha_fin,
            fecha_fin__gt=fecha_inicio
        ).exists()
 
-       if solapamiento:
-           messages.error(request, 'Ya existe una asignación en ese periodo')
-           return redirect('calendario_area')
+       #Aqui se usaba solapamiento if solapamiento:  messages.error(request, 'Ya existe una asignación en ese periodo')return redirect('jefa:calendario_area')
 
        try:
            AsignacionCalendario.objects.create(
@@ -657,7 +659,7 @@ def crear_asignacion(request):
        except Exception as e:
            messages.error(request, f'Error al crear asignación: {str(e)}')
        
-       return redirect('calendario_area')
+       return redirect('jefa:calendario_area')
 
 def modificar_asignacion(request):
     if request.method == 'POST':
@@ -668,7 +670,7 @@ def modificar_asignacion(request):
 
         try:
             asignacion = AsignacionCalendario.objects.get(id=asignacion_id)
-            asignacion.area_id = area_nueva_id
+            asignacion.area = area_nueva_id
             asignacion.fecha_inicio = fecha_inicio
             asignacion.fecha_fin = fecha_fin
             asignacion.save()
@@ -677,7 +679,7 @@ def modificar_asignacion(request):
         except Exception as e:
             messages.error(request, f'Error al modificar asignación: {str(e)}')
 
-        return redirect('calendario_area')
+        return redirect('jefa:calendario_area')
 
 def eliminar_asignacion(request, asignacion_id):
     try:
