@@ -2,91 +2,214 @@
 <html>
 <head>
     <title>Agregar Paciente</title>
+    <style>
+        .messages {
+            margin-bottom: 20px;
+        }
+        .message {
+            padding: 10px;
+            margin-bottom: 10px;
+            border-radius: 4px;
+        }
+        .error {
+            background-color: #ffe6e6;
+            border: 1px solid #ff9999;
+            color: #cc0000;
+        }
+        .success {
+            background-color: #e6ffe6;
+            border: 1px solid #99ff99;
+            color: #006600;
+        }
+        .alert {
+            background-color: #fff3cd;
+            border: 1px solid #ffeeba;
+            color: #856404;
+            padding: 15px;
+            margin-bottom: 20px;
+            border-radius: 4px;
+        }
+        .button {
+            display: inline-block;
+            padding: 8px 16px;
+            margin: 5px;
+            text-decoration: none;
+            background-color: #f0f0f0;
+            color: #333;
+            border: 1px solid #ccc;
+            border-radius: 4px;
+        }
+        form div {
+            margin-bottom: 15px;
+        }
+        label {
+            display: block;
+            margin-bottom: 5px;
+        }
+        .errorlist {
+            color: #cc0000;
+            margin-top: 5px;
+            padding-left: 20px;
+            font-size: 0.9em;
+        }
+    </style>
 </head>
 <body>
-    <h1>Agregar Nuevo Paciente</h1>
+    <h1>{{ titulo }}</h1>
+
     
 
     {% if messages %}
-<div class="messages">
-    {% for message in messages %}
-        <div class="message {% if message.tags %}{{ message.tags }}{% endif %}">
-            {{ message }}
-        </div>
-    {% endfor %}
-</div>
-{% endif %}
+    <div class="messages">
+        {% for message in messages %}
+            <div class="message {% if message.tags %}{{ message.tags }}{% endif %}">
+                {{ message }}
+            </div>
+        {% endfor %}
+    </div>
+    {% endif %}
 
-    <form method="POST">
-        {% csrf_token %}
-        
-        <!-- Campo Nombres -->
-        <div>
-            <label>Nombres:</label>
-            {{ form.nombres }}
-            {{ form.nombres.errors }}
+    {% if confirmar_reactivacion %}
+        <div class="alert">
+            <p>Se encontró un paciente inactivo con este número de seguridad social:</p>
+            <p><strong>Nombre:</strong> {{ paciente_inactivo.nombres }} {{ paciente_inactivo.apellidos }}</p>
+            <p><strong>Número de Seguridad Social:</strong> {{ paciente_inactivo.num_seguridad_social }}</p>
+            <p><strong>Fecha de Nacimiento:</strong> {{ paciente_inactivo.fecha_nacimiento }}</p>
+            <p><strong>Último Ingreso:</strong> {{ paciente_inactivo.fecha_ingreso }}</p>
+            <p><strong>Fecha de Alta:</strong> {{ paciente_inactivo.fecha_alta }}</p>
+            <p>¿Desea reactivar este paciente o crear uno nuevo?</p>
+            <form method="POST" action="{% url 'jefa:reactivar_paciente_' paciente_inactivo.id %}">
+                {% csrf_token %}
+                <button type="submit" class="button">Reactivar Paciente</button>
+                <a href="{% url 'jefa:pacientes_jefa' %}" class="button">Cancelar</a>
+            </form>
         </div>
+    {% else %}
+        <form method="POST">
+            {% csrf_token %}
+            
+            <!-- Campo Nombres -->
+            <div>
+                <label>Nombres:</label>
+                {{ form.nombres }}
+                {% if form.nombres.errors %}
+                    <ul class="errorlist">
+                    {% for error in form.nombres.errors %}
+                        <li>{{ error }}</li>
+                    {% endfor %}
+                    </ul>
+                {% endif %}
+            </div>
 
-        <!-- Campo Apellidos -->
-        <div>
-            <label>Apellidos:</label>
-            {{ form.apellidos }}
-            {{ form.apellidos.errors }}
-        </div>
+            <!-- Campo Apellidos -->
+            <div>
+                <label>Apellidos:</label>
+                {{ form.apellidos }}
+                {% if form.apellidos.errors %}
+                    <ul class="errorlist">
+                    {% for error in form.apellidos.errors %}
+                        <li>{{ error }}</li>
+                    {% endfor %}
+                    </ul>
+                {% endif %}
+            </div>
 
-        <!-- Fecha de Nacimiento -->
-        <div>
-            <label>Fecha de Nacimiento:</label>
-            {{ form.fecha_nacimiento }}
-            {{ form.fecha_nacimiento.errors }}
-        </div>
+            <!-- Fecha de Nacimiento -->
+            <div>
+                <label>Fecha de Nacimiento:</label>
+                {{ form.fecha_nacimiento }}
+                {% if form.fecha_nacimiento.errors %}
+                    <ul class="errorlist">
+                    {% for error in form.fecha_nacimiento.errors %}
+                        <li>{{ error }}</li>
+                    {% endfor %}
+                    </ul>
+                {% endif %}
+            </div>
 
-        <!-- Sexo -->
-        <div>
-            <label>Sexo:</label>
-            {{ form.sexo }}
-            {{ form.sexo.errors }}
-        </div>
+            <!-- Sexo -->
+            <div>
+                <label>Sexo:</label>
+                {{ form.sexo }}
+                {% if form.sexo.errors %}
+                    <ul class="errorlist">
+                    {% for error in form.sexo.errors %}
+                        <li>{{ error }}</li>
+                    {% endfor %}
+                    </ul>
+                {% endif %}
+            </div>
 
-        <!-- Número de Seguridad Social -->
-        <div>
-            <label>Número de Seguridad Social:</label>
-            {{ form.num_seguridad_social }}
-            {{ form.num_seguridad_social.errors }}
-        </div>
+            <!-- Número de Seguridad Social -->
+            <div>
+                <label>Número de Seguridad Social:</label>
+                {{ form.num_seguridad_social }}
+                {% if form.num_seguridad_social.errors %}
+                    <ul class="errorlist">
+                    {% for error in form.num_seguridad_social.errors %}
+                        <li>{{ error }}</li>
+                    {% endfor %}
+                    </ul>
+                {% endif %}
+            </div>
 
-        <!-- Área -->
-        <div>
-            <label>Área:</label>
-            {{ form.area }}
-            {{ form.area.errors }}
-        </div>
+            <!-- Área -->
+            <div>
+                <label>Área:</label>
+                {{ form.area }}
+                {% if form.area.errors %}
+                    <ul class="errorlist">
+                    {% for error in form.area.errors %}
+                        <li>{{ error }}</li>
+                    {% endfor %}
+                    </ul>
+                {% endif %}
+            </div>
 
-        <!-- Doctor Actual -->
-        <div>
-            <label>Doctor Actual:</label>
-            {{ form.doctor_actual }}
-            {{ form.doctor_actual.errors }}
-        </div>
+            <!-- Doctor Actual -->
+            <div>
+                <label>Doctor Actual:</label>
+                {{ form.doctor_actual }}
+                {% if form.doctor_actual.errors %}
+                    <ul class="errorlist">
+                    {% for error in form.doctor_actual.errors %}
+                        <li>{{ error }}</li>
+                    {% endfor %}
+                    </ul>
+                {% endif %}
+            </div>
 
-        <!-- Enfermero Actual -->
-        <div>
-            <label>Enfermero Actual:</label>
-            {{ form.enfermero_actual }}
-            {{ form.enfermero_actual.errors }}
-        </div>
+            <!-- Enfermero Actual -->
+            <div>
+                <label>Enfermero Actual:</label>
+                {{ form.enfermero_actual }}
+                {% if form.enfermero_actual.errors %}
+                    <ul class="errorlist">
+                    {% for error in form.enfermero_actual.errors %}
+                        <li>{{ error }}</li>
+                    {% endfor %}
+                    </ul>
+                {% endif %}
+            </div>
 
-        <!-- Hospital de Origen -->
-        <div>
-            <label>Hospital de Origen:</label>
-            {{ form.hospital_origen }}
-            {{ form.hospital_origen.errors }}
-        </div>
+            <!-- Hospital de Origen -->
+            <div>
+                <label>Hospital de Origen:</label>
+                {{ form.hospital_origen }}
+                {% if form.hospital_origen.errors %}
+                    <ul class="errorlist">
+                    {% for error in form.hospital_origen.errors %}
+                        <li>{{ error }}</li>
+                    {% endfor %}
+                    </ul>
+                {% endif %}
+            </div>
 
-        <div>
-            <button type="submit">Guardar Paciente</button>
-            <a href="{% url 'jefa:pacientes_jefa' %}">Volver</a>
-        </div>
-    </form>
+            <div>
+                <button type="submit" class="button">Guardar Paciente</button>
+                <a href="{% url 'jefa:pacientes_jefa' %}" class="button">Volver</a>
+            </div>
+        </form>
+    {% endif %}
 </body>
 </html>

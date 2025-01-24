@@ -61,14 +61,26 @@ def dar_alta_paciente(request, paciente_id):
 def agregar_pacientes(request):
     if request.method == 'POST':
         form = PacienteForm(request.POST)
-        if form.is_valid():
-            try:
+        try:
+            if form.is_valid():
                 paciente = form.save()
                 messages.success(request, 'Paciente agregado exitosamente.')
-            except Exception as e:
-                messages.error(request, 'No se pudo crear el paciente. Por favor, intente nuevamente.')
-        else:
-            messages.error(request, 'Por favor, corrija los errores en el formulario.')
+                return redirect('jefa:pacientes_jefa')
+        except form.ValidationError as e:
+            if str(e) == "['INACTIVO']":
+                print("Paciente inactivo encontrado")  # Debug
+                paciente_inactivo = form.paciente_inactivo
+                print(f"ID del paciente: {paciente_inactivo.id}")  # Debug
+                context = {
+                    'form': form,
+                    'paciente_inactivo': paciente_inactivo,
+                    'titulo': 'Paciente Encontrado',
+                    'confirmar_reactivacion': True  # Asegurándonos que esto es True
+                }
+                print("Context:", context)  # Debug
+                return render(request, 'usuarioJefa/agregar_pacientes.html', context)
+            else:
+                messages.error(request, str(e))
     else:
         form = PacienteForm()
     
@@ -76,6 +88,27 @@ def agregar_pacientes(request):
         'form': form,
         'titulo': 'Agregar Nuevo Paciente'
     })
+
+def reactivar_paciente_(request, paciente_id):
+    if request.method == 'POST':
+        try:
+            paciente = Paciente.objects.get(id=paciente_id)
+            if not paciente.esta_activo:
+                paciente.esta_activo = True
+                paciente.estado = 'ACTIVO'
+                paciente.fecha_alta = None
+                paciente.fecha_ingreso = timezone.now()
+                paciente.numero_ingresos += 1
+                paciente.save()
+                messages.success(request, 'Paciente reactivado exitosamente.')
+            else:
+                messages.error(request, 'El paciente ya está activo.')
+        except Paciente.DoesNotExist:
+            messages.error(request, 'No se encontró el paciente.')
+        except Exception as e:
+            messages.error(request, f'Error al reactivar paciente: {str(e)}')
+    
+    return redirect('jefa:pacientes_jefa')
 
 def historiales_(request):
     tipo_historial = request.GET.get('tipo', 'pacientes')

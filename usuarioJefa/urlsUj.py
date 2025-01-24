@@ -37,4 +37,6 @@ urlpatterns = [
     path('crear-fortaleza/', views.crear_fortaleza, name='crear_fortaleza'),
     path('editar-area/<int:area_id>/', views.editar_area, name='editar_area'),
     path('editar-fortaleza/<int:fortaleza_id>/', views.editar_fortaleza, name='editar_fortaleza'),
+
+    path('reactivar-paciente/<int:paciente_id>/', views.reactivar_paciente_, name='reactivar_paciente_'),
 ]

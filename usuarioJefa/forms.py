@@ -31,12 +31,20 @@ class PacienteForm(forms.ModelForm):
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
         
-        # Configurar los campos
         self.fields['area'].queryset = AreaEspecialidad.objects.all()
         self.fields['doctor_actual'].queryset = Usuarios.objects.filter(tipoUsuario='DR')
         self.fields['enfermero_actual'].queryset = Usuarios.objects.filter(tipoUsuario='EN')
         self.fields['hospital_origen'].required = False
+
+    def clean_num_seguridad_social(self):
+        num_seguridad_social = self.cleaned_data.get('num_seguridad_social')
+        paciente = Paciente.objects.filter(num_seguridad_social=num_seguridad_social).first()
         
-        # Filtrar doctores y enfermeros
-        self.fields['doctor_actual'].queryset = Usuarios.objects.filter(tipoUsuario='DR')
-        self.fields['enfermero_actual'].queryset = Usuarios.objects.filter(tipoUsuario='EN')
+        if paciente:
+            if paciente.esta_activo:
+                raise forms.ValidationError('Ya existe un paciente activo con este número de seguridad social.')
+            else:
+                # Guardamos el paciente inactivo para usarlo en la vista
+                self.paciente_inactivo = paciente
+                raise forms.ValidationError('INACTIVO')  # Usamos esto como señal
+        return num_seguridad_social
