@@ -579,7 +579,104 @@ def get_instrumento(request, instrumento_id):
         'especificaciones': instrumento.especificaciones
     })
 
+@login_required
+def areas_fortalezas(request):
+    areas = AreaEspecialidad.objects.all()
+    fortalezas = Fortaleza.objects.all()
+    return render(request, 'usuarioJefa/areas_fortalezas.html', {
+        'areas': areas,
+        'fortalezas': fortalezas
+    })
 
+@login_required
+def crear_area(request):
+    if request.method == 'POST':
+        nombre = request.POST.get('nombre')
+        descripcion = request.POST.get('descripcion')
+        fortalezas_ids = request.POST.getlist('fortalezas')
+        
+        try:
+            area = AreaEspecialidad.objects.create(
+                nombre=nombre,
+                descripcion=descripcion
+            )
+            if len(fortalezas_ids) <= 4:
+                area.fortalezas.set(fortalezas_ids)
+                messages.success(request, 'Área creada exitosamente.')
+                return redirect('areas_fortalezas')
+            else:
+                area.delete()
+                messages.error(request, 'No se pueden asignar más de 4 fortalezas a un área.')
+        except Exception as e:
+            messages.error(request, f'Error al crear el área: {str(e)}')
+    
+    fortalezas = Fortaleza.objects.all()
+    return render(request, 'usuarioJefa/crear_area.html', {'fortalezas': fortalezas})
+
+@login_required
+def crear_fortaleza(request):
+    if request.method == 'POST':
+        nombre = request.POST.get('nombre')
+        descripcion = request.POST.get('descripcion')
+        
+        try:
+            Fortaleza.objects.create(
+                nombre=nombre,
+                descripcion=descripcion
+            )
+            messages.success(request, 'Fortaleza creada exitosamente.')
+            return redirect('areas_fortalezas')
+        except Exception as e:
+            messages.error(request, f'Error al crear la fortaleza: {str(e)}')
+    
+    return render(request, 'usuarioJefa/crear_fortaleza.html')
+
+@login_required
+def editar_area(request, area_id):
+    area = get_object_or_404(AreaEspecialidad, id=area_id)
+    
+    if request.method == 'POST':
+        nombre = request.POST.get('nombre')
+        descripcion = request.POST.get('descripcion')
+        fortalezas_ids = request.POST.getlist('fortalezas')
+        
+        try:
+            if len(fortalezas_ids) <= 4:
+                area.nombre = nombre
+                area.descripcion = descripcion
+                area.save()
+                area.fortalezas.set(fortalezas_ids)
+                messages.success(request, 'Área actualizada exitosamente.')
+                return redirect('areas_fortalezas')
+            else:
+                messages.error(request, 'No se pueden asignar más de 4 fortalezas a un área.')
+        except Exception as e:
+            messages.error(request, f'Error al actualizar el área: {str(e)}')
+    
+    fortalezas = Fortaleza.objects.all()
+    return render(request, 'usuarioJefa/editar_area.html', {
+        'area': area,
+        'fortalezas': fortalezas
+    })
+
+@login_required
+def editar_fortaleza(request, fortaleza_id):
+    fortaleza = get_object_or_404(Fortaleza, id=fortaleza_id)
+    
+    if request.method == 'POST':
+        nombre = request.POST.get('nombre')
+        descripcion = request.POST.get('descripcion')
+        
+        try:
+            fortaleza.nombre = nombre
+            fortaleza.descripcion = descripcion
+            fortaleza.save()
+            messages.success(request, 'Fortaleza actualizada exitosamente.')
+            return redirect('areas_fortalezas')
+        except Exception as e:
+            messages.error(request, f'Error al actualizar la fortaleza: {str(e)}')
+    
+    return render(request, 'usuarioJefa/editar_fortaleza.html', {'fortaleza': fortaleza})
 #//////////////////////////////////////////////////////////////////
 #////////////////////////////////////////////////////////////////////
 #/777777777777777777777777777777777777777777777777777777777777777777

@@ -31,4 +31,10 @@ urlpatterns = [
     path('dar_alta_paciente/<int:paciente_id>/', views.dar_alta_paciente, name='dar_alta_paciente'),
     path('historial/<int:paciente_id>/', views.detalle_historial, name='detalle_historial'),
     path('reactivar_paciente/<int:paciente_id>/', views.reactivar_paciente, name='reactivar_paciente'),
+
+    path('areas-fortalezas/', views.areas_fortalezas, name='areas_fortalezas'),
+    path('crear-area/', views.crear_area, name='crear_area'),
+    path('crear-fortaleza/', views.crear_fortaleza, name='crear_fortaleza'),
+    path('editar-area/<int:area_id>/', views.editar_area, name='editar_area'),
+    path('editar-fortaleza/<int:fortaleza_id>/', views.editar_fortaleza, name='editar_fortaleza'),
 ]

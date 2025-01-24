@@ -1,10 +1,13 @@
 from django.contrib.auth.models import AbstractUser
 from django.db import models
 from django.utils import timezone
+from django.core.exceptions import ValidationError
+
 
 class AreaEspecialidad(models.Model):
     nombre = models.CharField(max_length=100, unique=True)
     descripcion = models.TextField(blank=True, null=True)
+    fortalezas = models.ManyToManyField('Fortaleza', blank=True)
 
     def __str__(self):
         return self.nombre
@@ -12,6 +15,11 @@ class AreaEspecialidad(models.Model):
     class Meta:
         verbose_name = 'Área de Especialidad'
         verbose_name_plural = 'Áreas de Especialidad'
+
+    def clean(self):
+        # Validar máximo 4 fortalezas
+        if self.fortalezas.count() > 4:
+            raise ValidationError('Un área no puede tener más de 4 fortalezas asociadas.')
 
 class Fortaleza(models.Model):
     nombre = models.CharField(max_length=100, unique=True)

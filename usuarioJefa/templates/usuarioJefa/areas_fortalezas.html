@@ -1,0 +1,137 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <title>Áreas y Fortalezas</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/css/bootstrap.min.css" rel="stylesheet">
+    <style>
+        .menu-container {
+            margin-bottom: 20px;
+            padding: 15px;
+            background-color: #f8f9fa;
+        }
+        .button {
+            margin: 0 10px;
+            padding: 8px 15px;
+            text-decoration: none;
+            color: #495057;
+        }
+    </style>
+</head>
+<body>
+    <!-- Menú -->
+    <div class="menu-container">
+        <h1>Menu Jefa de piso</h1>
+        <a href="{% url 'jefa:pacientes_jefa' %}" class="button">Pacientes</a>
+        <a href="{% url 'jefa:calendario_area' %}" class="button">Calendario</a>
+        <a href="{% url 'jefa:historiales_' %}" class="button">Historiales</a>
+        <a href="{% url 'jefa:almacen_' %}" class="button">Almacen</a>
+        <a href="{% url 'jefa:usuarios_' %}" class="button">Usuarios</a>
+        <a href="{% url 'jefa:areas_fortalezas' %}" class="button">Areas</a>
+        <br><br>
+        <a href="{% url 'login:login' %}" class="button">Cerrar sesión</a>
+    </div>
+
+    <!-- Contenido -->
+    <div class="container">
+        <div class="row mb-4">
+            <div class="col">
+                <h2>Gestión de Áreas y Fortalezas</h2>
+            </div>
+            <div class="col-auto">
+                <a href="{% url 'jefa:crear_area' %}" class="btn btn-primary me-2">Nueva Área</a>
+                <a href="{% url 'jefa:crear_fortaleza' %}" class="btn btn-success">Nueva Fortaleza</a>
+            </div>
+        </div>
+
+        {% if messages %}
+        <div class="messages">
+            {% for message in messages %}
+            <div class="alert alert-{{ message.tags }} alert-dismissible fade show" role="alert">
+                {{ message }}
+                <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+            </div>
+            {% endfor %}
+        </div>
+        {% endif %}
+
+        <div class="row">
+            <!-- Áreas -->
+            <div class="col-md-6">
+                <div class="card">
+                    <div class="card-header">
+                        <h3 class="card-title">Áreas</h3>
+                    </div>
+                    <div class="card-body">
+                        <table class="table table-striped">
+                            <thead>
+                                <tr>
+                                    <th>Nombre</th>
+                                    <th>Fortalezas Asignadas</th>
+                                    <th>Acciones</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for area in areas %}
+                                <tr>
+                                    <td>{{ area.nombre }}</td>
+                                    <td>
+                                        {% for fortaleza in area.fortalezas.all %}
+                                            <span class="badge bg-info">{{ fortaleza.nombre }}</span>
+                                        {% endfor %}
+                                    </td>
+                                    <td>
+                                        <a href="{% url 'jefa:editar_area' area.id %}" class="btn btn-sm btn-warning">Editar</a>
+                                    </td>
+                                </tr>
+                                {% empty %}
+                                <tr>
+                                    <td colspan="3" class="text-center">No hay áreas registradas</td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Fortalezas -->
+            <div class="col-md-6">
+                <div class="card">
+                    <div class="card-header">
+                        <h3 class="card-title">Fortalezas</h3>
+                    </div>
+                    <div class="card-body">
+                        <table class="table table-striped">
+                            <thead>
+                                <tr>
+                                    <th>Nombre</th>
+                                    <th>Descripción</th>
+                                    <th>Acciones</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for fortaleza in fortalezas %}
+                                <tr>
+                                    <td>{{ fortaleza.nombre }}</td>
+                                    <td>{{ fortaleza.descripcion|truncatechars:50 }}</td>
+                                    <td>
+                                        <a href="{% url 'jefa:editar_fortaleza' fortaleza.id %}" class="btn btn-sm btn-warning">Editar</a>
+                                    </td>
+                                </tr>
+                                {% empty %}
+                                <tr>
+                                    <td colspan="3" class="text-center">No hay fortalezas registradas</td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/js/bootstrap.bundle.min.js"></script>
+</body>
+</html>

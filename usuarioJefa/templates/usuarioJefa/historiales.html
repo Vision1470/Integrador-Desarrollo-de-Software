@@ -40,6 +40,17 @@
         </script>
 </head>
 <body>
+    <div class="menu-container">
+        <h1>Menu Jefa de piso</h1>
+        <a href="{% url 'jefa:pacientes_jefa' %}" class="button">Pacientes</a>
+        <a href="{% url 'jefa:calendario_area' %}" class="button">Calendario</a>
+        <a href="{% url 'jefa:historiales_' %}" class="button">Historiales</a>
+        <a href="{% url 'jefa:almacen_' %}" class="button">Almacen</a>
+        <a href="{% url 'jefa:usuarios_' %}" class="button">Usuarios</a>
+        <a href="{% url 'jefa:areas_fortalezas' %}" class="button">Areas</a>
+        <br><br>
+        <a href="{% url 'login:login' %}" class="button">Cerrar sesión</a>
+    </div>
     <h1>Historiales</h1>
 
     <!-- Tabs de navegación -->
