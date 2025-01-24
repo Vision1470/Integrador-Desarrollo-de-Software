@@ -1040,13 +1040,15 @@ def activar_sobrecarga(request):
     return render(request, 'usuarioJefa/activar_sobrecarga.html', {'form': form})
 
 def desactivar_sobrecarga(request, sobrecarga_id):
-    sobrecarga = get_object_or_404(AreaSobrecarga, id=sobrecarga_id, activo=True)
+    sobrecarga = get_object_or_404(AreaSobrecarga, id=sobrecarga_id)
     if request.method == 'POST':
-        sobrecarga.activo = False
-        sobrecarga.fecha_fin = timezone.now()
-        sobrecarga.save()
-        messages.success(request, f'Sobrecarga en {sobrecarga.area.nombre} desactivada.')
-        return redirect('lista_areas_sobrecarga')
+        if sobrecarga.activo:  # Verificar si está activa
+            sobrecarga.activo = False
+            sobrecarga.fecha_fin = timezone.now()
+            sobrecarga.save()
+            messages.success(request, f'Sobrecarga en {sobrecarga.area.nombre} desactivada.')
+        return redirect('jefa:lista_areas_sobrecarga')
+    return render(request, 'usuarioJefa/confirmar_desactivar_sobrecarga.html', {'sobrecarga': sobrecarga})
     
     return render(request, 'usuarioJefa/confirmar_desactivar_sobrecarga.html', 
                  {'sobrecarga': sobrecarga})

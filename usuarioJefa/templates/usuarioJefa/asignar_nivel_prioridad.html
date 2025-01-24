@@ -2,97 +2,6 @@
 <html lang="es">
 <head>
     <meta charset="UTF-8">
-    <title>Confirmar Desactivación de Sobrecarga</title>
-    <style>
-        .menu-container {
-            margin-bottom: 20px;
-        }
-        .button {
-            margin: 5px;
-            padding: 10px 20px;
-            text-decoration: none;
-            background-color: #007bff;
-            color: white;
-            border-radius: 4px;
-        }
-        .confirmation-container {
-            max-width: 500px;
-            margin: 0 auto;
-            padding: 20px;
-        }
-        .card {
-            border: 1px solid #dee2e6;
-            border-radius: 8px;
-            background: white;
-            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
-        }
-        .card-header {
-            padding: 15px 20px;
-            background: #f8f9fa;
-            border-bottom: 1px solid #dee2e6;
-            border-radius: 8px 8px 0 0;
-        }
-        .card-body {
-            padding: 20px;
-        }
-        .btn {
-            padding: 10px 20px;
-            border: none;
-            border-radius: 4px;
-            cursor: pointer;
-            margin-right: 10px;
-        }
-        .btn-danger {
-            background-color: #dc3545;
-            color: white;
-        }
-        .btn-secondary {
-            background-color: #6c757d;
-            color: white;
-        }
-    </style>
-</head>
-<body>
-    <div class="menu-container">
-        <h1>Menú Jefa de piso</h1>
-        <a href="{% url 'jefa:pacientes_jefa' %}" class="button">Pacientes</a>
-        <a href="{% url 'jefa:calendario_area' %}" class="button">Calendario</a>
-        <a href="{% url 'jefa:historiales_' %}" class="button">Historiales</a>
-        <a href="{% url 'jefa:almacen_' %}" class="button">Almacen</a>
-        <a href="{% url 'jefa:usuarios_' %}" class="button">Usuarios</a>
-        <a href="{% url 'jefa:areas_fortalezas' %}" class="button">Areas</a>
-        <br><br>
-    </div>
-
-    <div class="confirmation-container">
-        <div class="card">
-            <div class="card-header">
-                <h2 style="margin: 0;">Confirmar Desactivación de Sobrecarga</h2>
-            </div>
-            <div class="card-body">
-                <p style="margin-bottom: 20px;">
-                    ¿Está seguro que desea desactivar la sobrecarga en el área {{ sobrecarga.area.nombre }}?
-                </p>
-
-                <form method="post" style="display: flex; gap: 10px;">
-                    {% csrf_token %}
-                    <button type="submit" class="btn btn-danger">Confirmar Desactivación</button>
-                    <a href="{% url 'jefa:lista_areas_sobrecarga' %}" class="btn btn-secondary">Cancelar</a>
-                </form>
-            </div>
-        </div>
-    </div>
-
-    <br><br><br>
-    <a href="{% url 'jefa:menu_jefa' %}" class="button">Volver</a>
-</body>
-</html>
-
-
-<!DOCTYPE html>
-<html lang="es">
-<head>
-    <meta charset="UTF-8">
     <title>Asignar Nivel de Prioridad</title>
     <style>
         .menu-container {
@@ -119,12 +28,11 @@
             margin-bottom: 5px;
             font-weight: bold;
         }
-        .form-select, .form-input {
+        select, input {
             width: 100%;
             padding: 8px;
             border: 1px solid #ddd;
             border-radius: 4px;
-            margin-top: 5px;
         }
         .btn {
             padding: 10px 20px;
@@ -147,11 +55,6 @@
             border: 1px solid transparent;
             border-radius: 4px;
         }
-        .alert-success {
-            background-color: #d4edda;
-            border-color: #c3e6cb;
-            color: #155724;
-        }
         .alert-danger {
             background-color: #f8d7da;
             border-color: #f5c6cb;
@@ -172,7 +75,7 @@
     </div>
 
     <div class="form-container">
-        <h1 style="margin-bottom: 30px;">Asignar Nivel de Prioridad</h1>
+        <h1>Asignar Nivel de Prioridad</h1>
 
         {% if messages %}
             {% for message in messages %}
@@ -184,7 +87,6 @@
 
         <form method="post">
             {% csrf_token %}
-            
             <div class="form-group">
                 <label class="form-label">Área</label>
                 {{ form.area }}
@@ -205,7 +107,7 @@
                 {% endif %}
             </div>
 
-            <div style="display: flex; gap: 10px; margin-top: 30px;">
+            <div style="margin-top: 30px;">
                 <button type="submit" class="btn btn-primary">Asignar Prioridad</button>
                 <a href="{% url 'jefa:lista_areas_sobrecarga' %}" class="btn btn-secondary">Cancelar</a>
             </div>
