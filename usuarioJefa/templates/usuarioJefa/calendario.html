@@ -134,6 +134,37 @@
            </tbody>
        </table>
 
+       <!-- Panel flotante del historial de asignaciones -->
+<div class="historial-floating-panel" id="historialAsignacionesPanel" style="display: none;">
+    <div class="historial-header">
+        <h3>Historial de Asignaciones - {{ area_seleccionada.nombre }}</h3>
+        <button onclick="toggleHistorialAsignaciones()" class="close-button">&times;</button>
+    </div>
+    <div class="historial-content">
+        {% if historial_asignaciones %}
+            {% for asignacion in historial_asignaciones %}
+            <div class="cambio-item">
+                <div class="cambio-fecha">
+                    {{ asignacion.fecha_inicio|date:"d/m/Y" }} - {{ asignacion.fecha_fin|date:"d/m/Y" }}
+                </div>
+                <div class="cambio-details">
+                    <p><strong>Enfermero:</strong> {{ asignacion.enfermero.username }}</p>
+                    <p><strong>Bimestre:</strong> {{ asignacion.bimestre }}</p>
+                    <p><strong>Año:</strong> {{ asignacion.year }}</p>
+                </div>
+            </div>
+            {% endfor %}
+        {% else %}
+            <p class="no-changes">No hay asignaciones registradas para esta área</p>
+        {% endif %}
+    </div>
+</div>
+
+<!-- Botón para mostrar el historial de asignaciones -->
+<button type="button" onclick="toggleHistorialAsignaciones()" class="show-historial-button" style="bottom: 80px;">
+    Ver Asignaciones Activas
+</button>
+
        <!-- Panel flotante del historial -->
        <div class="historial-floating-panel" id="historialPanel">
            <div class="historial-header">
@@ -206,8 +237,6 @@
 <form method="POST" action="{% url 'jefa:modificar_asignacion' %}">
     {% csrf_token %}
     
-    <div class="form-group">
-        <label for="enfermero">Seleccionar empleado:</label>
         <select id="enfermero" name="enfermero" required>
             <option value="">Seleccionar empleado</option>
             {% for enfermero in enfermeros %}
@@ -216,17 +245,13 @@
                 </option>
             {% endfor %}
         </select>
-    </div>
 
-    <div class="form-group">
-        <label for="area">Seleccionar área:</label>
         <select id="area" name="area" required>
             <option value="">Seleccionar área</option>
             {% for area in areas %}
                 <option value="{{ area.id }}">{{ area.nombre }}</option>
             {% endfor %}
         </select>
-    </div>
 
     <div class="form-group">
         <label for="fecha_inicio">Fecha inicio:</label>
@@ -236,15 +261,6 @@
     <div class="form-group">
         <label for="fecha_fin">Fecha fin:</label>
         <input type="date" id="fecha_fin" name="fecha_fin" required>
-    </div>
-
-    <div class="form-group">
-        <label for="cuidados">Cuidados:</label>
-        <select id="cuidados" name="cuidados" multiple>  
-            {% for cuidado in cuidados %}
-                <option value="{{ cuidado.id }}">{{ cuidado.nombre }}</option>
-            {% endfor %}
-        </select>
     </div>
 
     <button type="submit" class="btn btn-primary">Modificar</button>
@@ -270,6 +286,11 @@
         }
     }
  
+    function toggleHistorialAsignaciones() {
+    const panel = document.getElementById('historialAsignacionesPanel');
+    panel.style.display = panel.style.display === 'none' ? 'block' : 'none';
+    }
+
     function toggleHistorial() {
         const panel = document.getElementById('historialPanel');
         panel.style.display = panel.style.display === 'none' ? 'block' : 'none';
@@ -277,12 +298,21 @@
  
     // Cerrar el panel si se hace clic fuera de él
     window.onclick = function(event) {
-        const panel = document.getElementById('historialPanel');
-        if (event.target === panel) {
-            panel.style.display = 'none';
-        }
+    const panelModificaciones = document.getElementById('historialPanel');
+    const panelAsignaciones = document.getElementById('historialAsignacionesPanel');
+    
+    if (event.target === panelModificaciones) {
+        panelModificaciones.style.display = 'none';
     }
+    if (event.target === panelAsignaciones) {
+        panelAsignaciones.style.display = 'none';
+    }
+    }
+
+    
     </script>
+    
+    
     
  </body>
  </html>

@@ -633,6 +633,42 @@ def calendario_area(request):
         mes_actual = datetime.now().month
         año_actual = datetime.now().year
 
+    if area_seleccionada:
+        area = AreaEspecialidad.objects.get(id=area_seleccionada)
+        mes_actual = datetime.now().month
+        año_actual = datetime.now().year
+        cal = calendar.monthcalendar(año_actual, mes_actual)
+        
+        # Asignaciones del mes actual
+        asignaciones = AsignacionCalendario.objects.filter(
+            area=area,
+            fecha_inicio__year=año_actual,
+            fecha_inicio__month=mes_actual
+        ).select_related('enfermero')
+        
+        # Historial completo de asignaciones para el área
+        historial_asignaciones = AsignacionCalendario.objects.filter(
+            area=area
+        ).select_related('enfermero').order_by('-fecha_inicio')
+        
+        # Historial de modificaciones
+        historial = HistorialCambios.objects.filter(
+            Q(area_anterior_id=area_seleccionada) | Q(area_nueva_id=area_seleccionada)
+        ).select_related(
+            'asignacion__enfermero',
+            'area_anterior',
+            'area_nueva'
+        ).order_by('-fecha_cambio')
+        
+    else:
+        area = None
+        cal = None
+        asignaciones = None
+        historial = None
+        historial_asignaciones = None
+        mes_actual = datetime.now().month
+        año_actual = datetime.now().year
+
     context = {
         'areas': areas,
         'all_areas': areas,
@@ -644,7 +680,8 @@ def calendario_area(request):
         'bimestres': bimestres,
         'mes_actual': mes_actual,
         'año_actual': año_actual,
-        'historial': historial
+        'historial': historial,
+        'historial_asignaciones': historial_asignaciones,
     }
     
     return render(request, 'usuariojefa/calendario.html', context)
