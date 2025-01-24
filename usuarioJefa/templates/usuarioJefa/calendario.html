@@ -2,6 +2,82 @@
 <html lang="en">
 <head>
    <meta charset="UTF-8" />
+   <style>
+   .historial-floating-panel {
+       display: none;
+       position: fixed;
+       top: 50%;
+       left: 50%;
+       transform: translate(-50%, -50%);
+       width: 80%;
+       max-width: 800px;
+       max-height: 80vh;
+       background: white;
+       border-radius: 8px;
+       box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+       z-index: 1000;
+   }
+
+   .historial-header {
+       display: flex;
+       justify-content: space-between;
+       align-items: center;
+       padding: 15px 20px;
+       background: #f8f9fa;
+       border-bottom: 1px solid #dee2e6;
+       border-radius: 8px 8px 0 0;
+   }
+
+   .historial-content {
+       padding: 20px;
+       overflow-y: auto;
+       max-height: calc(80vh - 60px);
+   }
+
+   .cambio-item {
+       margin-bottom: 20px;
+       padding: 15px;
+       border: 1px solid #dee2e6;
+       border-radius: 4px;
+       background: #fff;
+   }
+
+   .cambio-fecha {
+       color: #6c757d;
+       font-size: 0.9em;
+       margin-bottom: 10px;
+   }
+
+   .cambio-details p {
+       margin: 5px 0;
+   }
+
+   .close-button {
+       background: none;
+       border: none;
+       font-size: 1.5em;
+       cursor: pointer;
+       color: #6c757d;
+   }
+
+   .show-historial-button {
+       position: fixed;
+       bottom: 20px;
+       right: 20px;
+       padding: 10px 20px;
+       background: #007bff;
+       color: white;
+       border: none;
+       border-radius: 4px;
+       cursor: pointer;
+   }
+
+   .no-changes {
+       text-align: center;
+       color: #6c757d;
+       font-style: italic;
+   }
+   </style>
 </head>
 <body>
    <form method="GET" action="">
@@ -57,6 +133,41 @@
                {% endfor %}
            </tbody>
        </table>
+
+       <!-- Panel flotante del historial -->
+       <div class="historial-floating-panel" id="historialPanel">
+           <div class="historial-header">
+               <h3>Historial de Cambios - {{ area_seleccionada.nombre }}</h3>
+               <button onclick="toggleHistorial()" class="close-button">&times;</button>
+           </div>
+           <div class="historial-content">
+               {% if historial %}
+                   {% for cambio in historial %}
+                   <div class="cambio-item">
+                       <div class="cambio-fecha">
+                           {{ cambio.fecha_cambio|date:"d/m/Y H:i" }}
+                       </div>
+                       <div class="cambio-details">
+                           <p><strong>Enfermero:</strong> {{ cambio.asignacion.enfermero.username }}</p>
+                           <p><strong>Cambio de área:</strong> 
+                               {{ cambio.area_anterior.nombre }} → {{ cambio.area_nueva.nombre }}</p>
+                           <p><strong>Período anterior:</strong> 
+                               {{ cambio.fecha_inicio_anterior|date:"d/m/Y" }} - {{ cambio.fecha_fin_anterior|date:"d/m/Y" }}</p>
+                           <p><strong>Nuevo período:</strong> 
+                               {{ cambio.fecha_inicio_nueva|date:"d/m/Y" }} - {{ cambio.fecha_fin_nueva|date:"d/m/Y" }}</p>
+                       </div>
+                   </div>
+                   {% endfor %}
+               {% else %}
+                   <p class="no-changes">No hay cambios registrados para esta área</p>
+               {% endif %}
+           </div>
+       </div>
+
+       <!-- Botón para mostrar el historial -->
+       <button type="button" onclick="toggleHistorial()" class="show-historial-button">
+           Ver Historial de Cambios
+       </button>
        {% endif %}
    </form>
 
@@ -144,20 +255,34 @@
 
 
    <script>
-function updateAreas(enfermeroId) {
-    document.querySelectorAll('#area option').forEach(option => {
-        option.disabled = false;
-    });
-
-    if (enfermeroId) {
+    function updateAreas(enfermeroId) {
         document.querySelectorAll('#area option').forEach(option => {
-            const disabledFor = option.getAttribute('data-disabled-for');
-            if (disabledFor && disabledFor.includes(enfermeroId)) {
-                option.disabled = true;
-            }
+            option.disabled = false;
         });
+ 
+        if (enfermeroId) {
+            document.querySelectorAll('#area option').forEach(option => {
+                const disabledFor = option.getAttribute('data-disabled-for');
+                if (disabledFor && disabledFor.includes(enfermeroId)) {
+                    option.disabled = true;
+                }
+            });
+        }
     }
-}
-</script>
-</body>
-</html>
+ 
+    function toggleHistorial() {
+        const panel = document.getElementById('historialPanel');
+        panel.style.display = panel.style.display === 'none' ? 'block' : 'none';
+    }
+ 
+    // Cerrar el panel si se hace clic fuera de él
+    window.onclick = function(event) {
+        const panel = document.getElementById('historialPanel');
+        if (event.target === panel) {
+            panel.style.display = 'none';
+        }
+    }
+    </script>
+    
+ </body>
+ </html>

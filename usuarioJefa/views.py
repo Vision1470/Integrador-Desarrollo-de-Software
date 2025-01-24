@@ -607,21 +607,35 @@ def calendario_area(request):
         año_actual = datetime.now().year
         cal = calendar.monthcalendar(año_actual, mes_actual)
         
+        # Obtener asignaciones del mes actual
         asignaciones = AsignacionCalendario.objects.filter(
             area=area,
             fecha_inicio__year=año_actual,
             fecha_inicio__month=mes_actual
         ).select_related('enfermero')
+        
+        # Obtener TODO el historial de cambios para el área sin filtrar por fecha
+        historial = HistorialCambios.objects.filter(
+            Q(area_anterior_id=area_seleccionada) | Q(area_nueva_id=area_seleccionada)
+        ).select_related(
+            'asignacion__enfermero',
+            'area_anterior',
+            'area_nueva'
+        ).order_by('-fecha_cambio')
+        
+        # Debug para verificar si hay registros
+        print(f"Historial encontrado: {historial.count()} registros")
     else:
         area = None
         cal = None
         asignaciones = None
+        historial = None
         mes_actual = datetime.now().month
         año_actual = datetime.now().year
 
     context = {
         'areas': areas,
-        'all_areas': areas,  # Para el formulario de creación
+        'all_areas': areas,
         'enfermeros': enfermeros,
         'area_seleccionada': area,
         'calendario': cal,
@@ -629,7 +643,8 @@ def calendario_area(request):
         'areas_excluidas': areas_excluidas,
         'bimestres': bimestres,
         'mes_actual': mes_actual,
-        'año_actual': año_actual
+        'año_actual': año_actual,
+        'historial': historial
     }
     
     return render(request, 'usuariojefa/calendario.html', context)
@@ -733,49 +748,52 @@ def crear_asignacion(request):
 def modificar_asignacion(request):
     if request.method == 'POST':
         enfermero_id = request.POST.get('enfermero')
-        area_id = request.POST.get('area')
+        area_nueva_id = request.POST.get('area')
         fecha_inicio = request.POST.get('fecha_inicio')
         fecha_fin = request.POST.get('fecha_fin')
 
         try:
-            # Obtener la asignación actual del enfermero
+            # Obtener la asignación actual usando la fecha proporcionada
             asignacion = AsignacionCalendario.objects.get(
                 enfermero_id=enfermero_id,
                 activo=True,
-                fecha_inicio__lte=timezone.now(),
-                fecha_fin__gte=timezone.now()
+                fecha_inicio__lte=fecha_inicio,
+                fecha_fin__gte=fecha_inicio
             )
             
-            # Obtener la nueva área
-            nueva_area = AreaEspecialidad.objects.get(id=area_id)
+            # Guardar datos anteriores antes de modificar
+            area_anterior = asignacion.area
+            fecha_inicio_anterior = asignacion.fecha_inicio
+            fecha_fin_anterior = asignacion.fecha_fin
             
-            # Actualizar la asignación
+            # Realizar la modificación
+            nueva_area = AreaEspecialidad.objects.get(id=area_nueva_id)
             asignacion.area = nueva_area
             asignacion.fecha_inicio = fecha_inicio
             asignacion.fecha_fin = fecha_fin
             asignacion.save()
             
+            # Registrar el cambio en el historial
+            HistorialCambios.objects.create(
+                asignacion=asignacion,
+                area_anterior=area_anterior,
+                area_nueva=nueva_area,
+                fecha_inicio_anterior=fecha_inicio_anterior,
+                fecha_fin_anterior=fecha_fin_anterior,
+                fecha_inicio_nueva=fecha_inicio,
+                fecha_fin_nueva=fecha_fin
+            )
+            
             messages.success(request, 'Asignación modificada exitosamente')
         except AsignacionCalendario.DoesNotExist:
-            messages.error(request, 'No se encontró una asignación activa para este enfermero')
-        except AreaEspecialidad.DoesNotExist:
-            messages.error(request, 'El área seleccionada no existe')
+            messages.error(request, 'No se encontró una asignación activa para este enfermero en las fechas seleccionadas')
+        except AsignacionCalendario.MultipleObjectsReturned:
+            messages.error(request, 'Hay múltiples asignaciones para este enfermero en las fechas seleccionadas')
         except Exception as e:
             messages.error(request, f'Error al modificar asignación: {str(e)}')
 
         return redirect('jefa:calendario_area')
     
-    # Si es GET, renderizar el template con los datos necesarios
-    enfermeros = Usuarios.objects.filter(tipoUsuario='Enfermeria')
-    areas = AreaEspecialidad.objects.all()
-    cuidados = cuidados.objects.all()  # Asegúrate de tener este modelo definido
-    
-    return render(request, 'tu_template.html', {
-        'enfermeros': enfermeros,
-        'areas': areas,
-        'cuidados': cuidados
-    })
-
 def eliminar_asignacion(request, asignacion_id):
     try:
         asignacion = AsignacionCalendario.objects.get(id=asignacion_id)

@@ -180,7 +180,6 @@ class HistorialCompletoPaciente(models.Model):
         return FormularioSeguimiento.objects.filter(paciente=self.paciente).order_by('-fecha_registro')
     
 # models.py
-from django.db import models
 
 class AsignacionCalendario(models.Model):
     enfermero = models.ForeignKey('login.Usuarios', on_delete=models.PROTECT)
@@ -193,3 +192,16 @@ class AsignacionCalendario(models.Model):
 
     class Meta:
         unique_together = ['enfermero', 'fecha_inicio', 'fecha_fin']
+
+class HistorialCambios(models.Model):
+    asignacion = models.ForeignKey(AsignacionCalendario, on_delete=models.CASCADE)
+    fecha_cambio = models.DateTimeField(auto_now_add=True)
+    area_anterior = models.ForeignKey('login.AreaEspecialidad', on_delete=models.PROTECT, related_name='cambios_anteriores')
+    area_nueva = models.ForeignKey('login.AreaEspecialidad', on_delete=models.PROTECT, related_name='cambios_nuevos')
+    fecha_inicio_anterior = models.DateField()
+    fecha_fin_anterior = models.DateField()
+    fecha_inicio_nueva = models.DateField()
+    fecha_fin_nueva = models.DateField()
+
+    class Meta:
+        ordering = ['-fecha_cambio']
