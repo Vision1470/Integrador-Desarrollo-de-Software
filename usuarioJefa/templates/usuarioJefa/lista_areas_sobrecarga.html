@@ -1,11 +1,13 @@
 <!DOCTYPE html>
+{% load custom_filters %}
 <html lang="es">
 <head>
     <meta charset="UTF-8">
-    <title>Áreas en Sobrecarga</title>
+    <title>Gestión de Sobrecarga</title>
     <style>
         .menu-container {
             margin-bottom: 20px;
+            padding: 15px;
         }
         .button {
             margin: 5px;
@@ -14,63 +16,110 @@
             background-color: #007bff;
             color: white;
             border-radius: 4px;
+            display: inline-block;
         }
-        .card {
-            border: 1px solid #dee2e6;
-            border-radius: 8px;
-            margin-bottom: 20px;
-            background: white;
-        }
-        .card-header {
-            padding: 15px;
-            background: #f8f9fa;
-            border-bottom: 1px solid #dee2e6;
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-        }
-        .card-body {
-            padding: 20px;
-        }
-        .badge {
-            padding: 5px 10px;
-            border-radius: 4px;
-            font-size: 12px;
-        }
-        .badge-danger {
-            background: #dc3545;
-            color: white;
-        }
-        .grid-container {
-            display: grid;
-            grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
-            gap: 20px;
+        .content-container {
+            max-width: 1000px;
+            margin: 0 auto;
             padding: 20px;
         }
         .alert {
             padding: 15px;
-            margin-bottom: 20px;
+            margin-bottom: 15px;
             border: 1px solid transparent;
             border-radius: 4px;
         }
-        .alert-info {
-            background-color: #cce5ff;
-            border-color: #b8daff;
-            color: #004085;
+        .alert-success {
+            background-color: #d4edda;
+            border-color: #c3e6cb;
+            color: #155724;
+        }
+        .alert-warning {
+            background-color: #fff3cd;
+            border-color: #ffeeba;
+            color: #856404;
+        }
+        h1 {
+            margin-bottom: 20px;
+        }
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-bottom: 20px;
+        }
+        th, td {
+            padding: 12px 15px;
+            text-align: left;
+            border-bottom: 1px solid #dee2e6;
+        }
+        th {
+            background-color: #f8f9fa;
+            font-weight: bold;
+        }
+        tr:hover {
+            background-color: #f8f9fa;
         }
         .btn {
-            padding: 8px 16px;
+            padding: 8px 12px;
+            border: none;
             border-radius: 4px;
             cursor: pointer;
-            border: none;
+            font-size: 14px;
+        }
+        .btn-primary {
+            background-color: #007bff;
+            color: white;
+        }
+        .btn-success {
+            background-color: #28a745;
+            color: white;
         }
         .btn-danger {
             background-color: #dc3545;
             color: white;
         }
-        .btn-primary {
-            background-color: #007bff;
+        .btn-info {
+            background-color: #17a2b8;
             color: white;
+        }
+        .estado-badge {
+            display: inline-block;
+            padding: 5px 10px;
+            border-radius: 4px;
+            font-weight: bold;
+        }
+        .sobrecarga-activa {
+            background-color: #dc3545;
+            color: white;
+        }
+        .sobrecarga-inactiva {
+            background-color: #28a745;
+            color: white;
+        }
+        .prioridad-badge {
+            display: inline-block;
+            padding: 3px 8px;
+            border-radius: 4px;
+            font-weight: bold;
+            font-size: 12px;
+        }
+        .prioridad-1 { background-color: #28a745; color: white; }
+        .prioridad-2 { background-color: #17a2b8; color: white; }
+        .prioridad-3 { background-color: #ffc107; color: black; }
+        .prioridad-4 { background-color: #fd7e14; color: white; }
+        .prioridad-5 { background-color: #dc3545; color: white; }
+        .sin-prioridad { background-color: #6c757d; color: white; }
+        
+        .metric-container {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 10px;
+        }
+        .metric-item {
+            background-color: #f8f9fa;
+            border-radius: 4px;
+            padding: 5px 10px;
+            font-size: 14px;
         }
     </style>
 </head>
@@ -83,17 +132,12 @@
         <a href="{% url 'jefa:almacen_' %}" class="button">Almacen</a>
         <a href="{% url 'jefa:usuarios_' %}" class="button">Usuarios</a>
         <a href="{% url 'jefa:areas_fortalezas' %}" class="button">Areas</a>
+        <a href="{% url 'jefa:asignar_nivel_prioridad' %}" class="button">Niveles de Prioridad</a>
         <br><br>
     </div>
 
-    <div style="padding: 20px;">
-        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
-            <h1 style="margin: 0;">Áreas en Sobrecarga</h1>
-            <div>
-                <a href="{% url 'jefa:activar_sobrecarga' %}" class="btn btn-primary">Activar Sobrecarga</a>
-                <a href="{% url 'jefa:asignar_nivel_prioridad' %}" class="btn btn-primary" style="margin-left: 10px;">Asignar Prioridad</a>
-            </div>
-        </div>
+    <div class="content-container">
+        <h1>Gestión de Sobrecarga de Áreas</h1>
 
         {% if messages %}
             {% for message in messages %}
@@ -103,51 +147,89 @@
             {% endfor %}
         {% endif %}
 
-        {% if areas_sobrecarga %}
-            <div class="grid-container">
-                {% for sobrecarga in areas_sobrecarga %}
-                    <div class="card">
-                        <div class="card-header">
-                            <h3 style="margin: 0;">{{ sobrecarga.area.nombre }}</h3>
-                            <span class="badge badge-danger">Sobrecarga Activa</span>
-                        </div>
-                        <div class="card-body">
-                            {% for area_id, metricas in metricas_areas.items %}
-                            {% if area_id == sobrecarga.area.id %}
-                            <div style="margin-bottom: 15px;">
-                                <p><strong>Total Pacientes:</strong> {{ metricas.total_pacientes }}</p>
-                                <p><strong>Enfermeros Activos:</strong> {{ metricas.enfermeros_activos }}</p>
-                                <p><strong>Ratio Pacientes/Enfermero:</strong> {{ metricas.ratio_pacientes_enfermero|floatformat:2 }}</p>
-                                <div>
-                                    <strong>Pacientes por Gravedad:</strong>
-                                    <ul style="margin: 10px 0; padding-left: 20px;">
-                                        <li>Alta: {{ metricas.pacientes_por_gravedad.3|default:0 }}</li>
-                                        <li>Media: {{ metricas.pacientes_por_gravedad.2|default:0 }}</li>
-                                        <li>Baja: {{ metricas.pacientes_por_gravedad.1|default:0 }}</li>
-                                    </ul>
+        <table>
+            <thead>
+                <tr>
+                    <th>Área</th>
+                    <th>Nivel de Prioridad</th>
+                    <th>Estado</th>
+                    <th>Métricas</th>
+                    <th>Acciones</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for area in areas %}
+                <tr>
+                    <td>{{ area.nombre }}</td>
+                    <td>
+                        {% with nivel=niveles_prioridad|get_item:area.id %}
+                            {% if nivel %}
+                                <span class="prioridad-badge prioridad-{{ nivel }}">
+                                    {{ nivel }}
+                                </span>
+                            {% else %}
+                                <span class="prioridad-badge sin-prioridad">Sin asignar</span>
+                            {% endif %}
+                        {% endwith %}
+                    </td>
+                    <td>
+                        {% if area.id in areas_sobrecargadas_ids %}
+                            <span class="estado-badge sobrecarga-activa">Sobrecarga Activa</span>
+                        {% else %}
+                            <span class="estado-badge sobrecarga-inactiva">Normal</span>
+                        {% endif %}
+                    </td>
+                    <td>
+                        {% with metricas=metricas_areas|get_item:area.id %}
+                            <div class="metric-container">
+                                <div class="metric-item">
+                                    <strong>Pacientes:</strong> {{ metricas.total_pacientes }}
+                                </div>
+                                <div class="metric-item">
+                                    <strong>Enfermeros:</strong> {{ metricas.enfermeros_activos }}
+                                </div>
+                                <div class="metric-item">
+                                    <strong>Ratio:</strong> {{ metricas.ratio_pacientes_enfermero|floatformat:1 }}
                                 </div>
                             </div>
-                            {% endif %}
-                            {% endfor %}
-
-                            <form method="post" action="{% url 'jefa:desactivar_sobrecarga' sobrecarga.id %}">
+                        {% endwith %}
+                    </td>
+                    <td>
+                        {% if area.id in areas_sobrecargadas_ids %}
+                            <form method="post" style="display: inline-block;">
                                 {% csrf_token %}
-                                <button type="submit" class="btn btn-danger" style="width: 100%;">
+                                <input type="hidden" name="area_id" value="{{ area.id }}">
+                                <input type="hidden" name="accion" value="desactivar">
+                                <button type="submit" class="btn btn-danger">
                                     Desactivar Sobrecarga
                                 </button>
                             </form>
-                        </div>
-                    </div>
+                        {% else %}
+                            <form method="post" style="display: inline-block;">
+                                {% csrf_token %}
+                                <input type="hidden" name="area_id" value="{{ area.id }}">
+                                <input type="hidden" name="accion" value="activar">
+                                <button type="submit" class="btn btn-success">
+                                    Activar Sobrecarga
+                                </button>
+                            </form>
+                        {% endif %}
+                        
+                        
+                    </td>
+                </tr>
+                {% empty %}
+                <tr>
+                    <td colspan="5">No hay áreas disponibles.</td>
+                </tr>
                 {% endfor %}
-            </div>
-        {% else %}
-            <div class="alert alert-info">
-                No hay áreas en sobrecarga actualmente.
-            </div>
-        {% endif %}
+            </tbody>
+        </table>
     </div>
 
     <br><br><br>
-    <a href="{% url 'jefa:calendario_area' %}" class="button">Volver</a>
+    <div style="text-align: center;">
+        <a href="{% url 'jefa:menu_jefa' %}" class="button">Volver al Menú</a>
+    </div>
 </body>
 </html>

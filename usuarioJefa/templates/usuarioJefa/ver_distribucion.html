@@ -1,0 +1,85 @@
+# templates/usuarioJefa/ver_distribucion.html
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <title>Ver Distribución de Pacientes</title>
+    <style>
+        .menu-container {
+            margin-bottom: 20px;
+        }
+        .button {
+            margin: 5px;
+            padding: 10px 20px;
+            text-decoration: none;
+            background-color: #007bff;
+            color: white;
+            border-radius: 4px;
+        }
+        .distribucion-container {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+        .enfermero-card {
+            background: white;
+            border: 1px solid #dee2e6;
+            border-radius: 8px;
+            margin-bottom: 20px;
+            padding: 15px;
+        }
+        .pacientes-list {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+            gap: 10px;
+            margin-top: 10px;
+        }
+        .paciente-item {
+            background-color: #f8f9fa;
+            border-radius: 4px;
+            padding: 10px;
+        }
+        .gravedad-1 { border-left: 4px solid #28a745; }
+        .gravedad-2 { border-left: 4px solid #ffc107; }
+        .gravedad-3 { border-left: 4px solid #dc3545; }
+    </style>
+</head>
+<body>
+
+    <div class="distribucion-container">
+        <h2>{{ area.nombre }} - Distribución Actual</h2>
+
+        {% for distribucion in distribuciones %}
+            <div class="enfermero-card">
+                <h3>{{ distribucion.enfermero.nombre }}</h3>
+                <p>Total pacientes: {{ distribucion.total_pacientes }}</p>
+                
+                <div class="pacientes-list">
+                    {% if distribucion.pacientes_gravedad_3 > 0 %}
+                        <div class="paciente-item gravedad-3">
+                            <strong>Gravedad Alta:</strong> {{ distribucion.pacientes_gravedad_3 }} paciente(s)
+                        </div>
+                    {% endif %}
+                    
+                    {% if distribucion.pacientes_gravedad_2 > 0 %}
+                        <div class="paciente-item gravedad-2">
+                            <strong>Gravedad Media:</strong> {{ distribucion.pacientes_gravedad_2 }} paciente(s)
+                        </div>
+                    {% endif %}
+                    
+                    {% if distribucion.pacientes_gravedad_1 > 0 %}
+                        <div class="paciente-item gravedad-1">
+                            <strong>Gravedad Baja:</strong> {{ distribucion.pacientes_gravedad_1 }} paciente(s)
+                        </div>
+                    {% endif %}
+                </div>
+            </div>
+        {% empty %}
+            <p>No hay distribución de pacientes para mostrar.</p>
+        {% endfor %}
+    </div>
+
+    <br><br><br>
+    <a href="{% url 'jefa:menu_jefa' %}" class="button">Volver</a>
+</body>
+</html>

@@ -1,331 +1,659 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="es">
 <head>
-   <meta charset="UTF-8" />
-   <style>
-   .historial-floating-panel {
-       display: none;
-       position: fixed;
-       top: 50%;
-       left: 50%;
-       transform: translate(-50%, -50%);
-       width: 80%;
-       max-width: 800px;
-       max-height: 80vh;
-       background: white;
-       border-radius: 8px;
-       box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
-       z-index: 1000;
-   }
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Calendario de Área</title>
+    <style>
+        :root {
+            --primary-color: #0A2342;
+            --secondary-color: #2E4057;
+            --accent-color: #1E90FF;
+            --background-color: #EBF0F5;
+            --table-background: #F0F4F7;
+            --text-color: #333333;
+            --white: #FFFFFF;
+            --border-color: #D1D1D1;
+            --success-color: #28a745;
+            --warning-color: #ffc107;
+            --danger-color: #dc3545;
+            --info-color: #17a2b8;
+        }
 
-   .historial-header {
-       display: flex;
-       justify-content: space-between;
-       align-items: center;
-       padding: 15px 20px;
-       background: #f8f9fa;
-       border-bottom: 1px solid #dee2e6;
-       border-radius: 8px 8px 0 0;
-   }
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: 'Roboto', 'Arial', sans-serif;
+        }
 
-   .historial-content {
-       padding: 20px;
-       overflow-y: auto;
-       max-height: calc(80vh - 60px);
-   }
+        body {
+            background-color: var(--background-color);
+            color: var(--text-color);
+            line-height: 1.6;
+            padding: 20px;
+        }
 
-   .cambio-item {
-       margin-bottom: 20px;
-       padding: 15px;
-       border: 1px solid #dee2e6;
-       border-radius: 4px;
-       background: #fff;
-   }
+        .container {
+            background-color: var(--white);
+            border-radius: 8px;
+            box-shadow: 0 15px 30px rgba(0,0,0,0.15);
+            padding: 30px;
+            width: 100%;
+            max-width: 1200px;
+            border-left: 5px solid var(--primary-color);
+            margin: 0 auto;
+        }
 
-   .cambio-fecha {
-       color: #6c757d;
-       font-size: 0.9em;
-       margin-bottom: 10px;
-   }
+        .header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 20px;
+        }
 
-   .cambio-details p {
-       margin: 5px 0;
-   }
+        .header h1 {
+            font-size: 2rem;
+            color: var(--primary-color);
+            font-weight: 700;
+        }
 
-   .close-button {
-       background: none;
-       border: none;
-       font-size: 1.5em;
-       cursor: pointer;
-       color: #6c757d;
-   }
+        .menu-buttons {
+            display: flex;
+            gap: 15px;
+        }
 
-   .show-historial-button {
-       position: fixed;
-       bottom: 20px;
-       right: 20px;
-       padding: 10px 20px;
-       background: #007bff;
-       color: white;
-       border: none;
-       border-radius: 4px;
-       cursor: pointer;
-   }
+        .menu-button {
+            background-color: var(--primary-color);
+            color: var(--white);
+            text-decoration: none;
+            padding: 10px 15px;
+            border-radius: 4px;
+            font-size: 0.9rem;
+            font-weight: 600;
+            text-transform: uppercase;
+            transition: background-color 0.3s ease;
+        }
 
-   .no-changes {
-       text-align: center;
-       color: #6c757d;
-       font-style: italic;
-   }
-   </style>
+        .menu-button:hover {
+            background-color: var(--secondary-color);
+        }
+
+        .action-button {
+            background-color: var(--secondary-color);
+            color: var(--white);
+            border: none;
+            padding: 8px 12px;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 0.9rem;
+            font-weight: 600;
+            text-transform: uppercase;
+            transition: background-color 0.3s ease;
+            text-decoration: none;
+            display: inline-block;
+        }
+
+        .action-button:hover {
+            background-color: var(--accent-color);
+        }
+
+        .action-button.primary {
+            background-color: var(--primary-color);
+        }
+
+        .action-button.success {
+            background-color: var(--success-color);
+        }
+
+        .action-button.warning {
+            background-color: var(--warning-color);
+            color: var(--text-color);
+        }
+
+        .action-button.info {
+            background-color: var(--info-color);
+        }
+
+        .form-section {
+            margin-bottom: 20px;
+            padding: 20px;
+            border: 1px solid var(--border-color);
+            border-radius: 4px;
+            background-color: #f8f9fa;
+        }
+
+        .form-section h3 {
+            color: var(--primary-color);
+            margin-bottom: 15px;
+            font-size: 1.2rem;
+            padding-bottom: 5px;
+            border-bottom: 1px solid var(--border-color);
+        }
+
+        .form-group {
+            margin-bottom: 15px;
+        }
+
+        .form-label {
+            display: block;
+            margin-bottom: 5px;
+            font-weight: 500;
+        }
+
+        select, input[type="date"], button[type="submit"] {
+            padding: 10px;
+            border: 1px solid var(--border-color);
+            border-radius: 4px;
+            margin-right: 10px;
+            margin-bottom: 10px;
+            font-size: 1rem;
+        }
+
+        select {
+            background-color: var(--white);
+        }
+
+        select:focus, input:focus {
+            outline: none;
+            border-color: var(--accent-color);
+            box-shadow: 0 0 0 2px rgba(30, 144, 255, 0.2);
+        }
+
+        button[type="submit"] {
+            background-color: var(--primary-color);
+            color: var(--white);
+            cursor: pointer;
+            border: none;
+            font-weight: 600;
+            text-transform: uppercase;
+        }
+
+        button[type="submit"]:hover {
+            background-color: var(--secondary-color);
+        }
+
+        /* Calendario */
+        .calendar-header {
+            text-align: center;
+            margin-bottom: 20px;
+        }
+
+        .calendar-header h2 {
+            color: var(--accent-color);
+            font-size: 1.8rem;
+        }
+
+        .calendar-table {
+            width: 100%;
+            border-collapse: separate;
+            border-spacing: 2px;
+            margin-bottom: 30px;
+        }
+
+        .calendar-table th {
+            background-color: var(--primary-color);
+            color: var(--white);
+            padding: 10px;
+            text-align: center;
+            font-weight: 600;
+        }
+
+        .calendar-table td {
+            background-color: #f0f0f0;
+            padding: 15px;
+            text-align: center;
+            vertical-align: top;
+            height: 100px;
+            width: calc(100% / 7);
+            border-radius: 4px;
+        }
+
+        .calendar-table td:hover {
+            background-color: #e6e6e6;
+        }
+
+        .calendar-table td div {
+            font-size: 0.9rem;
+            padding: 2px 0;
+            color: var(--primary-color);
+        }
+
+        .calendar-table td div:nth-child(1) {
+            font-weight: bold;
+            font-size: 1.1rem;
+            margin-bottom: 5px;
+        }
+
+        /* Paneles flotantes */
+        .historial-floating-panel {
+            display: none;
+            position: fixed;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            width: 80%;
+            max-width: 800px;
+            max-height: 80vh;
+            background: var(--white);
+            border-radius: 8px;
+            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.2);
+            z-index: 1000;
+            border: 1px solid var(--border-color);
+        }
+
+        .historial-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 15px 20px;
+            background: var(--primary-color);
+            border-bottom: 1px solid var(--border-color);
+            border-radius: 8px 8px 0 0;
+        }
+
+        .historial-header h3 {
+            color: var(--white);
+            margin: 0;
+        }
+
+        .historial-content {
+            padding: 20px;
+            overflow-y: auto;
+            max-height: calc(80vh - 60px);
+        }
+
+        .cambio-item {
+            margin-bottom: 20px;
+            padding: 15px;
+            border: 1px solid var(--border-color);
+            border-radius: 4px;
+            background: var(--white);
+        }
+
+        .cambio-fecha {
+            color: var(--accent-color);
+            font-size: 0.9em;
+            margin-bottom: 10px;
+            font-weight: 600;
+        }
+
+        .cambio-details p {
+            margin: 5px 0;
+        }
+
+        .close-button {
+            background: none;
+            border: none;
+            font-size: 1.5em;
+            cursor: pointer;
+            color: var(--white);
+        }
+
+        .show-historial-button {
+            position: fixed;
+            bottom: 20px;
+            right: 20px;
+            padding: 10px 20px;
+            background: var(--accent-color);
+            color: var(--white);
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            font-weight: 600;
+            box-shadow: 0 2px 5px rgba(0, 0, 0, 0.2);
+        }
+
+        .show-historial-button:hover {
+            background: var(--secondary-color);
+        }
+
+        .no-changes {
+            text-align: center;
+            color: #6c757d;
+            font-style: italic;
+            padding: 20px;
+        }
+
+        /* Secciones de formularios */
+        .section-title {
+            margin-top: 30px;
+            margin-bottom: 15px;
+            color: var(--primary-color);
+            font-size: 1.4rem;
+            border-bottom: 2px solid var(--primary-color);
+            padding-bottom: 5px;
+            width: fit-content;
+        }
+
+        .form-inline {
+            display: flex;
+            flex-wrap: wrap;
+            align-items: center;
+            margin-bottom: 20px;
+        }
+
+        .area-selector-section {
+            margin-bottom: 30px;
+        }
+
+        .area-selector {
+            font-size: 1.4rem;
+            padding: 10px 15px;
+            border: 2px solid var(--primary-color);
+            border-radius: 4px;
+            margin-bottom: 15px;
+        }
+
+        .relacion-pacientes {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            margin-bottom: 20px;
+        }
+
+        @media (max-width: 768px) {
+            .container {
+                padding: 15px;
+            }
+            
+            .calendar-table {
+                font-size: 0.8rem;
+            }
+            
+            .calendar-table td {
+                padding: 5px;
+                height: 80px;
+            }
+            
+            .menu-buttons {
+                flex-wrap: wrap;
+            }
+            
+            .form-inline {
+                flex-direction: column;
+                align-items: stretch;
+            }
+            
+            .form-inline select, 
+            .form-inline input, 
+            .form-inline button {
+                width: 100%;
+                margin-bottom: 10px;
+            }
+            
+            .historial-floating-panel {
+                width: 95%;
+            }
+            
+            .show-historial-button {
+                width: 100%;
+                right: 0;
+                left: 0;
+                bottom: 0;
+                border-radius: 0;
+            }
+        }
+    </style>
 </head>
 <body>
-    <div class="menu-container">
-        <h1>Menu Jefa de piso</h1>
-        <a href="{% url 'jefa:pacientes_jefa' %}" class="button">Pacientes</a>
-        <a href="{% url 'jefa:calendario_area' %}" class="button">Calendario</a>
-        <a href="{% url 'jefa:historiales_' %}" class="button">Historiales</a>
-        <a href="{% url 'jefa:almacen_' %}" class="button">Almacen</a>
-        <a href="{% url 'jefa:usuarios_' %}" class="button">Usuarios</a>
-        <a href="{% url 'jefa:areas_fortalezas' %}" class="button">Areas</a>
-        <br><br>
-        <a href="{% url 'login:login' %}" class="button">Cerrar sesión</a>
+    <h1>Menu Jefa de Piso</h1>
+    <div class="menu-buttons">
+        <a href="{% url 'jefa:pacientes_jefa' %}" class="menu-button">Pacientes</a>
+        <a href="{% url 'jefa:calendario_area' %}" class="menu-button">Calendario</a>
+        <a href="{% url 'jefa:historiales_' %}" class="menu-button">Historiales</a>
+        <a href="{% url 'jefa:almacen_' %}" class="menu-button">Almacen</a>
+        <a href="{% url 'jefa:usuarios_' %}" class="menu-button">Usuarios</a>
+        <a href="{% url 'jefa:areas_fortalezas' %}" class="menu-button">Areas</a>
+        <form action="{% url 'login:login' %}" method="POST">
+            {% csrf_token %}
+            <button type="submit" class="menu-button">Cerrar Sesión</button>
+        </form>
     </div>
-   <form method="GET" action="">
-       <h1>
-           <select id="area" name="area" onchange="this.form.submit()">
-               <option value="">Seleccionar área</option>
-               {% for area in areas %}
-                   <option value="{{ area.id }}" {% if area_seleccionada.id == area.id %}selected{% endif %}>
-                       {{ area.nombre }}
-                   </option>
-               {% endfor %}
-           </select>
-       </h1>
-
-       {% if area_seleccionada %}
-       <text> Relacion de pacientes:
-           <select> <option> 1 </option></select> a
-           <select> <option> 2 </option></select> 
-           <button type="submit">Aceptar</button>
-       </text>
-
-       <h2 align="center" style="color: orange;">{{ mes_actual }} {{ año_actual }}</h2>
-       <br />
     
-       <table bgcolor="lightgrey" align="center" cellspacing="21" cellpadding="21">
-           <thead>
-               <tr>
-                   <th>Domingo</th>
-                   <th>Lunes</th>
-                   <th>Martes</th>
-                   <th>Miercoles</th>
-                   <th>Jueves</th>
-                   <th>Viernes</th>
-                   <th>Sabado</th>
-               </tr>
-           </thead>
-           <tbody>
-               {% for semana in calendario %}
-               <tr>
-                   {% for dia in semana %}
-                   <td>
-                       {% if dia != 0 %}
-                           {{ dia }}
-                           {% for asignacion in asignaciones %}
-                               {% if asignacion.fecha_inicio|date:"j" <= dia and asignacion.fecha_fin|date:"j" >= dia %}
-                               <div>{{ asignacion.enfermero.nombre }}</div>
-                               {% endif %}
-                           {% endfor %}
-                       {% endif %}
-                   </td>
-                   {% endfor %}
-               </tr>
-               {% endfor %}
-           </tbody>
-       </table>
+    <div class="container">
+        <div class="header">
+            <h1>Calendario de Área</h1>
+            <div class="menu-buttons">
+                <a href="{% url 'jefa:menu_jefa' %}" class="menu-button">Volver al Menú</a>
+            </div>
+        </div>
 
-       <!-- Panel flotante del historial de asignaciones -->
-<div class="historial-floating-panel" id="historialAsignacionesPanel" style="display: none;">
-    <div class="historial-header">
-        <h3>Historial de Asignaciones - {{ area_seleccionada.nombre }}</h3>
-        <button onclick="toggleHistorialAsignaciones()" class="close-button">&times;</button>
-    </div>
-    <div class="historial-content">
-        {% if historial_asignaciones %}
-            {% for asignacion in historial_asignaciones %}
-            <div class="cambio-item">
-                <div class="cambio-fecha">
-                    {{ asignacion.fecha_inicio|date:"d/m/Y" }} - {{ asignacion.fecha_fin|date:"d/m/Y" }}
+        <form method="GET" action="" class="area-selector-section">
+            <div class="form-group">
+                <select id="area" name="area" class="area-selector" onchange="this.form.submit()">
+                    <option value="">Seleccionar área</option>
+                    {% for area in areas %}
+                        <option value="{{ area.id }}" {% if area_seleccionada.id == area.id %}selected{% endif %}>
+                            {{ area.nombre }}
+                        </option>
+                    {% endfor %}
+                </select>
+            </div>
+
+            {% if area_seleccionada %}
+            <div class="relacion-pacientes">
+                <span>Relación de pacientes:</span>
+                <select> <option> 1 </option></select> 
+                <span>a</span>
+                <select> <option> 2 </option></select> 
+                <button type="submit" class="action-button">Aceptar</button>
+            </div>
+
+            <div class="calendar-header">
+                <h2>{{ mes_actual }} {{ año_actual }}</h2>
+            </div>
+        
+            <table class="calendar-table">
+                <thead>
+                    <tr>
+                        <th>Domingo</th>
+                        <th>Lunes</th>
+                        <th>Martes</th>
+                        <th>Miércoles</th>
+                        <th>Jueves</th>
+                        <th>Viernes</th>
+                        <th>Sábado</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for semana in calendario %}
+                    <tr>
+                        {% for dia in semana %}
+                        <td>
+                            {% if dia != 0 %}
+                                <div>{{ dia }}</div>
+                                {% for asignacion in asignaciones %}
+                                    {% if asignacion.fecha_inicio|date:"j" <= dia and asignacion.fecha_fin|date:"j" >= dia %}
+                                    <div>{{ asignacion.enfermero.nombre }}</div>
+                                    {% endif %}
+                                {% endfor %}
+                            {% endif %}
+                        </td>
+                        {% endfor %}
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+
+            <!-- Panel flotante del historial de asignaciones -->
+            <div class="historial-floating-panel" id="historialAsignacionesPanel">
+                <div class="historial-header">
+                    <h3>Historial de Asignaciones - {{ area_seleccionada.nombre }}</h3>
+                    <button onclick="toggleHistorialAsignaciones()" class="close-button">&times;</button>
                 </div>
-                <div class="cambio-details">
-                    <p><strong>Enfermero:</strong> {{ asignacion.enfermero.username }}</p>
-                    <p><strong>Bimestre:</strong> {{ asignacion.bimestre }}</p>
-                    <p><strong>Año:</strong> {{ asignacion.year }}</p>
+                <div class="historial-content">
+                    {% if historial_asignaciones %}
+                        {% for asignacion in historial_asignaciones %}
+                        <div class="cambio-item">
+                            <div class="cambio-fecha">
+                                {{ asignacion.fecha_inicio|date:"d/m/Y" }} - {{ asignacion.fecha_fin|date:"d/m/Y" }}
+                            </div>
+                            <div class="cambio-details">
+                                <p><strong>Enfermero:</strong> {{ asignacion.enfermero.username }}</p>
+                                <p><strong>Bimestre:</strong> {{ asignacion.bimestre }}</p>
+                                <p><strong>Año:</strong> {{ asignacion.year }}</p>
+                            </div>
+                        </div>
+                        {% endfor %}
+                    {% else %}
+                        <p class="no-changes">No hay asignaciones registradas para esta área</p>
+                    {% endif %}
                 </div>
             </div>
-            {% endfor %}
-        {% else %}
-            <p class="no-changes">No hay asignaciones registradas para esta área</p>
-        {% endif %}
+
+            <!-- Botón para mostrar el historial de asignaciones -->
+            <button type="button" onclick="toggleHistorialAsignaciones()" class="show-historial-button" style="bottom: 80px;">
+                Ver Asignaciones Activas
+            </button>
+
+            <!-- Panel flotante del historial -->
+            <div class="historial-floating-panel" id="historialPanel">
+                <div class="historial-header">
+                    <h3>Historial de Cambios - {{ area_seleccionada.nombre }}</h3>
+                    <button onclick="toggleHistorial()" class="close-button">&times;</button>
+                </div>
+                <div class="historial-content">
+                    {% if historial %}
+                        {% for cambio in historial %}
+                        <div class="cambio-item">
+                            <div class="cambio-fecha">
+                                {{ cambio.fecha_cambio|date:"d/m/Y H:i" }}
+                            </div>
+                            <div class="cambio-details">
+                                <p><strong>Enfermero:</strong> {{ cambio.asignacion.enfermero.username }}</p>
+                                <p><strong>Cambio de área:</strong> 
+                                    {{ cambio.area_anterior.nombre }} → {{ cambio.area_nueva.nombre }}</p>
+                                <p><strong>Período anterior:</strong> 
+                                    {{ cambio.fecha_inicio_anterior|date:"d/m/Y" }} - {{ cambio.fecha_fin_anterior|date:"d/m/Y" }}</p>
+                                <p><strong>Nuevo período:</strong> 
+                                    {{ cambio.fecha_inicio_nueva|date:"d/m/Y" }} - {{ cambio.fecha_fin_nueva|date:"d/m/Y" }}</p>
+                            </div>
+                        </div>
+                        {% endfor %}
+                    {% else %}
+                        <p class="no-changes">No hay cambios registrados para esta área</p>
+                    {% endif %}
+                </div>
+            </div>
+
+            <!-- Botón para mostrar el historial -->
+            <button type="button" onclick="toggleHistorial()" class="show-historial-button">
+                Ver Historial de Cambios
+            </button>
+            {% endif %}
+        </form>
+
+        <h3 class="section-title">Planeación de tareas</h3>
+        <form method="POST" action="{% url 'jefa:crear_asignacion' %}" class="form-section">
+            {% csrf_token %}
+            <div class="form-inline">
+                <select id="enfermeria" name="enfermero" required onchange="updateAreas(this.value)">
+                    <option value="">Seleccionar empleado</option>
+                    {% for enfermero in enfermeros %}
+                        <option value="{{ enfermero.id }}">{{ enfermero.username }}</option>
+                    {% endfor %}
+                </select>
+                
+                <select id="area" name="area" required>
+                    <option value="">Seleccionar área</option>
+                    {% for area in all_areas %}
+                        <option value="{{ area.id }}" 
+                                class="area-option"
+                                data-disabled-for="{% for enf_id, area_id in areas_excluidas.items %}{% if area_id == area.id %}{{ enf_id }} {% endif %}{% endfor %}">
+                            {{ area.nombre }}
+                        </option>
+                    {% endfor %}
+                </select>
+
+                <select id="bimestre" name="bimestre" required>
+                    <option value="">Seleccionar bimestre</option>
+                    {% for bimestre in bimestres %}
+                        <option value="{{ bimestre }}">Bimestre {{ bimestre }}</option>
+                    {% endfor %}
+                </select>
+                
+                <button type="submit" class="action-button">Aceptar</button>
+            </div>
+        </form>
+
+        <h3 class="section-title">Modificar tareas</h3>
+        <form method="POST" action="{% url 'jefa:modificar_asignacion' %}" class="form-section">
+            {% csrf_token %}
+            <div class="form-inline">
+                <select id="enfermero" name="enfermero" required>
+                    <option value="">Seleccionar empleado</option>
+                    {% for enfermero in enfermeros %}
+                        <option value="{{ enfermero.id }}">
+                            {{ enfermero.username }} - {{ enfermero.tipoUsuario }}
+                        </option>
+                    {% endfor %}
+                </select>
+
+                <select id="area" name="area" required>
+                    <option value="">Seleccionar área</option>
+                    {% for area in areas %}
+                        <option value="{{ area.id }}">{{ area.nombre }}</option>
+                    {% endfor %}
+                </select>
+
+                <div class="form-group">
+                    <label for="fecha_inicio" class="form-label">Fecha inicio:</label>
+                    <input type="date" id="fecha_inicio" name="fecha_inicio" required>
+                </div>
+
+                <div class="form-group">
+                    <label for="fecha_fin" class="form-label">Fecha fin:</label>
+                    <input type="date" id="fecha_fin" name="fecha_fin" required>
+                </div>
+
+                <button type="submit" class="action-button">Modificar</button>
+            </div>
+            
+            <div style="margin-top: 20px; text-align: center;">
+                <a href="{% url 'jefa:lista_areas_sobrecarga' %}" class="action-button info">Gestión de Sobrecarga</a>
+            </div>
+        </form>
     </div>
-</div>
 
-<!-- Botón para mostrar el historial de asignaciones -->
-<button type="button" onclick="toggleHistorialAsignaciones()" class="show-historial-button" style="bottom: 80px;">
-    Ver Asignaciones Activas
-</button>
-
-       <!-- Panel flotante del historial -->
-       <div class="historial-floating-panel" id="historialPanel">
-           <div class="historial-header">
-               <h3>Historial de Cambios - {{ area_seleccionada.nombre }}</h3>
-               <button onclick="toggleHistorial()" class="close-button">&times;</button>
-           </div>
-           <div class="historial-content">
-               {% if historial %}
-                   {% for cambio in historial %}
-                   <div class="cambio-item">
-                       <div class="cambio-fecha">
-                           {{ cambio.fecha_cambio|date:"d/m/Y H:i" }}
-                       </div>
-                       <div class="cambio-details">
-                           <p><strong>Enfermero:</strong> {{ cambio.asignacion.enfermero.username }}</p>
-                           <p><strong>Cambio de área:</strong> 
-                               {{ cambio.area_anterior.nombre }} → {{ cambio.area_nueva.nombre }}</p>
-                           <p><strong>Período anterior:</strong> 
-                               {{ cambio.fecha_inicio_anterior|date:"d/m/Y" }} - {{ cambio.fecha_fin_anterior|date:"d/m/Y" }}</p>
-                           <p><strong>Nuevo período:</strong> 
-                               {{ cambio.fecha_inicio_nueva|date:"d/m/Y" }} - {{ cambio.fecha_fin_nueva|date:"d/m/Y" }}</p>
-                       </div>
-                   </div>
-                   {% endfor %}
-               {% else %}
-                   <p class="no-changes">No hay cambios registrados para esta área</p>
-               {% endif %}
-           </div>
-       </div>
-
-       <!-- Botón para mostrar el historial -->
-       <button type="button" onclick="toggleHistorial()" class="show-historial-button">
-           Ver Historial de Cambios
-       </button>
-       {% endif %}
-   </form>
-
-   <h4>Planeación de tareas</h4>
-<form method="POST" action="{% url 'jefa:crear_asignacion' %}">
-    {% csrf_token %}
-    <select id="enfermeria" name="enfermero" required onchange="updateAreas(this.value)">
-        <option value="">Seleccionar empleado</option>
-        {% for enfermero in enfermeros %}
-            <option value="{{ enfermero.id }}">{{ enfermero.username }}</option>
-        {% endfor %}
-    </select>
-    
-    <select id="area" name="area" required>
-        <option value="">Seleccionar área</option>
-        {% for area in all_areas %}
-            <option value="{{ area.id }}" 
-                    class="area-option"
-                    data-disabled-for="{% for enf_id, area_id in areas_excluidas.items %}{% if area_id == area.id %}{{ enf_id }} {% endif %}{% endfor %}">
-                {{ area.nombre }}
-            </option>
-        {% endfor %}
-    </select>
-
-    <select id="bimestre" name="bimestre" required>
-        <option value="">Seleccionar bimestre</option>
-        {% for bimestre in bimestres %}
-            <option value="{{ bimestre }}">Bimestre {{ bimestre }}</option>
-        {% endfor %}
-    </select>
-    
-    <button type="submit">Aceptar</button>
-</form>
-
-<h4>Modificar tareas</h4>
-<form method="POST" action="{% url 'jefa:modificar_asignacion' %}">
-    {% csrf_token %}
-    
-        <select id="enfermero" name="enfermero" required>
-            <option value="">Seleccionar empleado</option>
-            {% for enfermero in enfermeros %}
-                <option value="{{ enfermero.id }}">
-                    {{ enfermero.username }} - {{ enfermero.tipoUsuario }}
-                </option>
-            {% endfor %}
-        </select>
-
-        <select id="area" name="area" required>
-            <option value="">Seleccionar área</option>
-            {% for area in areas %}
-                <option value="{{ area.id }}">{{ area.nombre }}</option>
-            {% endfor %}
-        </select>
-
-    <div class="form-group">
-        <label for="fecha_inicio">Fecha inicio:</label>
-        <input type="date" id="fecha_inicio" name="fecha_inicio" required>
-    </div>
-
-    <div class="form-group">
-        <label for="fecha_fin">Fecha fin:</label>
-        <input type="date" id="fecha_fin" name="fecha_fin" required>
-    </div>
-
-    <button type="submit" class="btn btn-primary">Modificar</button>
-
-    <a href="{% url 'jefa:lista_areas_sobrecarga' %}" class="button">Gestión de Sobrecarga</a>
-</form>
-
-   <br><br><br>
-   <a href="{% url 'jefa:menu_jefa' %}" class="button">Volver</a> 
-
-
-   <script>
-    function updateAreas(enfermeroId) {
-        document.querySelectorAll('#area option').forEach(option => {
-            option.disabled = false;
-        });
- 
-        if (enfermeroId) {
+    <script>
+        function updateAreas(enfermeroId) {
             document.querySelectorAll('#area option').forEach(option => {
-                const disabledFor = option.getAttribute('data-disabled-for');
-                if (disabledFor && disabledFor.includes(enfermeroId)) {
-                    option.disabled = true;
-                }
+                option.disabled = false;
             });
+    
+            if (enfermeroId) {
+                document.querySelectorAll('#area option').forEach(option => {
+                    const disabledFor = option.getAttribute('data-disabled-for');
+                    if (disabledFor && disabledFor.includes(enfermeroId)) {
+                        option.disabled = true;
+                    }
+                });
+            }
         }
-    }
- 
-    function toggleHistorialAsignaciones() {
-    const panel = document.getElementById('historialAsignacionesPanel');
-    panel.style.display = panel.style.display === 'none' ? 'block' : 'none';
-    }
-
-    function toggleHistorial() {
-        const panel = document.getElementById('historialPanel');
-        panel.style.display = panel.style.display === 'none' ? 'block' : 'none';
-    }
- 
-    // Cerrar el panel si se hace clic fuera de él
-    window.onclick = function(event) {
-    const panelModificaciones = document.getElementById('historialPanel');
-    const panelAsignaciones = document.getElementById('historialAsignacionesPanel');
     
-    if (event.target === panelModificaciones) {
-        panelModificaciones.style.display = 'none';
-    }
-    if (event.target === panelAsignaciones) {
-        panelAsignaciones.style.display = 'none';
-    }
-    }
+        function toggleHistorialAsignaciones() {
+            const panel = document.getElementById('historialAsignacionesPanel');
+            panel.style.display = panel.style.display === 'none' ? 'block' : 'none';
+        }
 
+        function toggleHistorial() {
+            const panel = document.getElementById('historialPanel');
+            panel.style.display = panel.style.display === 'none' ? 'block' : 'none';
+        }
     
+        // Cerrar el panel si se hace clic fuera de él
+        window.onclick = function(event) {
+            const panelModificaciones = document.getElementById('historialPanel');
+            const panelAsignaciones = document.getElementById('historialAsignacionesPanel');
+            
+            if (event.target === panelModificaciones) {
+                panelModificaciones.style.display = 'none';
+            }
+            if (event.target === panelAsignaciones) {
+                panelAsignaciones.style.display = 'none';
+            }
+        }
     </script>
-    
-    
-    
- </body>
- </html>
+</body>
+</html>

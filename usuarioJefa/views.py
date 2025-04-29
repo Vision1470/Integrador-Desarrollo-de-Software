@@ -1033,46 +1033,112 @@ def activar_sobrecarga(request):
             else:
                 messages.error(request, f'El área {area.nombre} ya está en sobrecarga.')
             
-            return redirect('lista_areas_sobrecarga')
+            return redirect('jefa:lista_areas_sobrecarga')  # Corregido con namespace
     else:
         form = ActivarSobrecargaForm()
     
     return render(request, 'usuarioJefa/activar_sobrecarga.html', {'form': form})
 
 def desactivar_sobrecarga(request, sobrecarga_id):
-    sobrecarga = get_object_or_404(AreaSobrecarga, id=sobrecarga_id)
+    sobrecarga = get_object_or_404(AreaSobrecarga, id=sobrecarga_id, activo=True)
     if request.method == 'POST':
-        if sobrecarga.activo:  # Verificar si está activa
-            sobrecarga.activo = False
-            sobrecarga.fecha_fin = timezone.now()
-            sobrecarga.save()
-            messages.success(request, f'Sobrecarga en {sobrecarga.area.nombre} desactivada.')
-        return redirect('jefa:lista_areas_sobrecarga')
-    return render(request, 'usuarioJefa/confirmar_desactivar_sobrecarga.html', {'sobrecarga': sobrecarga})
+        sobrecarga.activo = False
+        sobrecarga.fecha_fin = timezone.now()
+        sobrecarga.save()
+        messages.success(request, f'Sobrecarga en {sobrecarga.area.nombre} desactivada.')
+        return redirect('jefa:lista_areas_sobrecarga')  # Corregido con namespace
     
     return render(request, 'usuarioJefa/confirmar_desactivar_sobrecarga.html', 
                  {'sobrecarga': sobrecarga})
 
 def lista_areas_sobrecarga(request):
-    areas_sobrecarga = AreaSobrecarga.objects.filter(activo=True)
+    """Vista que muestra todas las áreas y permite gestionar sobrecargas"""
+    # Obtener todas las áreas
+    areas = AreaEspecialidad.objects.all()
+    
+    # Obtener áreas actualmente en sobrecarga
+    areas_sobrecargadas = AreaSobrecarga.objects.filter(activo=True)
+    areas_sobrecargadas_ids = [sobrecarga.area.id for sobrecarga in areas_sobrecargadas]
+    
+    # Si se envía un form para activar/desactivar
+    if request.method == 'POST':
+        accion = request.POST.get('accion')
+        area_id = request.POST.get('area_id')
+        
+        if area_id:
+            area = get_object_or_404(AreaEspecialidad, id=area_id)
+            
+            if accion == 'activar' and int(area_id) not in areas_sobrecargadas_ids:
+                # Activar sobrecarga
+                AreaSobrecarga.objects.create(
+                    area=area,
+                    fecha_inicio=timezone.now(),
+                    activo=True
+                )
+                messages.success(request, f'Área {area.nombre} marcada en sobrecarga.')
+                return redirect('jefa:lista_areas_sobrecarga')
+                
+            elif accion == 'desactivar' and int(area_id) in areas_sobrecargadas_ids:
+                # Desactivar sobrecarga
+                sobrecarga = AreaSobrecarga.objects.get(area_id=area_id, activo=True)
+                sobrecarga.activo = False
+                sobrecarga.fecha_fin = timezone.now()
+                sobrecarga.save()
+                messages.success(request, f'Sobrecarga en {area.nombre} desactivada.')
+                return redirect('jefa:lista_areas_sobrecarga')
+    
+    # Calcular métricas para todas las áreas
     metricas_areas = {}
+    for area in areas:
+        metricas_areas[area.id] = calcular_carga_trabajo(area)
     
-    for sobrecarga in areas_sobrecarga:
-        metricas_areas[sobrecarga.area.id] = calcular_carga_trabajo(sobrecarga.area)
+    # Preparar niveles de prioridad
+    niveles_prioridad = {}
+    for nivel in NivelPrioridadArea.objects.all():
+        niveles_prioridad[nivel.area.id] = nivel.nivel_prioridad
     
-    return render(request, 'usuarioJefa/lista_areas_sobrecarga.html', {
-        'areas_sobrecarga': areas_sobrecarga,
+    context = {
+        'areas': areas,
+        'areas_sobrecargadas_ids': areas_sobrecargadas_ids,
         'metricas_areas': metricas_areas,
-    })
+        'niveles_prioridad': niveles_prioridad,
+    }
+    
+    return render(request, 'usuarioJefa/lista_areas_sobrecarga.html', context)
 
 def asignar_nivel_prioridad(request):
-    if request.method == 'POST':
-        form = NivelPrioridadAreaForm(request.POST)
-        if form.is_valid():
-            form.save()
-            messages.success(request, 'Nivel de prioridad asignado correctamente.')
-            return redirect('lista_areas_sobrecarga')
-    else:
-        form = NivelPrioridadAreaForm()
+    # Obtener todas las áreas
+    areas = AreaEspecialidad.objects.all()
     
-    return render(request, 'usuarioJefa/asignar_nivel_prioridad.html', {'form': form})
+    if request.method == 'POST':
+        area_id = request.POST.get('area_id')
+        nivel_prioridad = request.POST.get('nivel_prioridad')
+        
+        if area_id and nivel_prioridad:
+            area = get_object_or_404(AreaEspecialidad, id=area_id)
+            
+            # Actualizar o crear el nivel de prioridad
+            nivel_obj, created = NivelPrioridadArea.objects.update_or_create(
+                area=area,
+                defaults={'nivel_prioridad': nivel_prioridad}
+            )
+            
+            if created:
+                messages.success(request, f'Nivel de prioridad asignado a {area.nombre}.')
+            else:
+                messages.success(request, f'Nivel de prioridad actualizado para {area.nombre}.')
+                
+            return redirect('jefa:asignar_nivel_prioridad')
+    
+    # Obtener los niveles de prioridad existentes
+    niveles_prioridad = {}
+    for nivel in NivelPrioridadArea.objects.all():
+        niveles_prioridad[nivel.area.id] = nivel.nivel_prioridad
+    
+    # Preparar contexto
+    context = {
+        'areas': areas,
+        'niveles_prioridad': niveles_prioridad
+    }
+    
+    return render(request, 'usuarioJefa/asignar_nivel_prioridad.html', context)

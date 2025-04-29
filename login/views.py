@@ -9,8 +9,6 @@ def login_view(request):
         usuario = request.POST.get('usuario', '').strip()
         contraseña = request.POST.get('contraseña', '')
 
-        # Validaciones previas...
-        
         try:
             user_exists = Usuarios.objects.filter(username=usuario).exists()
             if not user_exists:

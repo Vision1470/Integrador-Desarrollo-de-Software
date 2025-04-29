@@ -2,7 +2,8 @@
 <html lang="es">
 <head>
     <meta charset="UTF-8">
-    <title>Historiales</title>>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Historiales</title>
     <style>
         :root {
             --primary-color: #0A2342;
@@ -73,51 +74,6 @@
             background-color: var(--secondary-color);
         }
 
-        .tabs {
-            margin-bottom: 20px;
-        }
-
-        .tabs a {
-            text-decoration: none;
-            color: var(--text-color);
-            padding: 10px 15px;
-            border-radius: 4px;
-            transition: background-color 0.3s ease;
-        }
-
-        .tabs a.active {
-            background-color: var(--primary-color);
-            color: var(--white);
-            font-weight: bold;
-        }
-
-        .filters {
-            margin-bottom: 20px;
-        }
-
-        .filters input, .filters button {
-            padding: 8px 12px;
-            border: 1px solid var(--border-color);
-            border-radius: 4px;
-            font-size: 0.9rem;
-        }
-
-        .filters button {
-            background-color: var(--primary-color);
-            color: var(--white);
-            border-color: var(--primary-color);
-            cursor: pointer;
-            transition: background-color 0.3s ease;
-        }
-
-        .filters button:hover {
-            background-color: var(--secondary-color);
-        }
-
-        .table-container {
-            overflow-x: auto;
-        }
-
         .patients-table, .employees-table {
             width: 100%;
             border-collapse: separate;
@@ -178,6 +134,81 @@
             background-color: var(--accent-color);
         }
 
+        .tab-container {
+            margin-top: 20px;
+        }
+
+        .tab-nav {
+            list-style-type: none;
+            padding: 0;
+            margin: 0;
+            border-bottom: 2px solid var(--primary-color);
+        }
+
+        .tab-nav li {
+            display: inline-block;
+            margin-right: 10px;
+        }
+
+        .tab-nav li a {
+            text-decoration: none;
+            padding: 8px 16px;
+            color: var(--text-color);
+            border-radius: 4px 4px 0 0;
+            transition: background-color 0.3s ease;
+        }
+
+        .tab-nav li a.active {
+            background-color: var(--primary-color);
+            color: var(--white);
+            font-weight: 600;
+        }
+
+        .filters {
+            margin-bottom: 20px;
+            padding: 15px;
+            background-color: #f5f7fa;
+            border-radius: 4px;
+            border: 1px solid var(--border-color);
+        }
+
+        .filters input, .filters select {
+            padding: 8px 12px;
+            border: 1px solid var(--border-color);
+            border-radius: 4px;
+            margin-right: 10px;
+            margin-bottom: 10px;
+        }
+
+        .filters button {
+            background-color: var(--primary-color);
+            color: var(--white);
+            border: none;
+            padding: 8px 12px;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 0.9rem;
+            font-weight: 600;
+            text-transform: uppercase;
+            transition: background-color 0.3s ease;
+        }
+
+        .filters button:hover {
+            background-color: var(--secondary-color);
+        }
+
+        h2 {
+            margin-top: 30px;
+            margin-bottom: 15px;
+            color: var(--primary-color);
+            font-weight: 600;
+        }
+
+        .table-container {
+            overflow-x: auto;
+            margin-bottom: 30px;
+        }
+
         @media (max-width: 768px) {
             .container {
                 padding: 20px;
@@ -185,6 +216,10 @@
 
             .patients-table, .employees-table {
                 font-size: 0.9rem;
+            }
+            
+            .menu-buttons {
+                flex-wrap: wrap;
             }
         }
     </style>
@@ -222,213 +257,247 @@
             }
             return cookieValue;
         }
-        </script>
+    </script>
 </head>
 <body>
-    <div class="menu-container">
-        <h1>Menu Jefa de piso</h1>
-        <a href="{% url 'jefa:pacientes_jefa' %}" class="button">Pacientes</a>
-        <a href="{% url 'jefa:calendario_area' %}" class="button">Calendario</a>
-        <a href="{% url 'jefa:historiales_' %}" class="button">Historiales</a>
-        <a href="{% url 'jefa:almacen_' %}" class="button">Almacen</a>
-        <a href="{% url 'jefa:usuarios_' %}" class="button">Usuarios</a>
-        <a href="{% url 'jefa:areas_fortalezas' %}" class="button">Areas</a>
-        <br><br>
-        <a href="{% url 'login:login' %}" class="button">Cerrar sesión</a>
-    </div>
-    <h1>Historiales</h1>
-
-    <!-- Tabs de navegación -->
-    <div>
-        <a href="?tipo=pacientes" {% if tipo_historial == 'pacientes' %}style="font-weight: bold;"{% endif %}>
-            Historial Pacientes
-        </a> | 
-        <a href="?tipo=empleados" {% if tipo_historial == 'empleados' %}style="font-weight: bold;"{% endif %}>
-            Historial Empleados
-        </a>
-    </div>
-
-    {% if tipo_historial == 'pacientes' %}
-        <!-- Filtros para pacientes -->
-        <form method="GET" action="">
-            <input type="hidden" name="tipo" value="pacientes">
-            <input type="text" name="busqueda" placeholder="Buscar por nombre o NSS" value="{{ request.GET.busqueda }}">
-            <input type="date" name="fecha_inicio" value="{{ request.GET.fecha_inicio }}">
-            <input type="date" name="fecha_fin" value="{{ request.GET.fecha_fin }}">
-            <button type="submit">Buscar</button>
+    <h1>Menu Jefa de Piso</h1>
+    <div class="menu-buttons">
+        <a href="{% url 'jefa:pacientes_jefa' %}" class="menu-button">Pacientes</a>
+        <a href="{% url 'jefa:calendario_area' %}" class="menu-button">Calendario</a>
+        <a href="{% url 'jefa:historiales_' %}" class="menu-button">Historiales</a>
+        <a href="{% url 'jefa:almacen_' %}" class="menu-button">Almacen</a>
+        <a href="{% url 'jefa:usuarios_' %}" class="menu-button">Usuarios</a>
+        <a href="{% url 'jefa:areas_fortalezas' %}" class="menu-button">Areas</a>
+        <form action="{% url 'login:login' %}" method="POST">
+            {% csrf_token %}
+            <button type="submit" class="menu-button">Cerrar Sesión</button>
         </form>
+    </div>
+    
+    <div class="container">
+        <div class="header">
+            <h1>Historiales</h1>
+            <div class="menu-buttons">
+                <a href="{% url 'jefa:menu_jefa' %}" class="menu-button">Volver al Menú</a>
+            </div>
+        </div>
 
-        <!-- Tabla de Pacientes -->
-        <table border="1">
-        <!-- En el thead de la tabla de pacientes -->
-<thead>
-    <tr>
-        <th>Nombre Completo</th>
-        <th>NSS</th>
-        <th>Fecha de Ingreso</th>
-        <th>Fecha de Alta</th>  <!-- Nueva columna -->
-        <th>Número de Ingresos</th>
-        <th>Última Receta</th>
-        <th>Último Diagnóstico</th>
-        <th>Último Seguimiento</th>
-        <th>Ver Detalles</th>
-        <th>Acciones</th>
-    </tr>
-</thead>
-<tbody>
-    {% for paciente in registros %}
-        <tr>
-            <td>{{ paciente.nombres }} {{ paciente.apellidos }}</td>
-            <td>{{ paciente.num_seguridad_social }}</td>
-            <td>{{ paciente.fecha_ingreso|date:"d/m/Y" }}</td>
-            <td>{{ paciente.fecha_alta|date:"d/m/Y"|default:"-" }}</td>  <!-- Nueva celda -->
-            <td>{{ paciente.numero_ingresos }}</td>
-            <td>
-                {% with ultima_receta=paciente.recetas_doctor.first %}
-                    {% if ultima_receta %}
-                        {{ ultima_receta.fecha_creacion|date:"d/m/Y" }}
-                    {% else %}
-                        Sin recetas
-                    {% endif %}
-                {% endwith %}
-            </td>
-            <td>
-                {% with ultimo_diagnostico=paciente.diagnosticos.first %}
-                    {% if ultimo_diagnostico %}
-                        {{ ultimo_diagnostico.fecha_creacion|date:"d/m/Y" }}
-                    {% else %}
-                        Sin diagnósticos
-                    {% endif %}
-                {% endwith %}
-            </td>
-            <td>
-                {% with ultimo_seguimiento=paciente.seguimientocuidados_set.first %}
-                    {% if ultimo_seguimiento %}
-                        {{ ultimo_seguimiento.fecha_registro|date:"d/m/Y" }}
-                    {% else %}
-                        Sin seguimientos
-                    {% endif %}
-                {% endwith %}
-            </td>
-            <td>
-                <a href="{% url 'jefa:detalle_historial' paciente.id %}">Ver Detalles</a>
-            </td>
-            <td>
-                {% if not paciente.esta_activo %}
-                    <button onclick="confirmarReactivacion('{{ paciente.id }}')">Agregar</button>
-                {% endif %}
-            </td>
-        </tr>
-    {% empty %}
-        <tr>
-            <td colspan="9">No se encontraron pacientes</td>  <!-- Actualizado el colspan -->
-        </tr>
-    {% endfor %}
-</tbody>
-        </table>
-    {% else %}
-        <!-- Buscador para empleados -->
-        <form method="GET" action="">
-            <input type="hidden" name="tipo" value="empleados">
-            <input type="text" name="busqueda" placeholder="Buscar por nombre" value="{{ busqueda }}">
-            <button type="submit">Buscar</button>
-        </form>
+        <!-- Tabs de navegación -->
+        <div class="tab-container">
+            <ul class="tab-nav">
+                <li>
+                    <a href="?tipo=pacientes" class="{% if tipo_historial == 'pacientes' %}active{% endif %}">
+                        Historial Pacientes
+                    </a>
+                </li>
+                <li>
+                    <a href="?tipo=empleados" class="{% if tipo_historial == 'empleados' %}active{% endif %}">
+                        Historial Empleados
+                    </a>
+                </li>
+            </ul>
+        </div>
 
-        <!-- Enfermería -->
-        <h2>Enfermería</h2>
-        <table border="1">
-            <thead>
-                <tr>
-                    <th>Nombre</th>
-                    <th>Cédula</th>
-                    <th>Área Especialidad</th>
-                    <th>Fortalezas</th>
-                    <th>Estado</th>
-                    <th>Fecha de Registro</th>
-                    <th>Fecha de Baja</th>
-                    <th>Acciones</th>
-                </tr>
-            </thead>
-            <tbody>
-                {% for enfermero in enfermeros %}
-                    <tr>
-                        <td>{{ enfermero.first_name|default:enfermero.username }} {{ enfermero.apellidos }}</td>
-                        <td>{{ enfermero.cedula|default:"None" }}</td>
-                        <td>{{ enfermero.areaEspecialidad }}</td>
-                        <td>
-                            {% for fortaleza in enfermero.fortalezas.all %}
-                                {{ fortaleza }}{% if not forloop.last %}, {% endif %}
-                            {% endfor %}
-                        </td>
-                        <td>{{ enfermero.estaActivo|yesno:"Activo,Inactivo" }}</td>
-                        <td>{{ enfermero.fechaRegistro|date:"d/m/Y" }}</td>
-                        <td>{{ enfermero.fechaEliminacion|date:"d/m/Y"|default:"-" }}</td>
-                        <td><!-- Acciones si son necesarias --></td>
-                    </tr>
-                {% endfor %}
-            </tbody>
-        </table>
+        {% if tipo_historial == 'pacientes' %}
+            <!-- Filtros para pacientes -->
+            <div class="filters">
+                <form method="GET" action="">
+                    <input type="hidden" name="tipo" value="pacientes">
+                    <input type="text" name="busqueda" placeholder="Buscar por nombre o NSS" value="{{ request.GET.busqueda }}">
+                    <input type="date" name="fecha_inicio" value="{{ request.GET.fecha_inicio }}">
+                    <input type="date" name="fecha_fin" value="{{ request.GET.fecha_fin }}">
+                    <button type="submit" class="action-button">Buscar</button>
+                </form>
+            </div>
 
-        <!-- Doctores -->
-        <h2>Doctores</h2>
-        <table border="1">
-            <thead>
-                <tr>
-                    <th>Nombre</th>
-                    <th>Cédula</th>
-                    <th>Área Especialidad</th>
-                    <th>Estado</th>
-                    <th>Fecha de Registro</th>
-                    <th>Fecha de Baja</th>
-                    <th>Acciones</th>
-                </tr>
-            </thead>
-            <tbody>
-                {% for doctor in doctores %}
-                    <tr>
-                        <td>{{ doctor.first_name|default:doctor.username }} {{ doctor.apellidos }}</td>
-                        <td>{{ doctor.cedula|default:"None" }}</td>
-                        <td>{{ doctor.areaEspecialidad }}</td>
-                        <td>{{ doctor.estaActivo|yesno:"Activo,Inactivo" }}</td>
-                        <td>{{ doctor.fechaRegistro|date:"d/m/Y" }}</td>
-                        <td>{{ doctor.fechaEliminacion|date:"d/m/Y"|default:"-" }}</td>
-                        <td><!-- Acciones si son necesarias --></td>
-                    </tr>
-                {% endfor %}
-            </tbody>
-        </table>
+            <!-- Tabla de Pacientes -->
+            <div class="table-container">
+                <table class="patients-table">
+                    <thead>
+                        <tr>
+                            <th>Nombre Completo</th>
+                            <th>NSS</th>
+                            <th>Fecha de Ingreso</th>
+                            <th>Fecha de Alta</th>
+                            <th>Número de Ingresos</th>
+                            <th>Última Receta</th>
+                            <th>Último Diagnóstico</th>
+                            <th>Último Seguimiento</th>
+                            <th>Ver Detalles</th>
+                            <th>Acciones</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for paciente in registros %}
+                            <tr>
+                                <td>{{ paciente.nombres }} {{ paciente.apellidos }}</td>
+                                <td>{{ paciente.num_seguridad_social }}</td>
+                                <td>{{ paciente.fecha_ingreso|date:"d/m/Y" }}</td>
+                                <td>{{ paciente.fecha_alta|date:"d/m/Y"|default:"-" }}</td>
+                                <td>{{ paciente.numero_ingresos }}</td>
+                                <td>
+                                    {% with ultima_receta=paciente.recetas_doctor.first %}
+                                        {% if ultima_receta %}
+                                            {{ ultima_receta.fecha_creacion|date:"d/m/Y" }}
+                                        {% else %}
+                                            Sin recetas
+                                        {% endif %}
+                                    {% endwith %}
+                                </td>
+                                <td>
+                                    {% with ultimo_diagnostico=paciente.diagnosticos.first %}
+                                        {% if ultimo_diagnostico %}
+                                            {{ ultimo_diagnostico.fecha_creacion|date:"d/m/Y" }}
+                                        {% else %}
+                                            Sin diagnósticos
+                                        {% endif %}
+                                    {% endwith %}
+                                </td>
+                                <td>
+                                    {% with ultimo_seguimiento=paciente.seguimientocuidados_set.first %}
+                                        {% if ultimo_seguimiento %}
+                                            {{ ultimo_seguimiento.fecha_registro|date:"d/m/Y" }}
+                                        {% else %}
+                                            Sin seguimientos
+                                        {% endif %}
+                                    {% endwith %}
+                                </td>
+                                <td>
+                                    <a href="{% url 'jefa:detalle_historial' paciente.id %}" class="action-button">Ver Detalles</a>
+                                </td>
+                                <td>
+                                    {% if not paciente.esta_activo %}
+                                        <button onclick="confirmarReactivacion('{{ paciente.id }}')" class="action-button">Agregar</button>
+                                    {% endif %}
+                                </td>
+                            </tr>
+                        {% empty %}
+                            <tr>
+                                <td colspan="10">No se encontraron pacientes</td>
+                            </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        {% else %}
+            <!-- Buscador para empleados -->
+            <div class="filters">
+                <form method="GET" action="">
+                    <input type="hidden" name="tipo" value="empleados">
+                    <input type="text" name="busqueda" placeholder="Buscar por nombre" value="{{ busqueda }}">
+                    <button type="submit" class="action-button">Buscar</button>
+                </form>
+            </div>
 
-        <!-- Jefas de Piso -->
-        <h2>Jefas de Piso</h2>
-        <table border="1">
-            <thead>
-                <tr>
-                    <th>Nombre</th>
-                    <th>Cédula</th>
-                    <th>Estado</th>
-                    <th>Fecha de Registro</th>
-                    <th>Fecha de Baja</th>
-                    <th>Acciones</th>
-                </tr>
-            </thead>
-            <tbody>
-                {% for jefa in jefas %}
-                    <tr>
-                        <td>{{ jefa.first_name|default:jefa.username }} {{ jefa.apellidos }}</td>
-                        <td>{{ jefa.cedula|default:"None" }}</td>
-                        <td>{{ jefa.estaActivo|yesno:"Activo,Inactivo" }}</td>
-                        <td>{{ jefa.fechaRegistro|date:"d/m/Y" }}</td>
-                        <td>{{ jefa.fechaEliminacion|date:"d/m/Y"|default:"-" }}</td>
-                        <td><!-- Acciones si son necesarias --></td>
-                    </tr>
-                {% endfor %}
-            </tbody>
-        </table>
+            <!-- Enfermería -->
+            <h2>Enfermería</h2>
+            <div class="table-container">
+                <table class="employees-table">
+                    <thead>
+                        <tr>
+                            <th>Nombre</th>
+                            <th>Cédula</th>
+                            <th>Área Especialidad</th>
+                            <th>Fortalezas</th>
+                            <th>Estado</th>
+                            <th>Fecha de Registro</th>
+                            <th>Fecha de Baja</th>
+                            <th>Acciones</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for enfermero in enfermeros %}
+                            <tr>
+                                <td>{{ enfermero.first_name|default:enfermero.username }} {{ enfermero.apellidos }}</td>
+                                <td>{{ enfermero.cedula|default:"None" }}</td>
+                                <td>{{ enfermero.areaEspecialidad }}</td>
+                                <td>
+                                    {% for fortaleza in enfermero.fortalezas.all %}
+                                        {{ fortaleza }}{% if not forloop.last %}, {% endif %}
+                                    {% endfor %}
+                                </td>
+                                <td>{{ enfermero.estaActivo|yesno:"Activo,Inactivo" }}</td>
+                                <td>{{ enfermero.fechaRegistro|date:"d/m/Y" }}</td>
+                                <td>{{ enfermero.fechaEliminacion|date:"d/m/Y"|default:"-" }}</td>
+                                <td><!-- Acciones si son necesarias --></td>
+                            </tr>
+                        {% empty %}
+                            <tr>
+                                <td colspan="8">No hay personal de enfermería registrado</td>
+                            </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
 
-       
-    {% endif %}
+            <!-- Doctores -->
+            <h2>Doctores</h2>
+            <div class="table-container">
+                <table class="employees-table">
+                    <thead>
+                        <tr>
+                            <th>Nombre</th>
+                            <th>Cédula</th>
+                            <th>Área Especialidad</th>
+                            <th>Estado</th>
+                            <th>Fecha de Registro</th>
+                            <th>Fecha de Baja</th>
+                            <th>Acciones</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for doctor in doctores %}
+                            <tr>
+                                <td>{{ doctor.first_name|default:doctor.username }} {{ doctor.apellidos }}</td>
+                                <td>{{ doctor.cedula|default:"None" }}</td>
+                                <td>{{ doctor.areaEspecialidad }}</td>
+                                <td>{{ doctor.estaActivo|yesno:"Activo,Inactivo" }}</td>
+                                <td>{{ doctor.fechaRegistro|date:"d/m/Y" }}</td>
+                                <td>{{ doctor.fechaEliminacion|date:"d/m/Y"|default:"-" }}</td>
+                                <td><!-- Acciones si son necesarias --></td>
+                            </tr>
+                        {% empty %}
+                            <tr>
+                                <td colspan="7">No hay doctores registrados</td>
+                            </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
 
-    <br>
-    <a href="{% url 'jefa:menu_jefa' %}">Volver al Menú</a>
+            <!-- Jefas de Piso -->
+            <h2>Jefas de Piso</h2>
+            <div class="table-container">
+                <table class="employees-table">
+                    <thead>
+                        <tr>
+                            <th>Nombre</th>
+                            <th>Cédula</th>
+                            <th>Estado</th>
+                            <th>Fecha de Registro</th>
+                            <th>Fecha de Baja</th>
+                            <th>Acciones</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for jefa in jefas %}
+                            <tr>
+                                <td>{{ jefa.first_name|default:jefa.username }} {{ jefa.apellidos }}</td>
+                                <td>{{ jefa.cedula|default:"None" }}</td>
+                                <td>{{ jefa.estaActivo|yesno:"Activo,Inactivo" }}</td>
+                                <td>{{ jefa.fechaRegistro|date:"d/m/Y" }}</td>
+                                <td>{{ jefa.fechaEliminacion|date:"d/m/Y"|default:"-" }}</td>
+                                <td><!-- Acciones si son necesarias --></td>
+                            </tr>
+                        {% empty %}
+                            <tr>
+                                <td colspan="6">No hay jefas de piso registradas</td>
+                            </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        {% endif %}
+    </div>
 </body>
 </html>

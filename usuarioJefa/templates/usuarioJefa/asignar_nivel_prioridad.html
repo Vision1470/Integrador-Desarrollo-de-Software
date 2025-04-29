@@ -1,4 +1,5 @@
 <!DOCTYPE html>
+{% load custom_filters %}
 <html lang="es">
 <head>
     <meta charset="UTF-8">
@@ -6,6 +7,7 @@
     <style>
         .menu-container {
             margin-bottom: 20px;
+            padding: 15px;
         }
         .button {
             margin: 5px;
@@ -14,40 +16,12 @@
             background-color: #007bff;
             color: white;
             border-radius: 4px;
+            display: inline-block;
         }
-        .form-container {
-            max-width: 500px;
+        .content-container {
+            max-width: 800px;
             margin: 0 auto;
             padding: 20px;
-        }
-        .form-group {
-            margin-bottom: 20px;
-        }
-        .form-label {
-            display: block;
-            margin-bottom: 5px;
-            font-weight: bold;
-        }
-        select, input {
-            width: 100%;
-            padding: 8px;
-            border: 1px solid #ddd;
-            border-radius: 4px;
-        }
-        .btn {
-            padding: 10px 20px;
-            border: none;
-            border-radius: 4px;
-            cursor: pointer;
-            margin-right: 10px;
-        }
-        .btn-primary {
-            background-color: #007bff;
-            color: white;
-        }
-        .btn-secondary {
-            background-color: #6c757d;
-            color: white;
         }
         .alert {
             padding: 15px;
@@ -55,11 +29,63 @@
             border: 1px solid transparent;
             border-radius: 4px;
         }
-        .alert-danger {
-            background-color: #f8d7da;
-            border-color: #f5c6cb;
-            color: #721c24;
+        .alert-success {
+            background-color: #d4edda;
+            border-color: #c3e6cb;
+            color: #155724;
         }
+        h1 {
+            margin-bottom: 20px;
+        }
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-bottom: 20px;
+        }
+        th, td {
+            padding: 12px 15px;
+            text-align: left;
+            border-bottom: 1px solid #dee2e6;
+        }
+        th {
+            background-color: #f8f9fa;
+            font-weight: bold;
+        }
+        tr:hover {
+            background-color: #f8f9fa;
+        }
+        .form-inline {
+            display: flex;
+            align-items: center;
+        }
+        .form-control {
+            padding: 8px;
+            border: 1px solid #ced4da;
+            border-radius: 4px;
+            margin-right: 10px;
+        }
+        .btn {
+            padding: 8px 12px;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+        }
+        .btn-primary {
+            background-color: #007bff;
+            color: white;
+        }
+        .prioridad-badge {
+            display: inline-block;
+            padding: 5px 10px;
+            border-radius: 4px;
+            font-weight: bold;
+        }
+        .prioridad-1 { background-color: #28a745; color: white; }
+        .prioridad-2 { background-color: #17a2b8; color: white; }
+        .prioridad-3 { background-color: #ffc107; color: black; }
+        .prioridad-4 { background-color: #fd7e14; color: white; }
+        .prioridad-5 { background-color: #dc3545; color: white; }
+        .sin-prioridad { background-color: #6c757d; color: white; }
     </style>
 </head>
 <body>
@@ -71,11 +97,12 @@
         <a href="{% url 'jefa:almacen_' %}" class="button">Almacen</a>
         <a href="{% url 'jefa:usuarios_' %}" class="button">Usuarios</a>
         <a href="{% url 'jefa:areas_fortalezas' %}" class="button">Areas</a>
+        <a href="{% url 'jefa:lista_areas_sobrecarga' %}" class="button">Gestión de Sobrecarga</a>
         <br><br>
     </div>
 
-    <div class="form-container">
-        <h1>Asignar Nivel de Prioridad</h1>
+    <div class="content-container">
+        <h1>Niveles de Prioridad de Áreas</h1>
 
         {% if messages %}
             {% for message in messages %}
@@ -85,36 +112,58 @@
             {% endfor %}
         {% endif %}
 
-        <form method="post">
-            {% csrf_token %}
-            <div class="form-group">
-                <label class="form-label">Área</label>
-                {{ form.area }}
-                {% if form.area.errors %}
-                    <div class="alert alert-danger">
-                        {{ form.area.errors }}
-                    </div>
-                {% endif %}
-            </div>
+        <table>
+            <thead>
+                <tr>
+                    <th>Área</th>
+                    <th>Nivel de Prioridad</th>
+                    <th>Acciones</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for area in areas %}
+                <tr>
+                    <td>{{ area.nombre }}</td>
+                    <td>
+                        {% with nivel=niveles_prioridad|get_item:area.id %}
+                            {% if nivel %}
+                                <span class="prioridad-badge prioridad-{{ nivel }}">
+                                    {{ nivel }}
+                                </span>
+                            {% else %}
+                                <span class="prioridad-badge sin-prioridad">Sin asignar</span>
+                            {% endif %}
+                        {% endwith %}
+                    </td>
+                    <td>
+                        <form method="post" class="form-inline">
+                            {% csrf_token %}
+                            <input type="hidden" name="area_id" value="{{ area.id }}">
+                            <select name="nivel_prioridad" class="form-control">
+                                <option value="1" {% if niveles_prioridad|get_item:area.id == 1 %}selected{% endif %}>1 - Baja</option>
+                                <option value="2" {% if niveles_prioridad|get_item:area.id == 2 %}selected{% endif %}>2 - Media-Baja</option>
+                                <option value="3" {% if niveles_prioridad|get_item:area.id == 3 %}selected{% endif %}>3 - Media</option>
+                                <option value="4" {% if niveles_prioridad|get_item:area.id == 4 %}selected{% endif %}>4 - Media-Alta</option>
+                                <option value="5" {% if niveles_prioridad|get_item:area.id == 5 %}selected{% endif %}>5 - Alta</option>
+                            </select>
+                            <button type="submit" class="btn btn-primary">Guardar</button>
+                        </form>
+                    </td>
+                </tr>
+                {% empty %}
+                <tr>
+                    <td colspan="3">No hay áreas disponibles.</td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
 
-            <div class="form-group">
-                <label class="form-label">Nivel de Prioridad (1-5)</label>
-                {{ form.nivel_prioridad }}
-                {% if form.nivel_prioridad.errors %}
-                    <div class="alert alert-danger">
-                        {{ form.nivel_prioridad.errors }}
-                    </div>
-                {% endif %}
-            </div>
-
-            <div style="margin-top: 30px;">
-                <button type="submit" class="btn btn-primary">Asignar Prioridad</button>
-                <a href="{% url 'jefa:lista_areas_sobrecarga' %}" class="btn btn-secondary">Cancelar</a>
-            </div>
-        </form>
+        <a href="{% url 'jefa:lista_areas_sobrecarga' %}" class="button">Volver a Sobrecarga</a>
     </div>
 
     <br><br><br>
-    <a href="{% url 'jefa:menu_jefa' %}" class="button">Volver</a>
+    <div style="text-align: center;">
+        <a href="{% url 'jefa:menu_jefa' %}" class="button">Volver al Menú</a>
+    </div>
 </body>
 </html>

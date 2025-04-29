@@ -2,217 +2,194 @@
 <html lang="es">
 <head>
     <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Confirmar Desactivación de Sobrecarga</title>
     <style>
-        .menu-container {
+        :root {
+            --primary-color: #0A2342;
+            --secondary-color: #2E4057;
+            --accent-color: #1E90FF;
+            --background-color: #EBF0F5;
+            --table-background: #F0F4F7;
+            --text-color: #333333;
+            --white: #FFFFFF;
+            --border-color: #D1D1D1;
+            --success-color: #28a745;
+            --warning-color: #ffc107;
+            --danger-color: #dc3545;
+            --info-color: #17a2b8;
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: 'Roboto', 'Arial', sans-serif;
+        }
+
+        body {
+            background-color: var(--background-color);
+            color: var(--text-color);
+            line-height: 1.6;
+            padding: 20px;
+        }
+
+        .container {
+            background-color: var(--white);
+            border-radius: 8px;
+            box-shadow: 0 15px 30px rgba(0,0,0,0.15);
+            padding: 30px;
+            width: 100%;
+            max-width: 600px;
+            border-left: 5px solid var(--primary-color);
+            margin: 0 auto;
+        }
+
+        .header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
             margin-bottom: 20px;
         }
-        .button {
-            margin: 5px;
-            padding: 10px 20px;
+
+        .header h1 {
+            font-size: 2rem;
+            color: var(--primary-color);
+            font-weight: 700;
+        }
+
+        .menu-buttons {
+            display: flex;
+            gap: 15px;
+        }
+
+        .menu-button {
+            background-color: var(--primary-color);
+            color: var(--white);
             text-decoration: none;
-            background-color: #007bff;
-            color: white;
+            padding: 10px 15px;
             border-radius: 4px;
+            font-size: 0.9rem;
+            font-weight: 600;
+            text-transform: uppercase;
+            transition: background-color 0.3s ease;
         }
-        .confirmation-container {
-            max-width: 500px;
-            margin: 0 auto;
-            padding: 20px;
+
+        .menu-button:hover {
+            background-color: var(--secondary-color);
         }
-        .card {
-            border: 1px solid #dee2e6;
-            border-radius: 8px;
-            background: white;
-            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
-        }
-        .card-header {
-            padding: 15px 20px;
-            background: #f8f9fa;
-            border-bottom: 1px solid #dee2e6;
-            border-radius: 8px 8px 0 0;
-        }
-        .card-body {
-            padding: 20px;
-        }
-        .btn {
-            padding: 10px 20px;
+
+        .action-button {
+            background-color: var(--secondary-color);
+            color: var(--white);
             border: none;
+            padding: 10px 15px;
             border-radius: 4px;
             cursor: pointer;
-            margin-right: 10px;
+            font-size: 0.9rem;
+            font-weight: 600;
+            text-transform: uppercase;
+            transition: background-color 0.3s ease;
+            text-decoration: none;
+            display: inline-block;
         }
-        .btn-danger {
-            background-color: #dc3545;
-            color: white;
+
+        .action-button:hover {
+            background-color: var(--accent-color);
         }
-        .btn-secondary {
-            background-color: #6c757d;
-            color: white;
+
+        .action-button.danger {
+            background-color: var(--danger-color);
+        }
+
+        .confirmation-card {
+            background-color: var(--white);
+            border-radius: 8px;
+            overflow: hidden;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+            border: 1px solid var(--border-color);
+        }
+
+        .card-header {
+            background-color: var(--primary-color);
+            color: var(--white);
+            padding: 15px 20px;
+        }
+
+        .card-header h2 {
+            margin: 0;
+            font-size: 1.5rem;
+        }
+
+        .card-body {
+            padding: 25px 20px;
+        }
+
+        .confirmation-text {
+            font-size: 1.1rem;
+            margin-bottom: 30px;
+        }
+
+        .button-group {
+            display: flex;
+            gap: 15px;
+        }
+
+        @media (max-width: 768px) {
+            .container {
+                padding: 20px;
+                max-width: 100%;
+            }
+            
+            .button-group {
+                flex-direction: column;
+            }
+            
+            .menu-buttons {
+                flex-wrap: wrap;
+            }
         }
     </style>
 </head>
 <body>
-    <div class="menu-container">
-        <h1>Menú Jefa de piso</h1>
-        <a href="{% url 'jefa:pacientes_jefa' %}" class="button">Pacientes</a>
-        <a href="{% url 'jefa:calendario_area' %}" class="button">Calendario</a>
-        <a href="{% url 'jefa:historiales_' %}" class="button">Historiales</a>
-        <a href="{% url 'jefa:almacen_' %}" class="button">Almacen</a>
-        <a href="{% url 'jefa:usuarios_' %}" class="button">Usuarios</a>
-        <a href="{% url 'jefa:areas_fortalezas' %}" class="button">Areas</a>
-        <br><br>
+    <h1>Menu Jefa de Piso</h1>
+    <div class="menu-buttons">
+        <a href="{% url 'jefa:pacientes_jefa' %}" class="menu-button">Pacientes</a>
+        <a href="{% url 'jefa:calendario_area' %}" class="menu-button">Calendario</a>
+        <a href="{% url 'jefa:historiales_' %}" class="menu-button">Historiales</a>
+        <a href="{% url 'jefa:almacen_' %}" class="menu-button">Almacen</a>
+        <a href="{% url 'jefa:usuarios_' %}" class="menu-button">Usuarios</a>
+        <a href="{% url 'jefa:areas_fortalezas' %}" class="menu-button">Areas</a>
+        <form action="{% url 'login:login' %}" method="POST">
+            {% csrf_token %}
+            <button type="submit" class="menu-button">Cerrar Sesión</button>
+        </form>
     </div>
+    
+    <div class="container">
+        <div class="header">
+            <h1>Sobrecarga</h1>
+            <div class="menu-buttons">
+                <a href="{% url 'jefa:menu_jefa' %}" class="menu-button">Volver al Menú</a>
+            </div>
+        </div>
 
-    <div class="confirmation-container">
-        <div class="card">
+        <div class="confirmation-card">
             <div class="card-header">
-                <h2 style="margin: 0;">Confirmar Desactivación de Sobrecarga</h2>
+                <h2>Confirmar Desactivación de Sobrecarga</h2>
             </div>
             <div class="card-body">
-                <p style="margin-bottom: 20px;">
-                    ¿Está seguro que desea desactivar la sobrecarga en el área {{ sobrecarga.area.nombre }}?
+                <p class="confirmation-text">
+                    ¿Está seguro que desea desactivar la sobrecarga en el área <strong>{{ sobrecarga.area.nombre }}</strong>?
                 </p>
 
-                <form method="post" style="display: flex; gap: 10px;">
+                <form method="post" class="button-group">
                     {% csrf_token %}
-                    <button type="submit" class="btn btn-danger">Confirmar Desactivación</button>
-                    <a href="{% url 'jefa:lista_areas_sobrecarga' %}" class="btn btn-secondary">Cancelar</a>
+                    <button type="submit" class="action-button danger">Confirmar Desactivación</button>
+                    <a href="{% url 'jefa:lista_areas_sobrecarga' %}" class="action-button">Cancelar</a>
                 </form>
             </div>
         </div>
     </div>
-
-    <br><br><br>
-    <a href="{% url 'jefa:menu_jefa' %}" class="button">Volver</a>
-</body>
-</html>
-
-
-<!DOCTYPE html>
-<html lang="es">
-<head>
-    <meta charset="UTF-8">
-    <title>Asignar Nivel de Prioridad</title>
-    <style>
-        .menu-container {
-            margin-bottom: 20px;
-        }
-        .button {
-            margin: 5px;
-            padding: 10px 20px;
-            text-decoration: none;
-            background-color: #007bff;
-            color: white;
-            border-radius: 4px;
-        }
-        .form-container {
-            max-width: 500px;
-            margin: 0 auto;
-            padding: 20px;
-        }
-        .form-group {
-            margin-bottom: 20px;
-        }
-        .form-label {
-            display: block;
-            margin-bottom: 5px;
-            font-weight: bold;
-        }
-        .form-select, .form-input {
-            width: 100%;
-            padding: 8px;
-            border: 1px solid #ddd;
-            border-radius: 4px;
-            margin-top: 5px;
-        }
-        .btn {
-            padding: 10px 20px;
-            border: none;
-            border-radius: 4px;
-            cursor: pointer;
-            margin-right: 10px;
-        }
-        .btn-primary {
-            background-color: #007bff;
-            color: white;
-        }
-        .btn-secondary {
-            background-color: #6c757d;
-            color: white;
-        }
-        .alert {
-            padding: 15px;
-            margin-bottom: 15px;
-            border: 1px solid transparent;
-            border-radius: 4px;
-        }
-        .alert-success {
-            background-color: #d4edda;
-            border-color: #c3e6cb;
-            color: #155724;
-        }
-        .alert-danger {
-            background-color: #f8d7da;
-            border-color: #f5c6cb;
-            color: #721c24;
-        }
-    </style>
-</head>
-<body>
-    <div class="menu-container">
-        <h1>Menú Jefa de piso</h1>
-        <a href="{% url 'jefa:pacientes_jefa' %}" class="button">Pacientes</a>
-        <a href="{% url 'jefa:calendario_area' %}" class="button">Calendario</a>
-        <a href="{% url 'jefa:historiales_' %}" class="button">Historiales</a>
-        <a href="{% url 'jefa:almacen_' %}" class="button">Almacen</a>
-        <a href="{% url 'jefa:usuarios_' %}" class="button">Usuarios</a>
-        <a href="{% url 'jefa:areas_fortalezas' %}" class="button">Areas</a>
-        <br><br>
-    </div>
-
-    <div class="form-container">
-        <h1 style="margin-bottom: 30px;">Asignar Nivel de Prioridad</h1>
-
-        {% if messages %}
-            {% for message in messages %}
-                <div class="alert alert-{{ message.tags }}">
-                    {{ message }}
-                </div>
-            {% endfor %}
-        {% endif %}
-
-        <form method="post">
-            {% csrf_token %}
-            
-            <div class="form-group">
-                <label class="form-label">Área</label>
-                {{ form.area }}
-                {% if form.area.errors %}
-                    <div class="alert alert-danger">
-                        {{ form.area.errors }}
-                    </div>
-                {% endif %}
-            </div>
-
-            <div class="form-group">
-                <label class="form-label">Nivel de Prioridad (1-5)</label>
-                {{ form.nivel_prioridad }}
-                {% if form.nivel_prioridad.errors %}
-                    <div class="alert alert-danger">
-                        {{ form.nivel_prioridad.errors }}
-                    </div>
-                {% endif %}
-            </div>
-
-            <div style="display: flex; gap: 10px; margin-top: 30px;">
-                <button type="submit" class="btn btn-primary">Asignar Prioridad</button>
-                <a href="{% url 'jefa:lista_areas_sobrecarga' %}" class="btn btn-secondary">Cancelar</a>
-            </div>
-        </form>
-    </div>
-
-    <br><br><br>
-    <a href="{% url 'jefa:menu_jefa' %}" class="button">Volver</a>
 </body>
 </html>

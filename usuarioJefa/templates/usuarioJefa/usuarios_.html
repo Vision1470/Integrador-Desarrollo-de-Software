@@ -1,7 +1,8 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="es">
 <head>
     <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Menú de Usuarios</title>
     <style>
         :root {
@@ -13,6 +14,8 @@
             --text-color: #333333;
             --white: #FFFFFF;
             --border-color: #D1D1D1;
+            --success-color: #28a745;
+            --danger-color: #dc3545;
         }
 
         * {
@@ -115,26 +118,215 @@
             display: block;
         }
 
+        /* Estilos para tablas */
+        .users-table {
+            width: 100%;
+            border-collapse: separate;
+            border-spacing: 0;
+            margin-bottom: 30px;
+            border-radius: 6px;
+            overflow: hidden;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+            border: 2px solid var(--primary-color);
+            background-color: var(--table-background);
+        }
+
+        .users-table th {
+            background-color: var(--primary-color);
+            color: var(--white);
+            padding: 12px;
+            text-align: left;
+            font-weight: 600;
+            border-bottom: 2px solid var(--primary-color);
+        }
+
+        .users-table td {
+            padding: 12px;
+            border-bottom: 2px solid var(--primary-color);
+            border-right: 2px solid var(--primary-color);
+        }
+
+        .users-table tr:last-child td {
+            border-bottom: none;
+        }
+
+        .users-table td:last-child {
+            border-right: none;
+        }
+
+        .users-table tr:nth-child(even) {
+            background-color: #F6F9F7;
+        }
+
+        .users-table tr:hover {
+            background-color: #E6EAE7;
+        }
+        
+        /* Mejoras en el formulario */
         .form-section {
             margin-bottom: 20px;
-            padding: 10px;
+            padding: 20px;
             border: 1px solid var(--border-color);
             border-radius: 4px;
+            background-color: #f8f9fa;
         }
 
         .form-section h3 {
             color: var(--primary-color);
-            margin-bottom: 10px;
+            margin-bottom: 15px;
+            font-size: 1.2rem;
+            padding-bottom: 5px;
+            border-bottom: 1px solid var(--border-color);
+        }
+
+        .form-section div {
+            margin-bottom: 15px;
+        }
+
+        .form-section label {
+            display: block;
+            margin-bottom: 5px;
+            font-weight: 500;
+        }
+
+        .form-section input[type="text"], 
+        .form-section input[type="password"], 
+        .form-section input[type="date"], 
+        .form-section select {
+            width: 100%;
+            padding: 10px;
+            border: 1px solid var(--border-color);
+            border-radius: 4px;
+            font-size: 1rem;
+        }
+
+        .form-section input[type="text"]:focus, 
+        .form-section input[type="password"]:focus, 
+        .form-section input[type="date"]:focus, 
+        .form-section select:focus {
+            outline: none;
+            border-color: var(--accent-color);
+            box-shadow: 0 0 0 2px rgba(30, 144, 255, 0.2);
+        }
+
+        .checkbox-group {
+            margin-top: 10px;
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+            gap: 10px;
+        }
+
+        .checkbox-item {
+            display: flex;
+            align-items: center;
+            margin-bottom: 5px;
+        }
+
+        .checkbox-item input[type="checkbox"] {
+            margin-right: 8px;
+        }
+
+        #submit-button {
+            background-color: var(--success-color);
+            color: var(--white);
+            border: none;
+            padding: 10px 20px;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 0.9rem;
+            font-weight: 600;
+            text-transform: uppercase;
+            transition: background-color 0.3s ease;
+            margin-top: 15px;
+        }
+
+        #submit-button:hover {
+            background-color: #218838;
+        }
+
+        #submit-button:disabled {
+            background-color: #6c757d;
+            cursor: not-allowed;
+        }
+
+        .table-container {
+            overflow-x: auto;
+            margin-bottom: 20px;
+        }
+
+        .status-active {
+            color: var(--success-color);
+            font-weight: 600;
+        }
+
+        .status-inactive {
+            color: var(--danger-color);
+            font-weight: 600;
+        }
+
+        .action-buttons {
+            display: flex;
+            gap: 5px;
+            flex-wrap: wrap;
+        }
+
+        .action-button {
+            background-color: var(--secondary-color);
+            color: var(--white);
+            border: none;
+            padding: 8px 12px;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 0.9rem;
+            font-weight: 600;
+            text-transform: uppercase;
+            transition: background-color 0.3s ease;
+            text-decoration: none;
+            display: inline-block;
+        }
+
+        .action-button:hover {
+            background-color: var(--accent-color);
+        }
+
+        .action-button.success {
+            background-color: var(--success-color);
+        }
+
+        .action-button.danger {
+            background-color: var(--danger-color);
         }
 
         .error-message {
-            color: #cc0000;
+            color: var(--danger-color);
             font-size: 14px;
+            margin-top: 5px;
         }
 
+        /* Estilos responsive */
         @media (max-width: 768px) {
             .container {
                 padding: 20px;
+            }
+            
+            .checkbox-group {
+                grid-template-columns: 1fr;
+            }
+            
+    
+            
+            .action-buttons {
+                flex-direction: column;
+            }
+            
+            .action-buttons .action-button {
+                width: 100%;
+                text-align: center;
+                margin-bottom: 5px;
+            }
+            
+            .menu-buttons {
+                flex-wrap: wrap;
             }
         }
     </style>
@@ -148,10 +340,10 @@
         <a href="{% url 'jefa:almacen_' %}" class="menu-button">Almacen</a>
         <a href="{% url 'jefa:usuarios_' %}" class="menu-button">Usuarios</a>
         <a href="{% url 'jefa:areas_fortalezas' %}" class="menu-button">Areas</a>
-    <form action="{% url 'login:login' %}" method="POST">
-        {% csrf_token %}
-        <button type="submit" class="menu-button">Cerrar Sesión</button>
-    </form>
+        <form action="{% url 'login:login' %}" method="POST">
+            {% csrf_token %}
+            <button type="submit" class="menu-button">Cerrar Sesión</button>
+        </form>
     </div>
     <div class="container">
         <div class="header">
@@ -168,7 +360,58 @@
             </ul>
 
             <div id="gestionar-usuarios" class="tab-content active">
-                {% include 'usuarioJefa/gestionar_usuarios.html' %}
+                <!-- Contenido de gestionar usuarios -->
+                
+
+                <div class="table-container">
+                    <table class="users-table">
+                        <thead>
+                            <tr>
+                                <th>Nombre</th>
+                                <th>Apellidos</th>
+                                <th>Tipo</th>
+                                <th>Cédula</th>
+                                <th>Área</th>
+                                <th>Estado</th>
+                                <th>Acciones</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for usuario in usuarios %}
+                            <tr>
+                                <td>{{ usuario.first_name }}</td>
+                                <td>{{ usuario.apellidos }}</td>
+                                <td>
+                                    {% if usuario.tipo_usuario == 'EN' %}
+                                    Enfermería
+                                    {% elif usuario.tipo_usuario == 'DR' %}
+                                    Doctor
+                                    {% elif usuario.tipo_usuario == 'JP' %}
+                                    Jefa de piso
+                                    {% endif %}
+                                </td>
+                                <td>{{ usuario.cedula }}</td>
+                                <td>{{ usuario.areaEspecialidad.nombre }}</td>
+                                <td class="{% if usuario.estaActivo %}status-active{% else %}status-inactive{% endif %}">
+                                    {{ usuario.estaActivo|yesno:"Activo,Inactivo" }}
+                                </td>
+                                <td class="action-buttons">
+                                    <a href="{% url 'jefa:editar_usuario' usuario.id %}" class="action-button">Editar</a>
+                                    {% if usuario.estaActivo %}
+                                    <button class="action-button danger" onclick="confirmarDesactivacion('{{ usuario.id }}')">Desactivar</button>
+                                    {% else %}
+                                    <button class="action-button success" onclick="confirmarReactivacion('{{ usuario.id }}')">Reactivar</button>
+                                    {% endif %}
+                                </td>
+                            </tr>
+                            {% empty %}
+                            <tr>
+                                <td colspan="7" style="text-align: center;">No hay usuarios registrados</td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
             </div>
 
             <div id="crear-usuarios" class="tab-content">
@@ -209,12 +452,14 @@
                         </div>
                         <div>
                             <label>Fortalezas (máx. 4):</label>
-                            {% for fortaleza in fortalezas %}
-                                <label>
-                                    <input type="checkbox" name="fortalezas" value="{{ fortaleza.id }}">
-                                    {{ fortaleza.nombre }}
-                                </label>
-                            {% endfor %}
+                            <div class="checkbox-group">
+                                {% for fortaleza in fortalezas %}
+                                <div class="checkbox-item">
+                                    <input type="checkbox" name="fortalezas" value="{{ fortaleza.id }}" id="fortaleza_{{ fortaleza.id }}">
+                                    <label for="fortaleza_{{ fortaleza.id }}">{{ fortaleza.nombre }}</label>
+                                </div>
+                                {% endfor %}
+                            </div>
                         </div>
                         <div>
                             <label for="tipo_usuario">Tipo de Usuario:</label>
@@ -242,7 +487,7 @@
                         </div>
                     </div>
 
-                    <button type="submit" id="submit-button">Crear usuario</button>
+                    <button type="submit" id="submit-button" class="action-button success">Crear usuario</button>
                 </form>
             </div>
         </div>
@@ -315,6 +560,19 @@
             const fechaMaxima = hoy.toISOString().split('T')[0];
             fechaNacimientoInput.setAttribute('max', fechaMaxima);
         });
+
+        // Funciones para gestionar usuarios
+        function confirmarDesactivacion(usuarioId) {
+            if (confirm('¿Está seguro que desea desactivar este usuario?')) {
+                window.location.href = `/jefa/desactivar_usuario/${usuarioId}/`;
+            }
+        }
+
+        function confirmarReactivacion(usuarioId) {
+            if (confirm('¿Está seguro que desea reactivar este usuario?')) {
+                window.location.href = `/jefa/reactivar_usuario/${usuarioId}/`;
+            }
+        }
     </script>
 </body>
 </html>
