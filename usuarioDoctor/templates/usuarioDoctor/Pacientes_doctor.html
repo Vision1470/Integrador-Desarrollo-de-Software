@@ -6,207 +6,207 @@
    <title>Sistema Hospitalario - Mis Pacientes</title>
    <style>
         :root {
-            --primary-color: #4A4A4A;  /* Gris oscuro */
-            --secondary-color: #6D4C41;  /* Café oscuro */
-            --accent-color: #8D6E63;  /* Tono café suave */
-            --background-color: #F5F5F5;
-            --text-color: #333333;
-            --white: #FFFFFF;
-            --border-color: #7E7E7E;
-        }
+    --primary-color: #6D4C41;     /* Color café principal */
+    --secondary-color: #8D6E63;   /* Color café secundario */
+    --accent-color: #A1887F;      /* Color café acento */
+    --background-color: #F5F5F5;  /* Color de fondo */
+    --text-color: #333333;        /* Color de texto oscuro */
+    --white: #FFFFFF;             /* Blanco */
+    --border-color: #7E7E7E;      /* Color de borde */
+}
 
-        * {
-            margin: 0;
-            padding: 0;
-            box-sizing: border-box;
-            font-family: 'Roboto', 'Arial', sans-serif;
-        }
+* {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+    font-family: 'Roboto', 'Arial', sans-serif;
+}
 
-        body {
-            background-color: var(--background-color);
-            color: var(--text-color);
-            line-height: 1.6;
-            padding: 20px;
-        }
+body {
+    background-color: var(--background-color);
+    color: var(--text-color);
+    line-height: 1.6;
+    padding: 20px;
+}
 
-        .container {
-            background-color: var(--white);
-            border-radius: 6px;
-            box-shadow: 0 15px 30px rgba(0,0,0,0.15);
-            padding: 40px;
-            max-width: 1200px;
-            margin: 0 auto;
-            border-left: 6px solid var(--primary-color);
-            position: relative;
-        }
+.container {
+    background-color: var(--white);
+    border-radius: 6px;
+    box-shadow: 0 15px 30px rgba(0,0,0,0.15);
+    padding: 40px;
+    max-width: 1200px;
+    margin: 0 auto;
+    border-left: 6px solid var(--primary-color);
+    position: relative;
+}
 
-        .container::before {
-            content: '';
-            position: absolute;
-            top: 0;
-            left: 0;
-            right: 0;
-            height: 6px;
-            background: linear-gradient(to right, var(--primary-color), var(--accent-color));
-        }
+.container::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    height: 6px;
+    background: linear-gradient(to right, var(--primary-color), var(--accent-color));
+}
 
-        .header {
-            margin-bottom: 30px;
-        }
+.header {
+    margin-bottom: 30px;
+}
 
-        .header h1 {
-            color: var(--primary-color);
-            font-size: 2.2rem;
-            margin-bottom: 10px;
-        }
+.header h1 {
+    color: var(--primary-color);
+    font-size: 2.2rem;
+    margin-bottom: 10px;
+}
 
-        .header h3 {
-            color: var(--secondary-color);
-            font-size: 1.2rem;
-            font-weight: 400;
-        }
+.header h3 {
+    color: var(--secondary-color);
+    font-size: 1.2rem;
+    font-weight: 400;
+}
 
-        .messages {
-            margin-bottom: 25px;
-        }
+.messages {
+    margin-bottom: 25px;
+}
 
-        .message {
-            padding: 12px;
-            margin-bottom: 15px;
-            background-color: #E6E6E6;
-            border-left: 4px solid var(--primary-color);
-            font-weight: 500;
-        }
+.message {
+    padding: 12px;
+    margin-bottom: 15px;
+    background-color: #E6E6E6;
+    border-left: 4px solid var(--primary-color);
+    font-weight: 500;
+}
 
-        .patients-table {
-            width: 100%;
-            border-collapse: separate;
-            border-spacing: 0;
-            margin-bottom: 30px;
-            border: 2px solid var(--primary-color);
-            border-radius: 6px;
-            overflow: hidden;
-        }
+.patients-table {
+    width: 100%;
+    border-collapse: separate;
+    border-spacing: 0;
+    margin-bottom: 30px;
+    border: 2px solid var(--primary-color);
+    border-radius: 6px;
+    overflow: hidden;
+}
 
-        .patients-table th {
-            background-color: var(--primary-color);
-            color: var(--white);
-            padding: 12px;
-            text-align: left;
-            font-weight: 600;
-        }
+.patients-table th {
+    background-color: var(--primary-color);
+    color: var(--white);
+    padding: 12px;
+    text-align: left;
+    font-weight: 600;
+}
 
-        .patients-table td {
-            padding: 12px;
-            border-bottom: 2px solid var(--border-color);
-            border-right: 2px solid var(--border-color);
-        }
+.patients-table td {
+    padding: 12px;
+    border-bottom: 2px solid var(--secondary-color);
+    border-right: 2px solid var(--secondary-color);
+    background-color: #F8F5F3; /* Fondo con toque cálido para combinar con los cafés */
+}
 
-        .patients-table tr:last-child td {
-            border-bottom: none;
-        }
+.patients-table tr:last-child td {
+    border-bottom: none;
+}
 
-        .patients-table td:last-child {
-            border-right: none;
-        }
+.patients-table td:last-child {
+    border-right: none;
+}
 
-        .action-links {
-            display: flex;
-            flex-direction: column;
-            gap: 10px;
-        }
+.patients-table tr:nth-child(even) {
+    background-color: #F0EBE8; /* Tono ligeramente más oscuro para filas alternadas */
+}
 
-        .action-link {
-            display: inline-block;
-            color: var(--white);
-            text-decoration: none;
-            font-weight: 500;
-            padding: 8px 16px;
-            border-radius: 4px;
-            text-align: center;
-            transition: all 0.3s ease;
-            background-color: var(--secondary-color);
-            box-shadow: 0 2px 4px rgba(0,0,0,0.2);
-            position: relative;
-            overflow: hidden;
-        }
+.patients-table tr:hover {
+    background-color: #E8E0DA; /* Color hover más cálido */
+}
 
-        .action-link::before {
-            content: '';
-            position: absolute;
-            top: 0;
-            left: -100%;
-            width: 100%;
-            height: 100%;
-            background: linear-gradient(
-                120deg, 
-                transparent, 
-                rgba(255,255,255,0.3), 
-                transparent
-            );
-            transition: all 0.6s;
-        }
+.action-links {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+}
 
-        .action-link:hover {
-            background-color: var(--accent-color);
-            transform: translateY(-2px);
-            box-shadow: 0 4px 6px rgba(0,0,0,0.3);
-        }
+/* Botones de acción simplificados */
+.action-link {
+    display: inline-block;
+    color: var(--white);
+    text-decoration: none;
+    font-weight: 500;
+    padding: 8px 16px;
+    border-radius: 4px;
+    text-align: center;
+    transition: background-color 0.3s ease; /* Solo transición de color */
+    background-color: var(--secondary-color);
+    box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+}
 
-        .action-link:hover::before {
-            left: 100%;
-        }
+.action-link:hover {
+    background-color: var(--accent-color); /* Solo cambio de color al hover */
+}
 
-        .action-link:active {
-            transform: translateY(0);
-            box-shadow: 0 1px 2px rgba(0,0,0,0.2);
-        }
+td .action-link {
+    width: 100%;
+}
 
-        td .action-link {
-            width: 100%;
-        }
+.no-patients {
+    text-align: center;
+    color: var(--secondary-color);
+    padding: 20px;
+    background-color: #F0EBE8;
+    border-radius: 4px;
+    border-left: 4px solid var(--primary-color);
+}
 
-        .no-patients {
-            text-align: center;
-            color: var(--secondary-color);
-            padding: 20px;
-            background-color: #F0F0F0;
-            border-radius: 4px;
-        }
+/* Botón de logout simplificado */
+.logout-btn {
+    background-color: var(--primary-color);
+    color: var(--white);
+    border: none;
+    padding: 12px 24px;
+    border-radius: 4px;
+    cursor: pointer;
+    font-size: 1rem;
+    font-weight: 600;
+    letter-spacing: 1px;
+    text-transform: uppercase;
+    transition: background-color 0.3s ease; /* Solo transición de color */
+    display: block;
+    width: 200px;
+    margin: 0 auto;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+}
 
-        .logout-btn {
-            background-color: var(--primary-color);
-            color: var(--white);
-            border: none;
-            padding: 12px 24px;
-            border-radius: 4px;
-            cursor: pointer;
-            font-size: 1rem;
-            font-weight: 600;
-            letter-spacing: 1px;
-            text-transform: uppercase;
-            transition: background-color 0.3s ease;
-            display: block;
-            width: 200px;
-            margin: 0 auto;
-            box-shadow: 0 4px 6px rgba(0,0,0,0.1);
-        }
+.logout-btn:hover {
+    background-color: var(--secondary-color); /* Solo cambio de color al hover */
+}
 
-        .logout-btn:hover {
-            background-color: var(--secondary-color);
-        }
+/* Estilo para checkboxes (por si se necesitan) */
+.checkbox-container {
+    display: flex;
+    align-items: center;
+    margin-bottom: 10px;
+}
 
-        @media (max-width: 768px) {
-            .container {
-                padding: 20px;
-                border-left: none;
-                border-top: 6px solid var(--primary-color);
-            }
+.checkbox-container input[type="checkbox"] {
+    margin-right: 10px;
+}
 
-            .patients-table {
-                font-size: 0.9rem;
-            }
-        }
+.completion-info {
+    font-size: 0.9rem;
+    color: var(--secondary-color);
+    margin-top: 5px;
+}
+
+@media (max-width: 768px) {
+    .container {
+        padding: 20px;
+        border-left: none;
+        border-top: 6px solid var(--primary-color);
+    }
+
+    .patients-table {
+        font-size: 0.9rem;
+    }
+}
     </style>
 </head>
 <body>

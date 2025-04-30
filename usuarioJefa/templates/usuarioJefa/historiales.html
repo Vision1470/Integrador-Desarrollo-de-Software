@@ -14,6 +14,8 @@
             --text-color: #333333;
             --white: #FFFFFF;
             --border-color: #D1D1D1;
+            --success-color: #28a745;
+            --danger-color: #dc3545;
         }
 
         * {
@@ -38,6 +40,7 @@
             width: 100%;
             max-width: 1200px;
             border-left: 5px solid var(--primary-color);
+            margin: 0 auto;
         }
 
         .header {
@@ -56,6 +59,7 @@
         .menu-buttons {
             display: flex;
             gap: 15px;
+            flex-wrap: wrap;
         }
 
         .menu-button {
@@ -68,6 +72,8 @@
             font-weight: 600;
             text-transform: uppercase;
             transition: background-color 0.3s ease;
+            border: none;
+            cursor: pointer;
         }
 
         .menu-button:hover {
@@ -128,10 +134,20 @@
             font-weight: 600;
             text-transform: uppercase;
             transition: background-color 0.3s ease;
+            text-decoration: none;
+            display: inline-block;
         }
 
         .action-button:hover {
             background-color: var(--accent-color);
+        }
+
+        .action-button.success {
+            background-color: var(--success-color);
+        }
+
+        .action-button.danger {
+            background-color: var(--danger-color);
         }
 
         .tab-container {
@@ -209,6 +225,114 @@
             margin-bottom: 30px;
         }
 
+        /* Estilos para botones de acción */
+        .action-buttons {
+            display: flex;
+            gap: 5px;
+        }
+
+        /* Estilo para el detalle del paciente */
+        .patient-detail {
+            background-color: var(--white);
+            border-radius: 8px;
+            padding: 25px;
+            margin-top: 20px;
+            box-shadow: 0 4px 8px rgba(0,0,0,0.1);
+            border-left: 5px solid var(--primary-color);
+        }
+
+        .patient-info {
+            margin-bottom: 30px;
+            padding-bottom: 20px;
+            border-bottom: 1px solid var(--border-color);
+        }
+
+        .patient-info h2 {
+            color: var(--primary-color);
+            margin-bottom: 15px;
+        }
+
+        .info-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+            gap: 20px;
+        }
+
+        .info-item {
+            margin-bottom: 15px;
+        }
+
+        .info-item .label {
+            font-weight: 600;
+            color: var(--secondary-color);
+            display: block;
+            margin-bottom: 5px;
+        }
+
+        .info-item .value {
+            font-size: 1.05rem;
+        }
+
+        .section {
+            margin-bottom: 30px;
+        }
+
+        .section-title {
+            color: var(--primary-color);
+            border-bottom: 2px solid var(--accent-color);
+            padding-bottom: 8px;
+            margin-bottom: 15px;
+            font-size: 1.4rem;
+        }
+
+        .card {
+            background-color: var(--table-background);
+            border-radius: 6px;
+            padding: 15px;
+            margin-bottom: 15px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.05);
+            border-left: 3px solid var(--accent-color);
+        }
+
+        .card-header {
+            display: flex;
+            justify-content: space-between;
+            margin-bottom: 10px;
+            border-bottom: 1px solid var(--border-color);
+            padding-bottom: 8px;
+        }
+
+        .card-title {
+            font-weight: 600;
+            color: var(--secondary-color);
+            font-size: 1.1rem;
+        }
+
+        .card-date {
+            color: #6c757d;
+            font-size: 0.9rem;
+        }
+
+        .card-content {
+            margin-top: 10px;
+        }
+
+        .card-content p {
+            margin-bottom: 8px;
+        }
+
+        .back-button {
+            display: inline-block;
+            margin-bottom: 20px;
+        }
+
+        .empty-message {
+            text-align: center;
+            padding: 20px;
+            color: #6c757d;
+            font-style: italic;
+        }
+
         @media (max-width: 768px) {
             .container {
                 padding: 20px;
@@ -220,6 +344,14 @@
             
             .menu-buttons {
                 flex-wrap: wrap;
+            }
+
+            .info-grid {
+                grid-template-columns: 1fr;
+            }
+            
+            .action-buttons {
+                flex-direction: column;
             }
         }
     </style>
@@ -323,7 +455,6 @@
                             <th>Última Receta</th>
                             <th>Último Diagnóstico</th>
                             <th>Último Seguimiento</th>
-                            <th>Ver Detalles</th>
                             <th>Acciones</th>
                         </tr>
                     </thead>
@@ -362,18 +493,16 @@
                                         {% endif %}
                                     {% endwith %}
                                 </td>
-                                <td>
+                                <td class="action-buttons">
                                     <a href="{% url 'jefa:detalle_historial' paciente.id %}" class="action-button">Ver Detalles</a>
-                                </td>
-                                <td>
                                     {% if not paciente.esta_activo %}
-                                        <button onclick="confirmarReactivacion('{{ paciente.id }}')" class="action-button">Agregar</button>
+                                        <button onclick="confirmarReactivacion('{{ paciente.id }}')" class="action-button success">Agregar</button>
                                     {% endif %}
                                 </td>
                             </tr>
                         {% empty %}
                             <tr>
-                                <td colspan="10">No se encontraron pacientes</td>
+                                <td colspan="9" class="empty-message">No se encontraron pacientes</td>
                             </tr>
                         {% endfor %}
                     </tbody>
@@ -423,7 +552,7 @@
                             </tr>
                         {% empty %}
                             <tr>
-                                <td colspan="8">No hay personal de enfermería registrado</td>
+                                <td colspan="8" class="empty-message">No hay personal de enfermería registrado</td>
                             </tr>
                         {% endfor %}
                     </tbody>
@@ -458,7 +587,7 @@
                             </tr>
                         {% empty %}
                             <tr>
-                                <td colspan="7">No hay doctores registrados</td>
+                                <td colspan="7" class="empty-message">No hay doctores registrados</td>
                             </tr>
                         {% endfor %}
                     </tbody>
@@ -491,7 +620,7 @@
                             </tr>
                         {% empty %}
                             <tr>
-                                <td colspan="6">No hay jefas de piso registradas</td>
+                                <td colspan="6" class="empty-message">No hay jefas de piso registradas</td>
                             </tr>
                         {% endfor %}
                     </tbody>

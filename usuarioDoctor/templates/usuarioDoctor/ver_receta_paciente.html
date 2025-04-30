@@ -6,119 +6,124 @@
     <title>Sistema Hospitalario - Ver Receta</title>
     <style>
         :root {
-            --primary-color: #4A4A4A;
-            --secondary-color: #6D4C41;
-            --accent-color: #8D6E63;
-            --background-color: #E9ECEF;
-            --text-color: #333333;
-            --white: #FFFFFF;
-            --border-color: #5A5A5A;
-        }
+    --primary-color: #6D4C41;     /* Color café principal */
+    --secondary-color: #8D6E63;   /* Color café secundario */
+    --accent-color: #A1887F;      /* Color café acento */
+    --background-color: #E9ECEF;  /* Color de fondo */
+    --text-color: #333333;        /* Color de texto oscuro */
+    --white: #FFFFFF;             /* Blanco */
+    --border-color: #7E7E7E;      /* Color de borde */
+}
 
-        * {
-            margin: 0;
-            padding: 0;
-            box-sizing: border-box;
-            font-family: 'Roboto', 'Arial', sans-serif;
-        }
+* {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+    font-family: 'Roboto', 'Arial', sans-serif;
+}
 
-        body {
-            background-color: var(--background-color);
-            color: var(--text-color);
-            line-height: 1.6;
-            padding: 20px;
-        }
+body {
+    background-color: var(--background-color);
+    color: var(--text-color);
+    line-height: 1.6;
+    padding: 20px;
+}
 
-        .container {
-            background-color: var(--white);
-            border-radius: 6px;
-            box-shadow: 0 15px 30px rgba(0,0,0,0.15);
-            padding: 40px;
-            max-width: 1200px;
-            margin: 0 auto;
-            border-left: 6px solid var(--primary-color);
-            position: relative;
-        }
+.container {
+    background-color: var(--white);
+    border-radius: 6px;
+    box-shadow: 0 15px 30px rgba(0,0,0,0.15);
+    padding: 40px;
+    max-width: 1200px;
+    margin: 0 auto;
+    border-left: 6px solid var(--primary-color);
+    position: relative;
+}
 
-        .container::before {
-            content: '';
-            position: absolute;
-            top: 0;
-            left: 0;
-            right: 0;
-            height: 6px;
-            background: linear-gradient(to right, var(--primary-color), var(--accent-color));
-        }
+.container::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    height: 6px;
+    background: linear-gradient(to right, var(--primary-color), var(--accent-color));
+}
 
-        .header {
-            margin-bottom: 30px;
-        }
+.header {
+    margin-bottom: 30px;
+}
 
-        .header h1 {
-            color: var(--primary-color);
-            font-size: 2.2rem;
-            margin-bottom: 10px;
-        }
+.header h1 {
+    color: var(--primary-color);
+    font-size: 2.2rem;
+    margin-bottom: 10px;
+}
 
-        .header h2 {
-            color: var(--secondary-color);
-            font-size: 1.5rem;
-            margin-bottom: 10px;
-        }
+.header h2 {
+    color: var(--secondary-color);
+    font-size: 1.5rem;
+    margin-bottom: 10px;
+}
 
-        .patient-info {
-            margin-bottom: 20px;
-            background-color: #F1F3F5;
-            padding: 15px;
-            border-radius: 6px;
-        }
+.patient-info {
+    margin-bottom: 20px;
+    background-color: #F0EBE8; /* Fondo con tono cálido */
+    padding: 15px;
+    border-radius: 6px;
+    border-left: 4px solid var(--secondary-color);
+}
 
-        .seccion {
-            margin: 20px 0;
-            padding: 20px;
-            border: 3px solid var(--border-color);
-            border-radius: 6px;
-            background-color: #F1F3F5;
-        }
+.seccion {
+    margin: 20px 0;
+    padding: 20px;
+    border: 2px solid var(--secondary-color);
+    border-radius: 6px;
+    background-color: #F8F5F3; /* Fondo con tono cálido */
+}
 
-        .seccion h3 {
-            color: var(--secondary-color);
-            border-bottom: 2px solid var(--secondary-color);
-            padding-bottom: 10px;
-            margin-bottom: 15px;
-        }
+.seccion h3 {
+    color: var(--primary-color);
+    border-bottom: 2px solid var(--primary-color);
+    padding-bottom: 10px;
+    margin-bottom: 15px;
+}
 
-        .item {
-            margin: 10px 0;
-            padding: 10px;
-            background-color: var(--white);
-            border-radius: 4px;
-            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
-        }
+.item {
+    margin: 10px 0;
+    padding: 10px;
+    background-color: var(--white);
+    border-radius: 4px;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+    border-left: 3px solid var(--accent-color);
+}
 
-        .btn {
-            display: inline-block;
-            background-color: var(--primary-color);
-            color: var(--white);
-            text-decoration: none;
-            padding: 12px 24px;
-            border-radius: 4px;
-            margin: 10px 10px 0 0;
-            transition: all 0.3s ease;
-        }
+/* Botones simplificados */
+.btn {
+    display: inline-block;
+    background-color: var(--primary-color);
+    color: var(--white);
+    text-decoration: none;
+    padding: 10px 20px;
+    border-radius: 4px;
+    margin: 10px 10px 0 0;
+    transition: background-color 0.3s ease;
+    font-weight: 600;
+    text-transform: uppercase;
+    font-size: 0.9rem;
+}
 
-        .btn:hover {
-            background-color: var(--secondary-color);
-            transform: translateY(-2px);
-        }
+.btn:hover {
+    background-color: var(--secondary-color);
+}
 
-        @media (max-width: 768px) {
-            .container {
-                padding: 20px;
-                border-left: none;
-                border-top: 6px solid var(--primary-color);
-            }
-        }
+@media (max-width: 768px) {
+    .container {
+        padding: 20px;
+        border-left: none;
+        border-top: 6px solid var(--primary-color);
+    }
+}
     </style>
 </head>
 <body>

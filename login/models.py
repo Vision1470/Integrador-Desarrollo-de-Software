@@ -49,8 +49,8 @@ class Usuarios(AbstractUser):
     apellidos = models.CharField(max_length=150)
     edad = models.IntegerField(null=True, blank=True)
     fechaNacimiento = models.DateField(null=True, blank=True)
-    areaEspecialidad = models.ForeignKey(AreaEspecialidad, on_delete=models.SET_NULL, null=True)
-    fortalezas = models.ManyToManyField(Fortaleza)
+    areaEspecialidad = models.ForeignKey(AreaEspecialidad, on_delete=models.SET_NULL, null=True, blank=True)
+    fortalezas = models.ManyToManyField(Fortaleza, blank=True)
     
     # Estado del usuario
     estaActivo = models.BooleanField(default=True)
@@ -62,6 +62,19 @@ class Usuarios(AbstractUser):
     telefono = models.CharField(max_length=15, blank=True, null=True)
     direccion = models.TextField(blank=True, null=True)
     primerIngreso = models.BooleanField(default=True)
+    
+    def clean(self):
+        """Validación personalizada para el modelo"""
+        super().clean()
+        
+        # Validar campos obligatorios solo para enfermería
+        if self.tipoUsuario == self.enfermeria:
+            # Validar área de especialidad
+            if not self.areaEspecialidad:
+                raise ValidationError({'areaEspecialidad': 'El área de especialidad es obligatoria para usuarios de Enfermería'})
+            
+            # Para validar fortalezas, necesitamos verificar después de guardar
+            # ya que es una relación ManyToMany
 
 class HistorialPersonal(models.Model):
     usuario = models.ForeignKey(Usuarios, on_delete=models.CASCADE)

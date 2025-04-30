@@ -28,7 +28,7 @@
     </div>
     {% endif %}
 
-    <form method="POST">
+    <form method="POST" id="user-form">
         {% csrf_token %}
 
         <!-- Datos Personales -->
@@ -59,29 +59,34 @@
         <!-- Datos Profesionales -->
         <div class="form-section">
             <h3>Datos Profesionales</h3>
-            <p>
-                <label for="area_especialidad">Área de Especialidad:</label>
-                <select id="area_especialidad" name="area_especialidad" required>
-                    <option value="">Seleccione un área</option>
-                    {% for area in areas %}
-                        <option value="{{ area.id }}">{{ area.nombre }}</option>
-                    {% endfor %}
-                </select>
-            </p>
+            <div id="area-especialidad-container">
+                <p>
+                    <label for="area_especialidad">Área de Especialidad:</label>
+                    <select id="area_especialidad" name="area_especialidad">
+                        <option value="">Seleccione un área</option>
+                        {% for area in areas %}
+                            <option value="{{ area.id }}">{{ area.nombre }}</option>
+                        {% endfor %}
+                    </select>
+                </p>
+            </div>
 
-            <p>
-                <label>Fortalezas (seleccione máximo 4):</label><br>
-                {% for fortaleza in fortalezas %}
-                    <label>
-                        <input type="checkbox" name="fortalezas" value="{{ fortaleza.id }}">
-                        {{ fortaleza.nombre }}
-                    </label><br>
-                {% endfor %}
-            </p>
+            <div id="fortalezas-container">
+                <p>
+                    <label>Fortalezas (seleccione exactamente 4):</label><br>
+                    <span id="fortalezas-error" class="error-message"></span><br>
+                    {% for fortaleza in fortalezas %}
+                        <label>
+                            <input type="checkbox" name="fortalezas" value="{{ fortaleza.id }}" class="fortaleza-checkbox">
+                            {{ fortaleza.nombre }}
+                        </label><br>
+                    {% endfor %}
+                </p>
+            </div>
 
             <p>
                 <label for="tipo_usuario">Tipo de Usuario:</label>
-                <select id="tipo_usuario" name="tipo_usuario" required>
+                <select id="tipo_usuario" name="tipo_usuario" required onchange="toggleFields()">
                     <option value="EN">Enfermería</option>
                     <option value="DR">Doctor</option>
                     <option value="JP">Jefa de piso</option>
@@ -114,16 +119,6 @@
     <br><br>
     <a href="{% url 'jefa:usuarios_' %}">Volver al Menú</a>
 
-    Vamos a hacer algunos ajustes para asegurarnos que la edad se calcule y muestre automáticamente. Probemos con esta versión modificada del script:
-htmlCopy<!DOCTYPE html>
-<html lang="en">
-<!-- ... (resto del head y comienzo del body igual) ... -->
-
-Vamos a probar una versión más simple y directa del script. Aquí está la versión corregida:
-htmlCopy<!DOCTYPE html>
-<html lang="en">
-<!-- (El resto del código HTML se mantiene igual hasta el script) -->
-
 <script>
     // Esperar a que el documento esté completamente cargado
     window.onload = function() {
@@ -132,6 +127,14 @@ htmlCopy<!DOCTYPE html>
         const edad = document.getElementById('edad');
         const errorMessage = document.getElementById('error-message');
         const submitButton = document.getElementById('submit-button');
+        const tipoUsuario = document.getElementById('tipo_usuario');
+        const areaEspecialidad = document.getElementById('area_especialidad');
+        const fortalezasCheckboxes = document.querySelectorAll('.fortaleza-checkbox');
+        const fortalezasError = document.getElementById('fortalezas-error');
+        const form = document.getElementById('user-form');
+
+        // Inicializar campos según el tipo de usuario seleccionado
+        toggleFields();
 
         // Función para calcular la edad
         function calcularEdad() {
@@ -165,8 +168,57 @@ htmlCopy<!DOCTYPE html>
             }
         }
 
-        // Agregar el event listener
+        // Función para mostrar/ocultar campos según tipo de usuario
+        function toggleFields() {
+            if (tipoUsuario.value === "EN") {
+                // Para Enfermería: área de especialidad y fortalezas son obligatorias
+                areaEspecialidad.setAttribute("required", "required");
+                document.getElementById('area-especialidad-container').style.display = "block";
+                document.getElementById('fortalezas-container').style.display = "block";
+            } else {
+                // Para Doctor y Jefa de piso: no son obligatorias
+                areaEspecialidad.removeAttribute("required");
+                document.getElementById('area-especialidad-container').style.display = "none";
+                document.getElementById('fortalezas-container').style.display = "none";
+            }
+        }
+
+        // Validar selección de fortalezas (exactamente 4 para enfermería)
+        function validarFortalezas() {
+            if (tipoUsuario.value === "EN") {
+                let contadorSeleccionadas = 0;
+                fortalezasCheckboxes.forEach(checkbox => {
+                    if (checkbox.checked) {
+                        contadorSeleccionadas++;
+                    }
+                });
+
+                if (contadorSeleccionadas !== 4) {
+                    fortalezasError.textContent = "Debe seleccionar exactamente 4 fortalezas para Enfermería";
+                    return false;
+                } else {
+                    fortalezasError.textContent = "";
+                    return true;
+                }
+            }
+            return true; // No validar para otros tipos de usuario
+        }
+
+        // Agregar event listeners
         fechaNacimiento.onchange = calcularEdad;
+        tipoUsuario.onchange = toggleFields;
+        
+        // Validar fortalezas al enviar el formulario
+        form.addEventListener('submit', function(event) {
+            if (tipoUsuario.value === "EN" && !validarFortalezas()) {
+                event.preventDefault();
+            }
+        });
+
+        // Validar fortalezas cuando cambia una selección
+        fortalezasCheckboxes.forEach(checkbox => {
+            checkbox.addEventListener('change', validarFortalezas);
+        });
 
         // Establecer la fecha máxima como hoy
         const hoy = new Date();

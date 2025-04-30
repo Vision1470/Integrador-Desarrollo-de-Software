@@ -382,12 +382,14 @@
                                 <td>{{ usuario.first_name }}</td>
                                 <td>{{ usuario.apellidos }}</td>
                                 <td>
-                                    {% if usuario.tipo_usuario == 'EN' %}
+                                    {% if usuario.tipoUsuario == 'EN' %}
                                     Enfermería
-                                    {% elif usuario.tipo_usuario == 'DR' %}
+                                    {% elif usuario.tipoUsuario == 'DR' %}
                                     Doctor
-                                    {% elif usuario.tipo_usuario == 'JP' %}
+                                    {% elif usuario.tipoUsuario == 'JP' %}
                                     Jefa de piso
+                                    {% else %}
+                                    No asignado
                                     {% endif %}
                                 </td>
                                 <td>{{ usuario.cedula }}</td>
@@ -415,7 +417,7 @@
             </div>
 
             <div id="crear-usuarios" class="tab-content">
-                <form method="POST">
+                <form method="POST" id="user-form">
                     {% csrf_token %}
 
                     <div class="form-section">
@@ -441,29 +443,31 @@
 
                     <div class="form-section">
                         <h3>Datos Profesionales</h3>
-                        <div>
+                        <div id="area-especialidad-container">
                             <label for="area_especialidad">Área de Especialidad:</label>
-                            <select id="area_especialidad" name="area_especialidad" required>
+                            <select id="area_especialidad" name="area_especialidad">
                                 <option value="">Seleccione un área</option>
                                 {% for area in areas %}
                                     <option value="{{ area.id }}">{{ area.nombre }}</option>
                                 {% endfor %}
                             </select>
+                            <span id="area-error" class="error-message"></span>
                         </div>
-                        <div>
+                        <div id="fortalezas-container">
                             <label>Fortalezas (máx. 4):</label>
                             <div class="checkbox-group">
                                 {% for fortaleza in fortalezas %}
                                 <div class="checkbox-item">
-                                    <input type="checkbox" name="fortalezas" value="{{ fortaleza.id }}" id="fortaleza_{{ fortaleza.id }}">
+                                    <input type="checkbox" name="fortalezas" value="{{ fortaleza.id }}" id="fortaleza_{{ fortaleza.id }}" class="fortaleza-checkbox">
                                     <label for="fortaleza_{{ fortaleza.id }}">{{ fortaleza.nombre }}</label>
                                 </div>
                                 {% endfor %}
                             </div>
+                            <span id="fortalezas-error" class="error-message"></span>
                         </div>
                         <div>
                             <label for="tipo_usuario">Tipo de Usuario:</label>
-                            <select id="tipo_usuario" name="tipo_usuario" required>
+                            <select id="tipo_usuario" name="tipo_usuario" required onchange="toggleFields()">
                                 <option value="EN">Enfermería</option>
                                 <option value="DR">Doctor</option>
                                 <option value="JP">Jefa de piso</option>
@@ -559,6 +563,56 @@
             const hoy = new Date();
             const fechaMaxima = hoy.toISOString().split('T')[0];
             fechaNacimientoInput.setAttribute('max', fechaMaxima);
+
+            // Función para mostrar/ocultar campos según tipo de usuario
+            window.toggleFields = function() {
+                const tipoUsuario = document.getElementById('tipo_usuario').value;
+                const areaEspecialidad = document.getElementById('area_especialidad');
+                const areaError = document.getElementById('area-error');
+                const fortalezasError = document.getElementById('fortalezas-error');
+                
+                if (tipoUsuario === 'EN') {
+                    // Para Enfermería: área y fortalezas son obligatorias
+                    document.getElementById('area-especialidad-container').style.display = 'block';
+                    document.getElementById('fortalezas-container').style.display = 'block';
+                    areaEspecialidad.setAttribute('required', 'required');
+                    
+                    // Validar al enviar el formulario
+                    document.getElementById('user-form').onsubmit = function(e) {
+                        const fortalezasSeleccionadas = document.querySelectorAll('.fortaleza-checkbox:checked').length;
+                        let valido = true;
+                        
+                        if (!areaEspecialidad.value) {
+                            areaError.textContent = 'El área de especialidad es obligatoria para usuarios de Enfermería';
+                            valido = false;
+                        } else {
+                            areaError.textContent = '';
+                        }
+                        
+                        if (fortalezasSeleccionadas === 0) {
+                            fortalezasError.textContent = 'Debe seleccionar al menos una fortaleza para usuarios de Enfermería';
+                            valido = false;
+                        } else {
+                            fortalezasError.textContent = '';
+                        }
+                        
+                        return valido;
+                    };
+                } else {
+                    // Para Doctor y Jefa de piso: no son obligatorias
+                    document.getElementById('area-especialidad-container').style.display = 'none';
+                    document.getElementById('fortalezas-container').style.display = 'none';
+                    areaEspecialidad.removeAttribute('required');
+                    
+                    // Quitar validación adicional
+                    document.getElementById('user-form').onsubmit = null;
+                    areaError.textContent = '';
+                    fortalezasError.textContent = '';
+                }
+            };
+            
+            // Ejecutar al cargar la página
+            toggleFields();
         });
 
         // Funciones para gestionar usuarios
