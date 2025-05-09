@@ -1,0 +1,721 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Distribución Manual de Pacientes</title>
+    <style>
+        :root {
+            --primary-color: #0A2342;
+            --secondary-color: #2E4057;
+            --accent-color: #1E90FF;
+            --background-color: #EBF0F5;
+            --table-background: #F0F4F7;
+            --text-color: #333333;
+            --white: #FFFFFF;
+            --border-color: #D1D1D1;
+            --success-color: #28a745;
+            --warning-color: #ffc107;
+            --danger-color: #dc3545;
+            --info-color: #17a2b8;
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: 'Roboto', 'Arial', sans-serif;
+        }
+
+        body {
+            background-color: var(--background-color);
+            color: var(--text-color);
+            line-height: 1.6;
+            padding: 20px;
+        }
+
+        .container {
+            background-color: var(--white);
+            border-radius: 8px;
+            box-shadow: 0 15px 30px rgba(0,0,0,0.15);
+            padding: 30px;
+            width: 100%;
+            max-width: 1200px;
+            border-left: 5px solid var(--primary-color);
+            margin: 0 auto;
+        }
+
+        .header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 20px;
+        }
+
+        .header h1 {
+            font-size: 2rem;
+            color: var(--primary-color);
+            font-weight: 700;
+        }
+
+        .menu-buttons {
+            display: flex;
+            gap: 15px;
+        }
+
+        .menu-button {
+            background-color: var(--primary-color);
+            color: var(--white);
+            text-decoration: none;
+            padding: 10px 15px;
+            border-radius: 4px;
+            font-size: 0.9rem;
+            font-weight: 600;
+            text-transform: uppercase;
+            transition: background-color 0.3s ease;
+        }
+
+        .menu-button:hover {
+            background-color: var(--secondary-color);
+        }
+
+        .action-button {
+            background-color: var(--secondary-color);
+            color: var(--white);
+            border: none;
+            padding: 8px 12px;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 0.9rem;
+            font-weight: 600;
+            text-transform: uppercase;
+            transition: background-color 0.3s ease;
+            text-decoration: none;
+            display: inline-block;
+        }
+
+        .action-button:hover {
+            background-color: var(--accent-color);
+        }
+
+        .action-button.primary {
+            background-color: var(--primary-color);
+        }
+
+        .action-button.success {
+            background-color: var(--success-color);
+        }
+
+        .action-button.warning {
+            background-color: var(--warning-color);
+            color: var(--text-color);
+        }
+
+        .action-button.danger {
+            background-color: var(--danger-color);
+        }
+
+        .action-button.info {
+            background-color: var(--info-color);
+        }
+
+        .form-section {
+            margin-bottom: 20px;
+            padding: 20px;
+            border: 1px solid var(--border-color);
+            border-radius: 4px;
+            background-color: #f8f9fa;
+        }
+
+        .form-section h3 {
+            color: var(--primary-color);
+            margin-bottom: 15px;
+            font-size: 1.2rem;
+            padding-bottom: 5px;
+            border-bottom: 1px solid var(--border-color);
+        }
+
+        .form-group {
+            margin-bottom: 15px;
+        }
+
+        .form-label {
+            display: block;
+            margin-bottom: 5px;
+            font-weight: 500;
+        }
+
+        select, input[type="text"], input[type="date"], button[type="submit"] {
+            padding: 10px;
+            border: 1px solid var(--border-color);
+            border-radius: 4px;
+            margin-right: 10px;
+            margin-bottom: 10px;
+            font-size: 1rem;
+            width: 100%;
+            max-width: 400px;
+        }
+
+        select {
+            background-color: var(--white);
+        }
+
+        select:focus, input:focus {
+            outline: none;
+            border-color: var(--accent-color);
+            box-shadow: 0 0 0 2px rgba(30, 144, 255, 0.2);
+        }
+
+        button[type="submit"] {
+            background-color: var(--primary-color);
+            color: var(--white);
+            cursor: pointer;
+            border: none;
+            font-weight: 600;
+            text-transform: uppercase;
+        }
+
+        button[type="submit"]:hover {
+            background-color: var(--secondary-color);
+        }
+
+        /* Estilos adicionales para la distribución manual */
+        .enfermero-panel {
+            background-color: var(--white);
+            border-radius: 8px;
+            box-shadow: 0 4px 8px rgba(0,0,0,0.1);
+            margin-bottom: 20px;
+            overflow: hidden;
+        }
+        
+        .enfermero-header {
+            background-color: var(--secondary-color);
+            color: var(--white);
+            padding: 15px;
+            font-weight: 600;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        
+        .enfermero-body {
+            padding: 15px;
+        }
+        
+        .patient-list {
+            min-height: 150px;
+            border: 1px dashed var(--border-color);
+            padding: 10px;
+            border-radius: 4px;
+            margin-top: 10px;
+        }
+        
+        .patient-item {
+            padding: 10px;
+            background-color: var(--background-color);
+            border-radius: 4px;
+            margin-bottom: 8px;
+            cursor: move;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        
+        .patient-item:last-child {
+            margin-bottom: 0;
+        }
+        
+        .patient-gravity {
+            font-size: 0.8rem;
+            padding: 2px 6px;
+            border-radius: 2px;
+        }
+        
+        .gravity-1 {
+            background-color: var(--success-color);
+            color: var(--white);
+        }
+        
+        .gravity-2 {
+            background-color: var(--warning-color);
+            color: var(--text-color);
+        }
+        
+        .gravity-3 {
+            background-color: var(--danger-color);
+            color: var(--white);
+        }
+        
+        .patient-container {
+            margin-top: 20px;
+        }
+        
+        .patient-title {
+            font-size: 1.2rem;
+            margin-bottom: 10px;
+            color: var(--primary-color);
+        }
+        
+        .capacity-indicator {
+            margin-top: 10px;
+            display: flex;
+            align-items: center;
+        }
+        
+        .capacity-label {
+            margin-right: 10px;
+            font-weight: 500;
+        }
+        
+        .capacity-bar {
+            flex-grow: 1;
+            height: 8px;
+            background-color: #e9ecef;
+            border-radius: 4px;
+            overflow: hidden;
+            position: relative;
+        }
+        
+        .capacity-fill {
+            position: absolute;
+            height: 100%;
+            left: 0;
+            top: 0;
+            background-color: var(--success-color);
+            transition: width 0.3s ease;
+        }
+        
+        .capacity-value {
+            margin-left: 10px;
+            font-weight: 500;
+        }
+        
+        .capacity-fill.warning {
+            background-color: var(--warning-color);
+        }
+        
+        .capacity-fill.danger {
+            background-color: var(--danger-color);
+        }
+        
+        .capacity-counter {
+            margin-top: 5px;
+            display: flex;
+            justify-content: space-between;
+        }
+        
+        .counter-item {
+            display: flex;
+            align-items: center;
+            margin-right: 15px;
+        }
+        
+        .counter-label {
+            margin-right: 5px;
+        }
+        
+        .counter-value {
+            font-weight: 600;
+        }
+        
+        .nurse-cards {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+            gap: 20px;
+        }
+        
+        /* Alertas */
+        .alert {
+            padding: 15px;
+            margin-bottom: 20px;
+            border-radius: 4px;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+        }
+
+        .alert.info {
+            background-color: rgba(23, 162, 184, 0.1);
+            border: 1px solid var(--info-color);
+            color: var(--info-color);
+        }
+
+        .alert.warning {
+            background-color: rgba(255, 193, 7, 0.1);
+            border: 1px solid var(--warning-color);
+            color: #856404;
+        }
+
+        .alert.danger {
+            background-color: rgba(220, 53, 69, 0.1);
+            border: 1px solid var(--danger-color);
+            color: var(--danger-color);
+        }
+
+        .alert.success {
+            background-color: rgba(40, 167, 69, 0.1);
+            border: 1px solid var(--success-color);
+            color: var(--success-color);
+        }
+
+        .alert-content {
+            display: flex;
+            align-items: center;
+            gap: 15px;
+        }
+
+        .alert-icon {
+            font-size: 1.5rem;
+            font-weight: bold;
+        }
+
+        .alert-message {
+            flex-grow: 1;
+        }
+
+        .alert-close {
+            background: none;
+            border: none;
+            color: inherit;
+            font-size: 1.2rem;
+            cursor: pointer;
+        }
+        
+        .highlight {
+            border: 2px dashed var(--accent-color) !important;
+            background-color: rgba(30, 144, 255, 0.05);
+        }
+        
+        .dragging {
+            opacity: 0.7;
+            transform: scale(0.95);
+        }
+        
+        .enfermero-patients.error {
+            border: 2px dashed var(--danger-color) !important;
+            background-color: rgba(220, 53, 69, 0.05);
+        }
+        
+        /* Responsive */
+        @media (max-width: 768px) {
+            .container {
+                padding: 15px;
+            }
+            
+            .header {
+                flex-direction: column;
+            }
+            
+            .menu-buttons {
+                margin-top: 15px;
+                flex-wrap: wrap;
+                justify-content: center;
+            }
+            
+            .nurse-cards {
+                grid-template-columns: 1fr;
+            }
+            
+            select, input[type="text"] {
+                max-width: 100%;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>Distribución Manual de Pacientes</h1>
+            <div class="menu-buttons">
+                <a href="{% url 'jefa:calendario_area' %}" class="menu-button">Calendario</a>
+                <a href="{% url 'jefa:lista_areas_sobrecarga' %}" class="menu-button">Áreas en Sobrecarga</a>
+                <a href="{% url 'jefa:distribuir_pacientes' area.id %}" class="menu-button">Volver a Distribución</a>
+            </div>
+        </div>
+
+        {% if messages %}
+            {% for message in messages %}
+                <div class="alert {{ message.tags }}">
+                    <div class="alert-content">
+                        <span class="alert-icon">i</span>
+                        <div class="alert-message">{{ message }}</div>
+                    </div>
+                    <button class="alert-close">&times;</button>
+                </div>
+            {% endfor %}
+        {% endif %}
+
+        <div class="form-section">
+            <h3>Datos del Área: {{ area.nombre }}</h3>
+            <p>Asigna pacientes a los enfermeros usando la interfaz de arrastrar y soltar.</p>
+            <p>Recuerda los límites: <strong>máximo 3 pacientes leves, 2 pacientes moderados y 1 paciente grave</strong> por enfermero.</p>
+            
+            <form method="post" id="distribucionForm">
+                {% csrf_token %}
+                
+                <div class="form-group">
+                    <label class="form-label">Descripción (opcional):</label>
+                    <input type="text" name="descripcion" placeholder="Descripción de esta distribución">
+                </div>
+                
+                <div class="patient-container">
+                    <h3 class="patient-title">Pacientes Disponibles</h3>
+                    <div class="patient-list" id="availablePatients">
+                        {% for paciente_gravedad in pacientes %}
+                            <div class="patient-item" data-id="{{ paciente_gravedad.paciente.id }}" data-gravity="{{ paciente_gravedad.nivel_gravedad }}">
+                                <span>{{ paciente_gravedad.paciente.nombres }} {{ paciente_gravedad.paciente.apellidos }}</span>
+                                <span class="patient-gravity gravity-{{ paciente_gravedad.nivel_gravedad }}">
+                                    Gravedad {{ paciente_gravedad.nivel_gravedad }}
+                                </span>
+                                <input type="hidden" name="paciente_{{ paciente_gravedad.paciente.id }}_gravedad" value="{{ paciente_gravedad.nivel_gravedad }}">
+                                <!-- Este campo será actualizado por JS cuando se asigne el paciente -->
+                                <input type="hidden" name="paciente_{{ paciente_gravedad.paciente.id }}_enfermero" value="" id="enfermero_{{ paciente_gravedad.paciente.id }}">
+                            </div>
+                        {% empty %}
+                            <div class="alert info">No hay pacientes disponibles en esta área.</div>
+                        {% endfor %}
+                    </div>
+                </div>
+                
+                <div class="nurse-cards">
+                    {% for enfermero_activo in enfermeros %}
+                        <div class="enfermero-panel">
+                            <div class="enfermero-header">
+                                <span>{{ enfermero_activo.enfermero.first_name }} {{ enfermero_activo.enfermero.last_name }}</span>
+                                <span id="totalCount_{{ enfermero_activo.enfermero.id }}">0 pacientes</span>
+                            </div>
+                            <div class="enfermero-body">
+                                <div class="capacity-counter">
+                                    <div class="counter-item">
+                                        <span class="counter-label">Leves:</span>
+                                        <span class="counter-value" id="counter1_{{ enfermero_activo.enfermero.id }}">0/3</span>
+                                    </div>
+                                    <div class="counter-item">
+                                        <span class="counter-label">Moderados:</span>
+                                        <span class="counter-value" id="counter2_{{ enfermero_activo.enfermero.id }}">0/2</span>
+                                    </div>
+                                    <div class="counter-item">
+                                        <span class="counter-label">Graves:</span>
+                                        <span class="counter-value" id="counter3_{{ enfermero_activo.enfermero.id }}">0/1</span>
+                                    </div>
+                                </div>
+                                
+                                <div class="capacity-indicator">
+                                    <span class="capacity-label">Carga:</span>
+                                    <div class="capacity-bar">
+                                        <div class="capacity-fill" id="capacityFill_{{ enfermero_activo.enfermero.id }}" style="width: 0%;"></div>
+                                    </div>
+                                    <span class="capacity-value" id="capacityValue_{{ enfermero_activo.enfermero.id }}">0%</span>
+                                </div>
+                                
+                                <div class="patient-list enfermero-patients" id="enfermeroPatients_{{ enfermero_activo.enfermero.id }}" data-id="{{ enfermero_activo.enfermero.id }}">
+                                    <!-- Aquí se agregarán los pacientes asignados por JavaScript -->
+                                </div>
+                            </div>
+                        </div>
+                    {% endfor %}
+                </div>
+                
+                <div class="form-controls">
+                    <a href="{% url 'jefa:distribuir_pacientes' area.id %}" class="action-button">Cancelar</a>
+                    <button type="submit" class="action-button primary">Guardar Distribución</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <script>
+        // Función para actualizar los contadores y la barra de capacidad
+        function updateCounters(enfermeroId) {
+            const container = document.getElementById(`enfermeroPatients_${enfermeroId}`);
+            const patients = container.querySelectorAll('.patient-item');
+            
+            let count1 = 0; // Leves
+            let count2 = 0; // Moderados
+            let count3 = 0; // Graves
+            
+            patients.forEach(patient => {
+                const gravity = parseInt(patient.getAttribute('data-gravity'));
+                if (gravity === 1) count1++;
+                else if (gravity === 2) count2++;
+                else if (gravity === 3) count3++;
+                
+                // Actualizar el campo oculto para el formulario
+                const patientId = patient.getAttribute('data-id');
+                document.getElementById(`enfermero_${patientId}`).value = enfermeroId;
+            });
+            
+            // Actualizar contadores visibles
+            document.getElementById(`counter1_${enfermeroId}`).textContent = `${count1}/3`;
+            document.getElementById(`counter2_${enfermeroId}`).textContent = `${count2}/2`;
+            document.getElementById(`counter3_${enfermeroId}`).textContent = `${count3}/1`;
+            
+            // Actualizar contador total
+            document.getElementById(`totalCount_${enfermeroId}`).textContent = `${patients.length} pacientes`;
+            
+            // Calcular carga de trabajo
+            const maxCapacity = 1*3 + 2*2 + 3*1; // 1 grave + 2 medios + 3 leves = 10
+            const currentCapacity = count3*3 + count2*2 + count1*1;
+            const capacityPercentage = Math.min(100, (currentCapacity / maxCapacity) * 100);
+            
+            // Actualizar barra de capacidad
+            const capacityFill = document.getElementById(`capacityFill_${enfermeroId}`);
+            capacityFill.style.width = `${capacityPercentage}%`;
+            
+            // Actualizar valor de capacidad
+            document.getElementById(`capacityValue_${enfermeroId}`).textContent = `${Math.round(capacityPercentage)}%`;
+            
+            // Cambiar color según capacidad
+            capacityFill.classList.remove('warning', 'danger');
+            if (capacityPercentage > 80) {
+                capacityFill.classList.add('danger');
+            } else if (capacityPercentage > 50) {
+                capacityFill.classList.add('warning');
+            }
+            
+            // Validar límites
+            validateLimits(enfermeroId, count1, count2, count3);
+        }
+        
+        // Función para validar los límites de pacientes por gravedad
+        function validateLimits(enfermeroId, count1, count2, count3) {
+            const container = document.getElementById(`enfermeroPatients_${enfermeroId}`);
+            const counter1 = document.getElementById(`counter1_${enfermeroId}`);
+            const counter2 = document.getElementById(`counter2_${enfermeroId}`);
+            const counter3 = document.getElementById(`counter3_${enfermeroId}`);
+            
+            // Resetear clases de error
+            container.classList.remove('error');
+            counter1.classList.remove('danger');
+            counter2.classList.remove('danger');
+            counter3.classList.remove('danger');
+            
+            // Verificar exceso de pacientes leves
+            if (count1 > 3) {
+                counter1.classList.add('danger');
+                container.classList.add('error');
+            }
+            
+            // Verificar exceso de pacientes moderados
+            if (count2 > 2) {
+                counter2.classList.add('danger');
+                container.classList.add('error');
+            }
+            
+            // Verificar exceso de pacientes graves
+            if (count3 > 1) {
+                counter3.classList.add('danger');
+                container.classList.add('error');
+            }
+        }
+        
+        // Función para hacer que un elemento sea arrastrable
+        function makeElementDraggable(element) {
+            element.draggable = true;
+            
+            element.addEventListener('dragstart', function(e) {
+                e.dataTransfer.setData('text/plain', e.target.getAttribute('data-id'));
+                e.target.classList.add('dragging');
+            });
+            
+            element.addEventListener('dragend', function(e) {
+                e.target.classList.remove('dragging');
+            });
+        }
+        
+        // Función para preparar los contenedores para soltar elementos
+        function prepareDropZone(container) {
+            container.addEventListener('dragover', function(e) {
+                e.preventDefault();
+                this.classList.add('highlight');
+            });
+            
+            container.addEventListener('dragleave', function(e) {
+                this.classList.remove('highlight');
+            });
+            
+            container.addEventListener('drop', function(e) {
+                e.preventDefault();
+                this.classList.remove('highlight');
+                
+                const patientId = e.dataTransfer.getData('text/plain');
+                const patient = document.querySelector(`.patient-item[data-id="${patientId}"]`);
+                
+                // Si el paciente viene de otro enfermero, actualizar ese enfermero
+                if (patient.parentElement.classList.contains('enfermero-patients')) {
+                    const oldEnfermeroId = patient.parentElement.getAttribute('data-id');
+                    updateCounters(oldEnfermeroId);
+                }
+                
+                // Si el destino es la lista de pacientes disponibles, resetear el campo de enfermero
+                if (this.id === 'availablePatients') {
+                    document.getElementById(`enfermero_${patientId}`).value = '';
+                }
+                
+                // Mover el paciente al nuevo contenedor
+                this.appendChild(patient);
+                
+                // Si el destino es un enfermero, actualizar sus contadores
+                if (this.classList.contains('enfermero-patients')) {
+                    const enfermeroId = this.getAttribute('data-id');
+                    updateCounters(enfermeroId);
+                }
+            });
+        }
+        
+        // Inicializar la funcionalidad drag & drop
+        document.addEventListener('DOMContentLoaded', function() {
+            // Hacer que todos los pacientes sean arrastrables
+            const patients = document.querySelectorAll('.patient-item');
+            patients.forEach(makeElementDraggable);
+            
+            // Preparar la zona para pacientes disponibles
+            prepareDropZone(document.getElementById('availablePatients'));
+            
+            // Preparar las zonas para los enfermeros
+            const enfermeroContainers = document.querySelectorAll('.enfermero-patients');
+            enfermeroContainers.forEach(prepareDropZone);
+            
+            // Validar el formulario antes de enviar
+            document.getElementById('distribucionForm').addEventListener('submit', function(e) {
+                // Verificar si hay errores en algún enfermero
+                const errorContainers = document.querySelectorAll('.enfermero-patients.error');
+                
+                if (errorContainers.length > 0) {
+                    e.preventDefault();
+                    alert('Hay enfermeros con más pacientes de los permitidos por nivel de gravedad. Por favor, revisa la distribución.');
+                    return false;
+                }
+                
+                // Preparar los datos del formulario
+                const enfermeroContainers = document.querySelectorAll('.enfermero-patients');
+                enfermeroContainers.forEach(container => {
+                    const enfermeroId = container.getAttribute('data-id');
+                    const patients = container.querySelectorAll('.patient-item');
+                    
+                    patients.forEach(patient => {
+                        const patientId = patient.getAttribute('data-id');
+                        const inputName = `pacientes_${enfermeroId}`;
+                        
+                        // Crear un campo oculto para cada paciente asignado
+                        const input = document.createElement('input');
+                        input.type = 'hidden';
+                        input.name = inputName;
+                        input.value = patientId;
+                        this.appendChild(input);
+                    });
+                });
+                
+                return true;
+            });
+            
+            // Cerrar las alertas al hacer clic en el botón de cerrar
+            document.querySelectorAll('.alert-close').forEach(button => {
+                button.addEventListener('click', function() {
+                    this.closest('.alert').style.display = 'none';
+                });
+            });
+        });
+    </script>
+</body>
+</html>

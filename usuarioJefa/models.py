@@ -263,10 +263,13 @@ class GravedadPaciente(models.Model):
 
 
 
+# Modificación al modelo DistribucionPacientes en usuarioJefa/models.py
 class DistribucionPacientes(models.Model):
     enfermero = models.ForeignKey('login.Usuarios', on_delete=models.CASCADE)
     area = models.ForeignKey('login.AreaEspecialidad', on_delete=models.CASCADE)
     fecha_asignacion = models.DateTimeField(auto_now_add=True)
+    descripcion = models.CharField(max_length=255, blank=True)
+    activo = models.BooleanField(default=True)
     
     pacientes_gravedad_1 = models.IntegerField(
         default=0,
@@ -283,7 +286,7 @@ class DistribucionPacientes(models.Model):
         validators=[MinValueValidator(0), MaxValueValidator(1)],
         help_text="Pacientes de gravedad alta (máx. 1)"
     )
-
+    
     def clean(self):
         if self.pacientes_gravedad_1 > 3:
             raise ValidationError('Un enfermero no puede atender más de 3 pacientes de gravedad baja')
@@ -294,8 +297,24 @@ class DistribucionPacientes(models.Model):
 
     def total_pacientes(self):
         return self.pacientes_gravedad_1 + self.pacientes_gravedad_2 + self.pacientes_gravedad_3
+    
+    def get_pacientes_asignados(self):
+        """Retorna los pacientes asignados a este enfermero en esta distribución"""
+        return Paciente.objects.filter(asignacionpaciente__distribucion=self)
 
     class Meta:
         verbose_name = "Distribución de Pacientes"
         verbose_name_plural = "Distribuciones de Pacientes"
-        unique_together = ['enfermero', 'area']
+
+class AsignacionPaciente(models.Model):
+    paciente = models.ForeignKey('usuarioJefa.Paciente', on_delete=models.CASCADE, related_name='asignacionpaciente')
+    distribucion = models.ForeignKey('DistribucionPacientes', on_delete=models.CASCADE, related_name='asignaciones')
+    fecha_asignacion = models.DateTimeField(auto_now_add=True)
+    
+    class Meta:
+        verbose_name = "Asignación de Paciente"
+        verbose_name_plural = "Asignaciones de Pacientes"
+        unique_together = ['paciente', 'distribucion']  # Un paciente solo puede estar asignado a una distribución a la vez
+        
+    def __str__(self):
+        return f"Paciente {self.paciente.nombres} asignado a {self.distribucion.enfermero.username}"

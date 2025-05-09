@@ -1,85 +1,514 @@
-# templates/usuarioJefa/ver_distribucion.html
-<!DOCTYPE html>
+html<!DOCTYPE html>
 <html lang="es">
 <head>
     <meta charset="UTF-8">
-    <title>Ver Distribución de Pacientes</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Distribución de Pacientes</title>
     <style>
-        .menu-container {
-            margin-bottom: 20px;
+        :root {
+            --primary-color: #0A2342;
+            --secondary-color: #2E4057;
+            --accent-color: #1E90FF;
+            --background-color: #EBF0F5;
+            --table-background: #F0F4F7;
+            --text-color: #333333;
+            --white: #FFFFFF;
+            --border-color: #D1D1D1;
+            --success-color: #28a745;
+            --warning-color: #ffc107;
+            --danger-color: #dc3545;
+            --info-color: #17a2b8;
         }
-        .button {
-            margin: 5px;
-            padding: 10px 20px;
-            text-decoration: none;
-            background-color: #007bff;
-            color: white;
-            border-radius: 4px;
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: 'Roboto', 'Arial', sans-serif;
         }
-        .distribucion-container {
-            max-width: 1200px;
-            margin: 0 auto;
+
+        body {
+            background-color: var(--background-color);
+            color: var(--text-color);
+            line-height: 1.6;
             padding: 20px;
         }
-        .enfermero-card {
-            background: white;
-            border: 1px solid #dee2e6;
+
+        .container {
+            background-color: var(--white);
             border-radius: 8px;
+            box-shadow: 0 15px 30px rgba(0,0,0,0.15);
+            padding: 30px;
+            width: 100%;
+            max-width: 1200px;
+            border-left: 5px solid var(--primary-color);
+            margin: 0 auto;
+        }
+
+        .header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
             margin-bottom: 20px;
-            padding: 15px;
         }
-        .pacientes-list {
-            display: grid;
-            grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
-            gap: 10px;
-            margin-top: 10px;
+
+        .header h1 {
+            font-size: 2rem;
+            color: var(--primary-color);
+            font-weight: 700;
         }
-        .paciente-item {
-            background-color: #f8f9fa;
+
+        .menu-buttons {
+            display: flex;
+            gap: 15px;
+        }
+
+        .menu-button {
+            background-color: var(--primary-color);
+            color: var(--white);
+            text-decoration: none;
+            padding: 10px 15px;
             border-radius: 4px;
-            padding: 10px;
+            font-size: 0.9rem;
+            font-weight: 600;
+            text-transform: uppercase;
+            transition: background-color 0.3s ease;
         }
-        .gravedad-1 { border-left: 4px solid #28a745; }
-        .gravedad-2 { border-left: 4px solid #ffc107; }
-        .gravedad-3 { border-left: 4px solid #dc3545; }
-    </style>
-</head>
-<body>
 
-    <div class="distribucion-container">
-        <h2>{{ area.nombre }} - Distribución Actual</h2>
+        .menu-button:hover {
+            background-color: var(--secondary-color);
+        }
 
-        {% for distribucion in distribuciones %}
-            <div class="enfermero-card">
-                <h3>{{ distribucion.enfermero.nombre }}</h3>
-                <p>Total pacientes: {{ distribucion.total_pacientes }}</p>
-                
-                <div class="pacientes-list">
-                    {% if distribucion.pacientes_gravedad_3 > 0 %}
-                        <div class="paciente-item gravedad-3">
-                            <strong>Gravedad Alta:</strong> {{ distribucion.pacientes_gravedad_3 }} paciente(s)
-                        </div>
-                    {% endif %}
-                    
-                    {% if distribucion.pacientes_gravedad_2 > 0 %}
-                        <div class="paciente-item gravedad-2">
-                            <strong>Gravedad Media:</strong> {{ distribucion.pacientes_gravedad_2 }} paciente(s)
-                        </div>
-                    {% endif %}
-                    
-                    {% if distribucion.pacientes_gravedad_1 > 0 %}
-                        <div class="paciente-item gravedad-1">
-                            <strong>Gravedad Baja:</strong> {{ distribucion.pacientes_gravedad_1 }} paciente(s)
-                        </div>
-                    {% endif %}
-                </div>
-            </div>
-        {% empty %}
-            <p>No hay distribución de pacientes para mostrar.</p>
-        {% endfor %}
-    </div>
+        .action-button {
+            background-color: var(--secondary-color);
+            color: var(--white);
+            border: none;
+            padding: 8px 12px;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 0.9rem;
+            font-weight: 600;
+            text-transform: uppercase;
+            transition: background-color 0.3s ease;
+            text-decoration: none;
+            display: inline-block;
+        }
 
-    <br><br><br>
-    <a href="{% url 'jefa:menu_jefa' %}" class="button">Volver</a>
-</body>
-</html>
+        .action-button:hover {
+            background-color: var(--accent-color);
+        }
+
+        .action-button.primary {
+            background-color: var(--primary-color);
+        }
+
+        .action-button.success {
+            background-color: var(--success-color);
+        }
+
+        .action-button.warning {
+            background-color: var(--warning-color);
+            color: var(--text-color);
+        }
+
+        .action-button.danger {
+            background-color: var(--danger-color);
+        }
+
+        .action-button.info {
+            background-color: var(--info-color);
+        }
+
+        .form-section {
+            margin-bottom: 20px;
+            padding: 20px;
+            border: 1px solid var(--border-color);
+            border-radius: 4px;
+            background-color: #f8f9fa;
+        }
+
+        .form-section h3 {
+            color: var(--primary-color);
+            margin-bottom: 15px;
+            font-size: 1.2rem;
+            padding-bottom: 5px;
+            border-bottom: 1px solid var(--border-color);
+        }
+
+        .area-stats {
+            margin-bottom: 20px;
+        }
+
+        .stat-row {
+            display: flex;
+            justify-content: space-between;
+            margin-bottom: 10px;
+        }
+
+        .stat-label {
+            font-weight: 500;
+        }
+
+        .badge {
+               background-color: var(--info-color);
+               color: var(--white);
+               padding: 3px 8px;
+               border-radius: 4px;
+               font-size: 0.8rem;
+               font-weight: 600;
+           }
+   
+           .badge.danger {
+               background-color: var(--danger-color);
+           }
+   
+           .badge.warning {
+               background-color: var(--warning-color);
+               color: var(--text-color);
+           }
+   
+           .badge.success {
+               background-color: var(--success-color);
+           }
+   
+           /* Niveles de carga */
+           .workload-indicator {
+               display: flex;
+               height: 8px;
+               border-radius: 4px;
+               overflow: hidden;
+               margin: 10px 0;
+           }
+   
+           .workload-segment {
+               height: 100%;
+           }
+   
+           .workload-segment.low {
+               background-color: var(--success-color);
+           }
+   
+           .workload-segment.medium {
+               background-color: var(--warning-color);
+           }
+   
+           .workload-segment.high {
+               background-color: var(--danger-color);
+           }
+   
+           /* Alertas */
+           .alert {
+               padding: 15px;
+               margin-bottom: 20px;
+               border-radius: 4px;
+               display: flex;
+               align-items: center;
+               justify-content: space-between;
+           }
+   
+           .alert.info {
+               background-color: rgba(23, 162, 184, 0.1);
+               border: 1px solid var(--info-color);
+               color: var(--info-color);
+           }
+   
+           .alert.warning {
+               background-color: rgba(255, 193, 7, 0.1);
+               border: 1px solid var(--warning-color);
+               color: #856404;
+           }
+   
+           .alert.danger {
+               background-color: rgba(220, 53, 69, 0.1);
+               border: 1px solid var(--danger-color);
+               color: var(--danger-color);
+           }
+   
+           .alert.success {
+               background-color: rgba(40, 167, 69, 0.1);
+               border: 1px solid var(--success-color);
+               color: var(--success-color);
+           }
+   
+           .alert-content {
+               display: flex;
+               align-items: center;
+               gap: 15px;
+           }
+   
+           .alert-icon {
+               font-size: 1.5rem;
+               font-weight: bold;
+           }
+   
+           .alert-message {
+               flex-grow: 1;
+           }
+   
+           .alert-close {
+               background: none;
+               border: none;
+               color: inherit;
+               font-size: 1.2rem;
+               cursor: pointer;
+           }
+   
+           /* Tarjetas de enfermeros */
+           .nurse-cards {
+               display: grid;
+               grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+               gap: 20px;
+               margin-bottom: 20px;
+           }
+   
+           .nurse-card {
+               background-color: var(--white);
+               border-radius: 8px;
+               box-shadow: 0 4px 8px rgba(0,0,0,0.1);
+               padding: 0;
+               overflow: hidden;
+           }
+   
+           .nurse-card-header {
+               background-color: var(--secondary-color);
+               color: var(--white);
+               padding: 15px;
+               font-weight: 600;
+           }
+   
+           .nurse-card-body {
+               padding: 15px;
+           }
+   
+           .nurse-info {
+               margin-bottom: 15px;
+           }
+   
+           .patient-list {
+               list-style: none;
+               margin: 0;
+               padding: 0;
+           }
+   
+           .patient-item {
+               padding: 10px;
+               border: 1px solid var(--border-color);
+               border-radius: 4px;
+               margin-bottom: 8px;
+               display: flex;
+               justify-content: space-between;
+               align-items: center;
+           }
+   
+           .patient-item:last-child {
+               margin-bottom: 0;
+           }
+   
+           .patient-gravity {
+               font-size: 0.8rem;
+               padding: 2px 6px;
+               border-radius: 2px;
+           }
+   
+           .gravity-1 {
+               background-color: var(--success-color);
+               color: var(--white);
+           }
+   
+           .gravity-2 {
+               background-color: var(--warning-color);
+               color: var(--text-color);
+           }
+   
+           .gravity-3 {
+               background-color: var(--danger-color);
+               color: var(--white);
+           }
+   
+           .section-title {
+               color: var(--primary-color);
+               font-size: 1.5rem;
+               margin: 30px 0 15px;
+               padding-bottom: 8px;
+               border-bottom: 2px solid var(--primary-color);
+           }
+   
+           .form-controls {
+               display: flex;
+               justify-content: flex-end;
+               gap: 10px;
+               margin-top: 20px;
+           }
+   
+           /* Responsive */
+           @media (max-width: 768px) {
+               .container {
+                   padding: 15px;
+               }
+               
+               .header {
+                   flex-direction: column;
+               }
+               
+               .menu-buttons {
+                   margin-top: 15px;
+                   flex-wrap: wrap;
+                   justify-content: center;
+               }
+               
+               .nurse-cards {
+                   grid-template-columns: 1fr;
+               }
+               
+               .form-controls {
+                   flex-direction: column;
+               }
+               
+               .action-button {
+                   width: 100%;
+                   text-align: center;
+                   margin-bottom: 10px;
+               }
+           }
+       </style>
+   </head>
+   <body>
+       <div class="container">
+           <div class="header">
+               <h1>Distribución de Pacientes</h1>
+               <div class="menu-buttons">
+                   <a href="{% url 'jefa:calendario_area' %}" class="menu-button">Calendario</a>
+                   <a href="{% url 'jefa:lista_areas_sobrecarga' %}" class="menu-button">Áreas en Sobrecarga</a>
+                   <a href="{% url 'jefa:distribuir_pacientes' area.id %}" class="menu-button">Nueva Distribución</a>
+               </div>
+           </div>
+   
+           {% if messages %}
+               {% for message in messages %}
+                   <div class="alert {{ message.tags }}">
+                       <div class="alert-content">
+                           <span class="alert-icon">i</span>
+                           <div class="alert-message">{{ message }}</div>
+                       </div>
+                       <button class="alert-close">&times;</button>
+                   </div>
+               {% endfor %}
+           {% endif %}
+   
+           <div class="form-section">
+               <h3>Datos del Área: {{ area.nombre }}</h3>
+               <div class="area-stats">
+                   <div class="stat-row">
+                       <span class="stat-label">Nivel de Prioridad:</span>
+                       <span class="badge {% if nivel_prioridad > 3 %}danger{% elif nivel_prioridad > 1 %}warning{% else %}success{% endif %}">
+                           {{ nivel_prioridad }}
+                       </span>
+                   </div>
+                   <div class="stat-row">
+                       <span class="stat-label">Total de Pacientes:</span>
+                       <span>{{ total_pacientes }}</span>
+                   </div>
+                   <div class="stat-row">
+                       <span class="stat-label">Enfermeros Activos:</span>
+                       <span>{{ enfermeros_data|length }}</span>
+                   </div>
+                   <div class="stat-row">
+                       <span class="stat-label">Ratio Pacientes/Enfermero:</span>
+                       <span class="badge {% if ratio_pacientes_enfermero > 5 %}danger{% elif ratio_pacientes_enfermero > 3 %}warning{% else %}success{% endif %}">
+                           {{ ratio_pacientes_enfermero|floatformat:2 }}
+                       </span>
+                   </div>
+                   <div class="stat-row">
+                       <span class="stat-label">Estado:</span>
+                       {% if area_en_sobrecarga %}
+                           <span class="badge danger">En Sobrecarga</span>
+                       {% else %}
+                           <span class="badge success">Normal</span>
+                       {% endif %}
+                   </div>
+                   <div class="stat-row">
+                       <span class="stat-label">Fecha de Distribución:</span>
+                       <span>{{ distribucion_fecha|date:"d/m/Y H:i" }}</span>
+                   </div>
+               </div>
+   
+               <h3>Pacientes por Gravedad</h3>
+               <div class="stat-row">
+                   <span class="stat-label">Gravedad Alta (3):</span>
+                   <span class="badge danger">{{ pacientes_gravedad_3 }}</span>
+               </div>
+               <div class="stat-row">
+                   <span class="stat-label">Gravedad Media (2):</span>
+                   <span class="badge warning">{{ pacientes_gravedad_2 }}</span>
+               </div>
+               <div class="stat-row">
+                   <span class="stat-label">Gravedad Baja (1):</span>
+                   <span class="badge success">{{ pacientes_gravedad_1 }}</span>
+               </div>
+   
+               <div class="workload-indicator">
+                   <div class="workload-segment low" style="width: {{ porcentaje_gravedad_1 }}%;"></div>
+                   <div class="workload-segment medium" style="width: {{ porcentaje_gravedad_2 }}%;"></div>
+                   <div class="workload-segment high" style="width: {{ porcentaje_gravedad_3 }}%;"></div>
+               </div>
+           </div>
+   
+           <h2 class="section-title">Distribución Actual</h2>
+           
+           <div class="nurse-cards">
+               {% for enfermero_data in enfermeros_data %}
+               <div class="nurse-card">
+                   <div class="nurse-card-header">
+                       {{ enfermero_data.enfermero.first_name }} {{ enfermero_data.enfermero.last_name }}
+                   </div>
+                   <div class="nurse-card-body">
+                       <div class="nurse-info">
+                           <div class="stat-row">
+                               <span class="stat-label">Pacientes Asignados:</span>
+                               <span>{{ enfermero_data.total_pacientes }}</span>
+                           </div>
+                           <div class="stat-row">
+                               <span class="stat-label">Carga de Trabajo:</span>
+                               <span class="badge {% if enfermero_data.carga_trabajo > 80 %}danger{% elif enfermero_data.carga_trabajo > 50 %}warning{% else %}success{% endif %}">
+                                   {{ enfermero_data.carga_trabajo }}%
+                               </span>
+                           </div>
+                       </div>
+                       
+                       <h4>Pacientes:</h4>
+                       <ul class="patient-list">
+                           {% for paciente_data in enfermero_data.pacientes %}
+                           <li class="patient-item">
+                               <span>{{ paciente_data.paciente.nombres }} {{ paciente_data.paciente.apellidos }}</span>
+                               <span class="patient-gravity gravity-{{ paciente_data.nivel_gravedad }}">
+                                   Gravedad {{ paciente_data.nivel_gravedad }}
+                               </span>
+                           </li>
+                           {% empty %}
+                           <li class="patient-item">No hay pacientes asignados</li>
+                           {% endfor %}
+                       </ul>
+                   </div>
+               </div>
+               {% endfor %}
+           </div>
+           
+           <div class="form-controls">
+               <a href="{% url 'jefa:distribuir_pacientes' area.id %}" class="action-button primary">Nueva Distribución</a>
+               <a href="{% url 'jefa:ajustar_distribucion' area.id %}" class="action-button warning">Ajustar Distribución</a>
+               {% if area_en_sobrecarga %}
+               <a href="{% url 'jefa:lista_areas_sobrecarga' %}" class="action-button">Volver a Sobrecargas</a>
+               {% endif %}
+           </div>
+       </div>
+   
+       <script>
+           // Cerrar las alertas al hacer clic en el botón de cerrar
+           document.querySelectorAll('.alert-close').forEach(button => {
+               button.addEventListener('click', function() {
+                   this.closest('.alert').style.display = 'none';
+               });
+           });
+       </script>
+   </body>
+   </html>

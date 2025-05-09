@@ -46,8 +46,13 @@ urlpatterns = [
     path('area/prioridad/', views.asignar_nivel_prioridad, name='asignar_nivel_prioridad'),
     path('sobrecarga/lista/', views.lista_areas_sobrecarga, name='lista_areas_sobrecarga'),
 
+
     path('distribucion/<int:area_id>/', views.distribuir_pacientes, name='distribuir_pacientes'),
     path('distribucion/ver/<int:area_id>/', views.ver_distribucion, name='ver_distribucion'),
-    path('distribucion/', views.distribuir_pacientes, name='distribuir_pacientes_inicio'),
+    path('distribucion/guardar/<int:area_id>/', views.guardar_distribucion, name='guardar_distribucion'),
+    path('distribucion/ajustar/<int:area_id>/', views.ajustar_distribucion, name='ajustar_distribucion'),
+    path('distribucion/cancelar/<int:area_id>/', views.cancelar_distribucion, name='cancelar_distribucion'),
+    path('distribucion/manual/<int:area_id>/', views.distribucion_manual, name='distribucion_manual'),
+    path('distribucion/ajustar_manual/<int:area_id>/', views.ajustar_distribucion_manual, name='ajustar_distribucion_manual'),
 
 ]
