@@ -5,299 +5,127 @@
     <meta charset="UTF-8">
     <title>Gestión de Sobrecarga</title>
     <style>
-        :root {
-    --primary-color: #0A2342;     /* Color azul oscuro principal */
-    --secondary-color: #2E4057;   /* Color azul secundario */
-    --accent-color: #1E90FF;      /* Color azul acento */
-    --background-color: #EBF0F5;  /* Color de fondo con tono azulado */
-    --table-background: #F0F4F7;  /* Color de fondo para tablas */
-    --text-color: #333333;        /* Color de texto oscuro */
-    --white: #FFFFFF;             /* Blanco */
-    --border-color: #D1D1D1;      /* Color de borde */
-    
-    /* Colores de estados y botones */
-    --success-color: #28a745;     /* Verde para éxito */
-    --warning-color: #ffc107;     /* Amarillo para advertencias */
-    --danger-color: #dc3545;      /* Rojo para errores */
-    --info-color: #17a2b8;        /* Azul claro para información */
-    
-    /* Colores para prioridades - mantenemos estos para claridad funcional */
-    --p1-color: #28a745;  /* Verde - Baja */
-    --p2-color: #17a2b8;  /* Azul claro - Media-Baja */
-    --p3-color: #ffc107;  /* Amarillo - Media */
-    --p4-color: #fd7e14;  /* Naranja - Media-Alta */
-    --p5-color: #dc3545;  /* Rojo - Alta */
-    --p0-color: #6c757d;  /* Gris - Sin asignar */
-}
-
-* {
-    margin: 0;
-    padding: 0;
-    box-sizing: border-box;
-    font-family: 'Roboto', 'Arial', sans-serif;
-}
-
-body {
-    background-color: var(--background-color);
-    color: var(--text-color);
-    line-height: 1.6;
-    padding: 20px;
-}
-
-.menu-container {
-    margin-bottom: 20px;
-    padding: 15px;
-    background-color: var(--white);
-    border-radius: 8px;
-    box-shadow: 0 4px 6px rgba(0,0,0,0.1);
-    border-left: 5px solid var(--primary-color);
-    position: relative;
-}
-
-.menu-container::before {
-    content: '';
-    position: absolute;
-    top: 0;
-    left: 0;
-    right: 0;
-    height: 5px;
-    background: linear-gradient(to right, var(--primary-color), var(--accent-color));
-}
-
-.menu-container h1 {
-    color: var(--primary-color);
-    font-size: 2rem;
-    margin-bottom: 15px;
-}
-
-.button {
-    margin: 5px;
-    padding: 10px 20px;
-    text-decoration: none;
-    background-color: var(--primary-color);
-    color: var(--white);
-    border-radius: 4px;
-    display: inline-block;
-    transition: background-color 0.3s ease;
-    font-weight: 600;
-    text-transform: uppercase;
-    font-size: 0.9rem;
-}
-
-.button:hover {
-    background-color: var(--secondary-color);
-}
-
-.content-container {
-    max-width: 1000px;
-    margin: 0 auto;
-    padding: 30px;
-    background-color: var(--white);
-    border-radius: 8px;
-    box-shadow: 0 15px 30px rgba(0,0,0,0.15);
-    border-left: 5px solid var(--primary-color);
-    position: relative;
-}
-
-.content-container::before {
-    content: '';
-    position: absolute;
-    top: 0;
-    left: 0;
-    right: 0;
-    height: 5px;
-    background: linear-gradient(to right, var(--primary-color), var(--accent-color));
-}
-
-.content-container h1 {
-    color: var(--primary-color);
-    font-size: 2rem;
-    margin-bottom: 20px;
-}
-
-.alert {
-    padding: 15px;
-    margin-bottom: 15px;
-    border: 1px solid transparent;
-    border-radius: 4px;
-}
-
-.alert-success {
-    background-color: #d4edda;
-    border-color: #c3e6cb;
-    color: #155724;
-}
-
-.alert-warning {
-    background-color: #fff3cd;
-    border-color: #ffeeba;
-    color: #856404;
-}
-
-/* Estilos para tablas */
-table {
-    width: 100%;
-    border-collapse: separate;
-    border-spacing: 0;
-    margin-bottom: 30px;
-    border-radius: 6px;
-    overflow: hidden;
-    box-shadow: 0 4px 6px rgba(0,0,0,0.1);
-    border: 2px solid var(--primary-color);
-    background-color: var(--table-background);
-}
-
-th, td {
-    padding: 12px 15px;
-    text-align: left;
-}
-
-th {
-    background-color: var(--primary-color);
-    color: var(--white);
-    font-weight: 600;
-    border-bottom: 2px solid var(--primary-color);
-}
-
-td {
-    border-bottom: 1px solid var(--border-color);
-}
-
-tr:last-child td {
-    border-bottom: none;
-}
-
-tr:hover {
-    background-color: #E6EAE7;
-}
-
-/* Estilos para botones */
-.btn {
-    padding: 8px 12px;
-    border: none;
-    border-radius: 4px;
-    cursor: pointer;
-    font-size: 14px;
-    font-weight: 600;
-    transition: background-color 0.3s ease;
-}
-
-.btn-primary {
-    background-color: var(--primary-color);
-    color: var(--white);
-}
-
-.btn-primary:hover {
-    background-color: var(--secondary-color);
-}
-
-.btn-success {
-    background-color: var(--success-color);
-    color: var(--white);
-}
-
-.btn-success:hover {
-    background-color: #218838;
-}
-
-.btn-danger {
-    background-color: var(--danger-color);
-    color: var(--white);
-}
-
-.btn-danger:hover {
-    background-color: #c82333;
-}
-
-.btn-info {
-    background-color: var(--info-color);
-    color: var(--white);
-}
-
-.btn-info:hover {
-    background-color: #138496;
-}
-
-/* Estilos para badges */
-.estado-badge {
-    display: inline-block;
-    padding: 5px 10px;
-    border-radius: 4px;
-    font-weight: bold;
-}
-
-.sobrecarga-activa {
-    background-color: var(--danger-color);
-    color: var(--white);
-}
-
-.sobrecarga-inactiva {
-    background-color: var(--success-color);
-    color: var(--white);
-}
-
-.prioridad-badge {
-    display: inline-block;
-    padding: 3px 8px;
-    border-radius: 4px;
-    font-weight: bold;
-    font-size: 12px;
-}
-
-.prioridad-1 { background-color: var(--p1-color); color: white; }
-.prioridad-2 { background-color: var(--p2-color); color: white; }
-.prioridad-3 { background-color: var(--p3-color); color: black; }
-.prioridad-4 { background-color: var(--p4-color); color: white; }
-.prioridad-5 { background-color: var(--p5-color); color: white; }
-.sin-prioridad { background-color: var(--p0-color); color: white; }
-
-/* Estilos para métricas */
-.metric-container {
-    display: flex;
-    flex-wrap: wrap;
-    gap: 10px;
-}
-
-.metric-item {
-    background-color: #F0F4F7;
-    border-radius: 4px;
-    padding: 8px 12px;
-    font-size: 14px;
-    border-left: 3px solid var(--accent-color);
-}
-
-/* Responsive */
-@media (max-width: 768px) {
-    .content-container {
-        padding: 20px;
-        border-left: none;
-        border-top: 5px solid var(--primary-color);
-    }
-    
-    .menu-container {
-        padding: 15px;
-        border-left: none;
-        border-top: 5px solid var(--primary-color);
-    }
-    
-    .metric-container {
-        flex-direction: column;
-    }
-    
-    table {
-        font-size: 0.9rem;
-    }
-    
-    td, th {
-        padding: 8px;
-    }
-    
-    .button {
-        display: block;
-        margin-bottom: 8px;
-        text-align: center;
-    }
-}
+        .menu-container {
+            margin-bottom: 20px;
+            padding: 15px;
+        }
+        .button {
+            margin: 5px;
+            padding: 10px 20px;
+            text-decoration: none;
+            background-color: #007bff;
+            color: white;
+            border-radius: 4px;
+            display: inline-block;
+        }
+        .content-container {
+            max-width: 1000px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+        .alert {
+            padding: 15px;
+            margin-bottom: 15px;
+            border: 1px solid transparent;
+            border-radius: 4px;
+        }
+        .alert-success {
+            background-color: #d4edda;
+            border-color: #c3e6cb;
+            color: #155724;
+        }
+        .alert-warning {
+            background-color: #fff3cd;
+            border-color: #ffeeba;
+            color: #856404;
+        }
+        .alert-info {
+            background-color: #cce5ff;
+            border-color: #b8daff;
+            color: #004085;
+        }
+        h1 {
+            margin-bottom: 20px;
+        }
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-bottom: 20px;
+        }
+        th, td {
+            padding: 12px 15px;
+            text-align: left;
+            border-bottom: 1px solid #dee2e6;
+        }
+        th {
+            background-color: #f8f9fa;
+            font-weight: bold;
+        }
+        tr:hover {
+            background-color: #f8f9fa;
+        }
+        .btn {
+            padding: 8px 12px;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 14px;
+        }
+        .btn-primary {
+            background-color: #007bff;
+            color: white;
+        }
+        .btn-success {
+            background-color: #28a745;
+            color: white;
+        }
+        .btn-danger {
+            background-color: #dc3545;
+            color: white;
+        }
+        .btn-info {
+            background-color: #17a2b8;
+            color: white;
+        }
+        .estado-badge {
+            display: inline-block;
+            padding: 5px 10px;
+            border-radius: 4px;
+            font-weight: bold;
+        }
+        .sobrecarga-activa {
+            background-color: #dc3545;
+            color: white;
+        }
+        .sobrecarga-inactiva {
+            background-color: #28a745;
+            color: white;
+        }
+        .prioridad-badge {
+            display: inline-block;
+            padding: 3px 8px;
+            border-radius: 4px;
+            font-weight: bold;
+            font-size: 12px;
+        }
+        .prioridad-1 { background-color: #28a745; color: white; }
+        .prioridad-2 { background-color: #17a2b8; color: white; }
+        .prioridad-3 { background-color: #ffc107; color: black; }
+        .prioridad-4 { background-color: #fd7e14; color: white; }
+        .prioridad-5 { background-color: #dc3545; color: white; }
+        .sin-prioridad { background-color: #6c757d; color: white; }
+        
+        .metric-container {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 10px;
+        }
+        .metric-item {
+            background-color: #f8f9fa;
+            border-radius: 4px;
+            padding: 5px 10px;
+            font-size: 14px;
+        }
     </style>
 </head>
 <body>
@@ -324,88 +152,93 @@ tr:hover {
             {% endfor %}
         {% endif %}
 
-        <table>
-            <thead>
-                <tr>
-                    <th>Área</th>
-                    <th>Nivel de Prioridad</th>
-                    <th>Estado</th>
-                    <th>Métricas</th>
-                    <th>Acciones</th>
-                </tr>
-            </thead>
-            <tbody>
-                {% for area in areas %}
-                <tr>
-                    <td>{{ area.nombre }}</td>
-                    <td>
-                        {% with nivel=niveles_prioridad|get_item:area.id %}
-                            {% if nivel %}
-                                <span class="prioridad-badge prioridad-{{ nivel }}">
-                                    {{ nivel }}
-                                </span>
+        {% if areas %}
+            <table>
+                <thead>
+                    <tr>
+                        <th>Área</th>
+                        <th>Nivel de Prioridad</th>
+                        <th>Estado</th>
+                        <th>Métricas</th>
+                        <th>Acciones</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for area in areas %}
+                    <tr>
+                        <td>{{ area.nombre }}</td>
+                        <td>
+                            {% with nivel=niveles_prioridad|get_item:area.id %}
+                                {% if nivel %}
+                                    <span class="prioridad-badge prioridad-{{ nivel }}">
+                                        {{ nivel }}
+                                    </span>
+                                {% else %}
+                                    <span class="prioridad-badge sin-prioridad">Sin asignar</span>
+                                {% endif %}
+                            {% endwith %}
+                        </td>
+                        <td>
+                            {% if area.id in areas_sobrecargadas_ids %}
+                                <span class="estado-badge sobrecarga-activa">Sobrecarga Activa</span>
                             {% else %}
-                                <span class="prioridad-badge sin-prioridad">Sin asignar</span>
+                                <span class="estado-badge sobrecarga-inactiva">Normal</span>
                             {% endif %}
-                        {% endwith %}
-                    </td>
-                    <td>
-                        {% if area.id in areas_sobrecargadas_ids %}
-                            <span class="estado-badge sobrecarga-activa">Sobrecarga Activa</span>
-                        {% else %}
-                            <span class="estado-badge sobrecarga-inactiva">Normal</span>
-                        {% endif %}
-                    </td>
-                    <td>
-                        {% with metricas=metricas_areas|get_item:area.id %}
-                            <div class="metric-container">
-                                <div class="metric-item">
-                                    <strong>Pacientes:</strong> {{ metricas.total_pacientes }}
+                        </td>
+                        <td>
+                            {% with metricas=metricas_areas|get_item:area.id %}
+                                <div class="metric-container">
+                                    <div class="metric-item">
+                                        <strong>Pacientes:</strong> {{ metricas.total_pacientes }}
+                                    </div>
+                                    <div class="metric-item">
+                                        <strong>Enfermeros:</strong> {{ metricas.enfermeros_activos }}
+                                    </div>
+                                    <div class="metric-item">
+                                        <strong>Ratio:</strong> {{ metricas.ratio_pacientes_enfermero|floatformat:1 }}
+                                    </div>
                                 </div>
-                                <div class="metric-item">
-                                    <strong>Enfermeros:</strong> {{ metricas.enfermeros_activos }}
-                                </div>
-                                <div class="metric-item">
-                                    <strong>Ratio:</strong> {{ metricas.ratio_pacientes_enfermero|floatformat:1 }}
-                                </div>
-                            </div>
-                        {% endwith %}
-                    </td>
-                    <td>
-                        {% if area.id in areas_sobrecargadas_ids %}
-                            <form method="post" style="display: inline-block;">
-                                {% csrf_token %}
-                                <input type="hidden" name="area_id" value="{{ area.id }}">
-                                <input type="hidden" name="accion" value="desactivar">
-                                <button type="submit" class="btn btn-danger">
-                                    Desactivar Sobrecarga
-                                </button>
-                            </form>
-                        {% else %}
-                            <form method="post" style="display: inline-block;">
-                                {% csrf_token %}
-                                <input type="hidden" name="area_id" value="{{ area.id }}">
-                                <input type="hidden" name="accion" value="activar">
-                                <button type="submit" class="btn btn-success">
-                                    Activar Sobrecarga
-                                </button>
-                            </form>
-                        {% endif %}
-                        
-                        <!--{% if area.id in areas_sobrecargadas_ids %}
-                            <a href="{% url 'jefa:distribuir_pacientes' area.id %}" class="btn btn-info" style="margin-left: 5px;">
-                                Distribuir Pacientes
-                            </a>
-                        {% endif %}-->
-                    </td>
-                </tr>
-                {% empty %}
-                <tr>
-                    <td colspan="5">No hay áreas disponibles.</td>
-                </tr>
-                {% endfor %}
-            </tbody>
-        </table>
+                            {% endwith %}
+                        </td>
+                        <td>
+                            {% if area.id in areas_sobrecargadas_ids %}
+                                <form method="post" style="display: inline-block;">
+                                    {% csrf_token %}
+                                    <input type="hidden" name="area_id" value="{{ area.id }}">
+                                    <input type="hidden" name="accion" value="desactivar">
+                                    <button type="submit" class="btn btn-danger">
+                                        Desactivar Sobrecarga
+                                    </button>
+                                </form>
+                                
+                                <br><br>
+                                <a href="{% url 'jefa:distribuir_pacientes' area.id %}" class="btn btn-info" style="width: 100%;">
+                                    Distribuir Pacientes
+                                </a>
+                            {% else %}
+                                <form method="post" style="display: inline-block;">
+                                    {% csrf_token %}
+                                    <input type="hidden" name="area_id" value="{{ area.id }}">
+                                    <input type="hidden" name="accion" value="activar">
+                                    <button type="submit" class="btn btn-success">
+                                        Activar Sobrecarga
+                                    </button>
+                                </form>
+                            {% endif %}
+                        </td>
+                    </tr>
+                    {% empty %}
+                    <tr>
+                        <td colspan="5">No hay áreas disponibles.</td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        {% else %}
+            <div class="alert alert-info">
+                No hay áreas disponibles.
+            </div>
+        {% endif %}
     </div>
 
     <br><br><br>

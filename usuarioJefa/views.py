@@ -1142,3 +1142,141 @@ def asignar_nivel_prioridad(request):
     }
     
     return render(request, 'usuarioJefa/asignar_nivel_prioridad.html', context)
+
+
+
+
+def distribuir_pacientes(request, area_id=None):
+    """Vista para distribuir pacientes de forma equitativa"""
+    area = get_object_or_404(AreaEspecialidad, id=area_id) if area_id else None
+    
+    if request.method == 'POST':
+        try:
+            with transaction.atomic():
+                # Obtener todos los enfermeros activos en el área
+                enfermeros_activos = Usuarios.objects.filter(
+                    asignacioncalendario__area=area,
+                    asignacioncalendario__activo=True
+                ).distinct()
+
+                # Obtener pacientes por gravedad
+                pacientes = GravedadPaciente.objects.filter(
+                    paciente__area=area
+                ).values('nivel_gravedad').annotate(
+                    total=Count('id')
+                )
+
+                # Crear o actualizar distribución
+                distribuir_por_gravedad(enfermeros_activos, pacientes, area)
+                
+                messages.success(request, 'Pacientes distribuidos exitosamente')
+                return redirect('jefa:lista_areas_sobrecarga')
+        
+        except Exception as e:
+            messages.error(request, f'Error al distribuir pacientes: {str(e)}')
+    
+    # Obtener distribución actual
+    distribuciones = DistribucionPacientes.objects.filter(area=area)
+    nivel_prioridad = NivelPrioridadArea.objects.get(area=area).nivel_prioridad if area else None
+    
+    context = {
+        'area': area,
+        'distribuciones': distribuciones,
+        'nivel_prioridad': nivel_prioridad,
+    }
+    
+    return render(request, 'usuarioJefa/distribuir_pacientes.html', context)
+
+def distribuir_por_gravedad(enfermeros, pacientes, area):
+    """
+    Implementa la lógica de distribución según RQNF79-84
+    """
+    # Resetear distribuciones existentes
+    DistribucionPacientes.objects.filter(area=area).delete()
+    
+    # Convertir QuerySet de pacientes a diccionario para fácil acceso
+    pacientes_dict = {p['nivel_gravedad']: p['total'] for p in pacientes}
+    
+    # Obtener total de pacientes por gravedad
+    total_g3 = pacientes_dict.get(3, 0)  # Alta gravedad
+    total_g2 = pacientes_dict.get(2, 0)  # Media gravedad
+    total_g1 = pacientes_dict.get(1, 0)  # Baja gravedad
+    
+    # Calcular enfermeros necesarios
+    enfermeros_necesarios = max(
+        total_g3,  # 1 paciente grave por enfermero
+        (total_g2 + 1) // 2,  # Hasta 2 pacientes medios por enfermero
+        (total_g1 + 2) // 3   # Hasta 3 pacientes leves por enfermero
+    )
+    
+    if enfermeros_necesarios > enfermeros.count():
+        raise ValueError(f'Se necesitan al menos {enfermeros_necesarios} enfermeros para esta distribución')
+    
+    distribuciones = []
+    enfermeros_list = list(enfermeros)
+    
+    # Distribuir pacientes de alta gravedad (máximo 1 por enfermero)
+    for _ in range(total_g3):
+        if not enfermeros_list:
+            raise ValueError('No hay suficientes enfermeros disponibles')
+        enfermero = enfermeros_list.pop(0)
+        distribuciones.append(
+            DistribucionPacientes(
+                enfermero=enfermero,
+                area=area,
+                pacientes_gravedad_3=1
+            )
+        )
+    
+    # Distribuir pacientes de gravedad media (máximo 2 por enfermero)
+    enfermero_idx = 0
+    for _ in range(total_g2):
+        if enfermero_idx >= len(distribuciones):
+            if enfermeros_list:
+                distribuciones.append(
+                    DistribucionPacientes(
+                        enfermero=enfermeros_list.pop(0),
+                        area=area
+                    )
+                )
+            else:
+                enfermero_idx = 0
+        
+        if distribuciones[enfermero_idx].pacientes_gravedad_2 < 2:
+            distribuciones[enfermero_idx].pacientes_gravedad_2 += 1
+        enfermero_idx += 1
+    
+    # Distribuir pacientes de baja gravedad (máximo 3 por enfermero)
+    enfermero_idx = 0
+    for _ in range(total_g1):
+        if enfermero_idx >= len(distribuciones):
+            if enfermeros_list:
+                distribuciones.append(
+                    DistribucionPacientes(
+                        enfermero=enfermeros_list.pop(0),
+                        area=area
+                    )
+                )
+            else:
+                enfermero_idx = 0
+        
+        if distribuciones[enfermero_idx].pacientes_gravedad_1 < 3:
+            distribuciones[enfermero_idx].pacientes_gravedad_1 += 1
+        enfermero_idx += 1
+    
+    # Guardar todas las distribuciones
+    for distribucion in distribuciones:
+        distribucion.clean()  # Validar límites
+        distribucion.save()
+
+def ver_distribucion(request, area_id):
+    """Vista para ver la distribución actual de un área"""
+    area = get_object_or_404(AreaEspecialidad, id=area_id)
+    distribuciones = DistribucionPacientes.objects.filter(area=area)
+    
+    context = {
+        'area': area,
+        'distribuciones': distribuciones,
+    }
+    
+    return render(request, 'usuarioJefa/ver_distribucion.html', context)

@@ -260,3 +260,42 @@ class GravedadPaciente(models.Model):
     class Meta:
         verbose_name = "Gravedad de Paciente"
         verbose_name_plural = "Gravedades de Pacientes"
+
+
+
+class DistribucionPacientes(models.Model):
+    enfermero = models.ForeignKey('login.Usuarios', on_delete=models.CASCADE)
+    area = models.ForeignKey('login.AreaEspecialidad', on_delete=models.CASCADE)
+    fecha_asignacion = models.DateTimeField(auto_now_add=True)
+    
+    pacientes_gravedad_1 = models.IntegerField(
+        default=0,
+        validators=[MinValueValidator(0), MaxValueValidator(3)],
+        help_text="Pacientes de gravedad baja (máx. 3)"
+    )
+    pacientes_gravedad_2 = models.IntegerField(
+        default=0,
+        validators=[MinValueValidator(0), MaxValueValidator(2)],
+        help_text="Pacientes de gravedad media (máx. 2)"
+    )
+    pacientes_gravedad_3 = models.IntegerField(
+        default=0,
+        validators=[MinValueValidator(0), MaxValueValidator(1)],
+        help_text="Pacientes de gravedad alta (máx. 1)"
+    )
+
+    def clean(self):
+        if self.pacientes_gravedad_1 > 3:
+            raise ValidationError('Un enfermero no puede atender más de 3 pacientes de gravedad baja')
+        if self.pacientes_gravedad_2 > 2:
+            raise ValidationError('Un enfermero no puede atender más de 2 pacientes de gravedad media')
+        if self.pacientes_gravedad_3 > 1:
+            raise ValidationError('Un enfermero no puede atender más de 1 paciente de gravedad alta')
+
+    def total_pacientes(self):
+        return self.pacientes_gravedad_1 + self.pacientes_gravedad_2 + self.pacientes_gravedad_3
+
+    class Meta:
+        verbose_name = "Distribución de Pacientes"
+        verbose_name_plural = "Distribuciones de Pacientes"
+        unique_together = ['enfermero', 'area']
