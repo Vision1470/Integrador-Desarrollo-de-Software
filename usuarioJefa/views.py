@@ -1224,12 +1224,12 @@ def distribuir_pacientes(request, area_id):
             # Generar nueva distribución según el método seleccionado
             if metodo_distribucion == 'equitativa':
                 distribucion_actual, distribucion_id = generar_distribucion_equitativa(
-                    area, enfermeros_activos, pacientes_en_area, considerar_desempeno, descripcion
+                    request, area, enfermeros_activos, pacientes_en_area, considerar_desempeno, descripcion
                 )
                 messages.success(request, "Se ha generado una distribución equitativa.")
             elif metodo_distribucion == 'gravedad':
                 distribucion_actual, distribucion_id = generar_distribucion_por_gravedad(
-                    area, enfermeros_activos, pacientes_en_area, considerar_desempeno, descripcion
+                    request, area, enfermeros_activos, pacientes_en_area, considerar_desempeno, descripcion
                 )
                 messages.success(request, "Se ha generado una distribución priorizando por gravedad.")
             elif metodo_distribucion == 'manual':
@@ -1681,6 +1681,203 @@ def cargar_distribucion_previa(distribucion_id, enfermeros_activos):
             })
     
     return asignaciones
+
+@transaction.atomic
+def generar_distribucion_equitativa(request, area, enfermeros_activos, pacientes_en_area, considerar_desempeno, descripcion=None):
+    """
+    Genera una distribución donde la carga de pacientes se reparte 
+    lo más equitativamente posible entre los enfermeros.
+    """
+    # Crear nueva entrada de distribución para cada enfermero
+    asignaciones = []
+    distribuciones = []
+    
+    # Preparar lista de enfermeros
+    enfermeros = [e.enfermero for e in enfermeros_activos]
+    
+    # Ordenar enfermeros según su desempeño si se considera
+    if considerar_desempeno:
+        enfermeros.sort(key=lambda e: calcular_puntuacion_desempeno(e, area), reverse=True)
+    
+    # Inicializar estructura para asignaciones
+    for enfermero in enfermeros:
+        # Crear distribución para este enfermero
+        distribucion = DistribucionPacientes(
+            enfermero=enfermero,
+            area=area,
+            descripcion=descripcion,
+            pacientes_gravedad_1=0,
+            pacientes_gravedad_2=0,
+            pacientes_gravedad_3=0,
+            activo=True
+        )
+        distribucion.save()
+        distribuciones.append(distribucion)
+        
+        asignaciones.append({
+            'enfermero': enfermero,
+            'distribucion': distribucion,
+            'pacientes': [],
+            'gravedad_1': 0,
+            'gravedad_2': 0,
+            'gravedad_3': 0,
+            'total_pacientes': 0,
+            'carga_trabajo': 0
+        })
+    
+    # Obtener todos los pacientes
+    todos_pacientes = list(pacientes_en_area.select_related('paciente'))
+    
+    # Contar total de pacientes por tipo de gravedad
+    total_pacientes = len(todos_pacientes)
+    total_enfermeros = len(enfermeros)
+    
+    if total_enfermeros == 0:
+        messages.error(request, "No hay enfermeros disponibles para asignar.")
+        return [], None
+    
+    # Calcular cuántos pacientes deberían ir a cada enfermero
+    pacientes_por_enfermero = total_pacientes // total_enfermeros
+    pacientes_extras = total_pacientes % total_enfermeros
+    
+    # Distribuir pacientes por gravedad, priorizando graves y medios primero
+    pacientes_por_gravedad = {
+        3: list(pacientes_en_area.filter(nivel_gravedad=3).select_related('paciente')),
+        2: list(pacientes_en_area.filter(nivel_gravedad=2).select_related('paciente')),
+        1: list(pacientes_en_area.filter(nivel_gravedad=1).select_related('paciente'))
+    }
+    
+    # Verificar capacidad
+    for gravedad, pacientes in pacientes_por_gravedad.items():
+        max_por_enfermero = 1 if gravedad == 3 else (2 if gravedad == 2 else 3)
+        total_capacidad = max_por_enfermero * total_enfermeros
+        if len(pacientes) > total_capacidad:
+            messages.warning(
+                request, 
+                f"Hay más pacientes de gravedad {gravedad} ({len(pacientes)}) que la capacidad total ({total_capacidad})."
+            )
+    
+    # Distribuir pacientes de gravedad 3 primero (máximo 1 por enfermero)
+    for i, paciente in enumerate(pacientes_por_gravedad[3]):
+        if i < len(asignaciones):
+            if asignaciones[i]['gravedad_3'] < 1:
+                asignaciones[i]['pacientes'].append(paciente.paciente)
+                asignaciones[i]['gravedad_3'] += 1
+                asignaciones[i]['total_pacientes'] += 1
+                
+                # Actualizar el modelo de distribución
+                distribucion = asignaciones[i]['distribucion']
+                distribucion.pacientes_gravedad_3 += 1
+                distribucion.save()
+                
+                # Crear asignación de paciente
+                AsignacionPaciente.objects.create(
+                    paciente=paciente.paciente,
+                    distribucion=distribucion,
+                    activo=True
+                )
+                
+                # Actualizar enfermero del paciente
+                paciente_obj = paciente.paciente
+                paciente_obj.enfermero_actual = asignaciones[i]['enfermero']
+                paciente_obj.save()
+            else:
+                messages.warning(
+                    request, 
+                    f"No se pudo asignar al paciente {paciente.paciente} (gravedad alta) porque el enfermero ya tiene un paciente grave."
+                )
+        else:
+            messages.warning(
+                request, 
+                f"No se pudo asignar al paciente {paciente.paciente} (gravedad alta) porque no hay suficientes enfermeros."
+            )
+    
+    # Distribuir pacientes de gravedad 2 (máximo 2 por enfermero)
+    for paciente in pacientes_por_gravedad[2]:
+        # Ordenar por número de pacientes de gravedad 2 y total
+        asignaciones_ordenadas = sorted(
+            asignaciones, 
+            key=lambda a: (a['gravedad_2'], a['total_pacientes'])
+        )
+        
+        asignado = False
+        for asignacion in asignaciones_ordenadas:
+            if asignacion['gravedad_2'] < 2:
+                asignacion['pacientes'].append(paciente.paciente)
+                asignacion['gravedad_2'] += 1
+                asignacion['total_pacientes'] += 1
+                
+                # Actualizar el modelo de distribución
+                distribucion = asignacion['distribucion']
+                distribucion.pacientes_gravedad_2 += 1
+                distribucion.save()
+                
+                # Crear asignación de paciente
+                AsignacionPaciente.objects.create(
+                    paciente=paciente.paciente,
+                    distribucion=distribucion,
+                    activo=True
+                )
+                
+                # Actualizar enfermero del paciente
+                paciente_obj = paciente.paciente
+                paciente_obj.enfermero_actual = asignacion['enfermero']
+                paciente_obj.save()
+                
+                asignado = True
+                break
+        
+        if not asignado:
+            messages.warning(request, f"No se pudo asignar al paciente {paciente.paciente} (gravedad media).")
+    
+    # Distribuir pacientes de gravedad 1 (máximo 3 por enfermero)
+    for paciente in pacientes_por_gravedad[1]:
+        # Ordenar por número total de pacientes para equilibrar carga
+        asignaciones_ordenadas = sorted(
+            asignaciones, 
+            key=lambda a: (a['total_pacientes'], a['gravedad_1'])
+        )
+        
+        asignado = False
+        for asignacion in asignaciones_ordenadas:
+            if asignacion['gravedad_1'] < 3:
+                asignacion['pacientes'].append(paciente.paciente)
+                asignacion['gravedad_1'] += 1
+                asignacion['total_pacientes'] += 1
+                
+                # Actualizar el modelo de distribución
+                distribucion = asignacion['distribucion']
+                distribucion.pacientes_gravedad_1 += 1
+                distribucion.save()
+                
+                # Crear asignación de paciente
+                AsignacionPaciente.objects.create(
+                    paciente=paciente.paciente,
+                    distribucion=distribucion,
+                    activo=True
+                )
+                
+                # Actualizar enfermero del paciente
+                paciente_obj = paciente.paciente
+                paciente_obj.enfermero_actual = asignacion['enfermero']
+                paciente_obj.save()
+                
+                asignado = True
+                break
+        
+        if not asignado:
+            messages.warning(request, f"No se pudo asignar al paciente {paciente.paciente} (gravedad baja).")
+    
+    # Calcular carga de trabajo para cada enfermero
+    for asignacion in asignaciones:
+        carga_maxima = 1*3 + 2*2 + 3*1  # 1 grave + 2 medios + 3 leves = 10
+        carga_actual = (asignacion['gravedad_3'] * 3) + (asignacion['gravedad_2'] * 2) + (asignacion['gravedad_1'] * 1)
+        asignacion['carga_trabajo'] = int((carga_actual / carga_maxima) * 100) if carga_maxima > 0 else 0
+    
+    # Guardar el ID de esta distribución para referencia
+    distribucion_id = distribuciones[0].id if distribuciones else None
+    
+    return asignaciones, distribucion_id
 
 @transaction.atomic
 def guardar_distribucion(request, area_id):

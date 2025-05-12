@@ -733,7 +733,7 @@
                 <button type="submit" class="action-button success">Guardar Distribución</button>
             </form>
             
-            <form method="post" action="{% url 'jefa:ajustar_distribucion_de_pacientes' area.id %}">
+            <form method="post" action="{% url 'jefa:ajustar_distribucion' area.id %}">
                 {% csrf_token %}
                 <input type="hidden" name="distribucion_id" value="{{ distribucion_id }}">
                 <button type="submit" class="action-button warning">Ajustar Manualmente</button>

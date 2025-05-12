@@ -54,5 +54,6 @@ urlpatterns = [
     path('distribucion/cancelar/<int:area_id>/', views.cancelar_distribucion, name='cancelar_distribucion'),
     path('distribucion/manual/<int:area_id>/', views.distribucion_manual, name='distribucion_manual'),
     path('distribucion/ajustar_manual/<int:area_id>/', views.ajustar_distribucion_manual, name='ajustar_distribucion_manual'),
+    
 
 ]
