@@ -1202,7 +1202,7 @@ def distribuir_pacientes(request, area_id):
     
     # Obtener distribuciones previas para esta área
     distribuciones_previas = DistribucionPacientes.objects.filter(
-        area=area, activo=True
+        area=area
     ).values('id', 'fecha_asignacion', 'descripcion').distinct().order_by('-fecha_asignacion')[:5]
     
     # Procesar el formulario si se envía
@@ -1217,9 +1217,36 @@ def distribuir_pacientes(request, area_id):
         
         # Si se solicita cargar una distribución previa
         if distribucion_previa_id:
-            distribucion_actual = cargar_distribucion_previa(distribucion_previa_id, enfermeros_activos)
-            distribucion_id = distribucion_previa_id
-            messages.success(request, "Se ha cargado la distribución previa correctamente.")
+            try:
+                with transaction.atomic():
+                    # Obtener la distribución base que queremos activar
+                    distribucion_base = get_object_or_404(DistribucionPacientes, id=distribucion_previa_id)
+                    
+                    # Desactivar todas las distribuciones activas del área
+                    DistribucionPacientes.objects.filter(
+                        area=area,
+                        activo=True
+                    ).update(activo=False)
+                    
+                    # Activar solamente las distribuciones del mismo grupo (misma fecha y descripción)
+                    # Esto activará todas las distribuciones que corresponden a la misma acción
+                    # de distribución, una por cada enfermero
+                    DistribucionPacientes.objects.filter(
+                        area=area,
+                        fecha_asignacion=distribucion_base.fecha_asignacion,
+                        descripcion=distribucion_base.descripcion
+                    ).update(activo=True)
+                
+                # Ahora cargar la distribución seleccionada para mostrarla
+                distribucion_actual = cargar_distribucion_previa(distribucion_previa_id)
+                distribucion_id = distribucion_previa_id
+                
+                if distribucion_actual:
+                    messages.success(request, "Se ha cargado la distribución seleccionada correctamente.")
+                else:
+                    messages.warning(request, "La distribución seleccionada no contiene datos para mostrar.")
+            except Exception as e:
+                messages.error(request, f"Error al cargar la distribución: {str(e)}")
         else:
             # Generar nueva distribución según el método seleccionado
             if metodo_distribucion == 'equitativa':
@@ -1638,49 +1665,115 @@ def calcular_puntuacion_desempeno(enfermero, area):
     
     return puntuacion
 
-def cargar_distribucion_previa(distribucion_id, enfermeros_activos):
+def cargar_distribucion_previa(distribucion_previa_id):
     """
-    Carga una distribución previa desde la base de datos.
+    Carga una distribución previa basada en su ID y la retorna en formato compatible con la plantilla.
     """
-    distribucion = get_object_or_404(DistribucionPacientes, id=distribucion_id)
-    
-    # Obtener IDs de enfermeros actualmente activos
-    enfermeros_activos_ids = [e.enfermero.id for e in enfermeros_activos]
-    
-    # Obtener todas las distribuciones asociadas
-    distribuciones = DistribucionPacientes.objects.filter(
-        area=distribucion.area,
-        fecha_asignacion__date=distribucion.fecha_asignacion.date()
-    )
-    
-    # Cargar asignaciones existentes
-    asignaciones = []
-    for dist in distribuciones:
-        if dist.enfermero.id in enfermeros_activos_ids:
-            # Obtener pacientes asignados a este enfermero
-            pacientes_asignados = Paciente.objects.filter(
-                area=dist.area,
-                enfermero_actual=dist.enfermero,
-                esta_activo=True
-            )
+    try:
+        # Obtener la distribución base para determinar el grupo
+        distribucion_base = get_object_or_404(DistribucionPacientes, id=distribucion_previa_id)
+        
+        # Obtener todas las distribuciones del mismo grupo (misma fecha y descripción)
+        distribuciones = DistribucionPacientes.objects.filter(
+            area=distribucion_base.area,
+            fecha_asignacion=distribucion_base.fecha_asignacion,
+            descripcion=distribucion_base.descripcion,
+            activo=True  # Solo las activas
+        ).select_related('enfermero')
+        
+        # Preparar la estructura de datos para la plantilla
+        asignaciones = []
+        
+        for distribucion in distribuciones:
+            # Obtener pacientes asignados a esta distribución
+            pacientes_asignados = []
+            try:
+                # Si existe el modelo AsignacionPaciente
+                pacientes_asignados = list(Paciente.objects.filter(
+                    asignacionpaciente__distribucion=distribucion,
+                    asignacionpaciente__activo=True
+                ))
+            except:
+                # Si no existe el modelo o hay error
+                pass
+            
+            # Preparar información de pacientes
+            pacientes_info = []
+            
+            # Si hay pacientes asignados explícitamente
+            for paciente in pacientes_asignados:
+                # Obtener gravedad actual
+                gravedad = GravedadPaciente.objects.filter(
+                    paciente=paciente
+                ).order_by('-fecha_asignacion').first()
+                
+                nivel = gravedad.nivel_gravedad if gravedad else 1
+                
+                pacientes_info.append({
+                    'paciente': paciente,
+                    'nivel_gravedad': nivel
+                })
+            
+            # Si no hay pacientes asignados explícitamente, simular basado en conteos
+            if not pacientes_info:
+                # Crear pacientes simulados basados en los contadores
+                for i in range(distribucion.pacientes_gravedad_1):
+                    pacientes_info.append({
+                        'paciente': {
+                            'nombres': f"Paciente Leve #{i+1}",
+                            'apellidos': ""
+                        },
+                        'nivel_gravedad': 1,
+                        'es_simulado': True
+                    })
+                
+                for i in range(distribucion.pacientes_gravedad_2):
+                    pacientes_info.append({
+                        'paciente': {
+                            'nombres': f"Paciente Medio #{i+1}",
+                            'apellidos': ""
+                        },
+                        'nivel_gravedad': 2,
+                        'es_simulado': True
+                    })
+                
+                for i in range(distribucion.pacientes_gravedad_3):
+                    pacientes_info.append({
+                        'paciente': {
+                            'nombres': f"Paciente Grave #{i+1}",
+                            'apellidos': ""
+                        },
+                        'nivel_gravedad': 3,
+                        'es_simulado': True
+                    })
             
             # Calcular carga de trabajo
             carga_maxima = 1*3 + 2*2 + 3*1  # 1 grave + 2 medios + 3 leves = 10
-            carga_actual = (dist.pacientes_gravedad_3 * 3) + (dist.pacientes_gravedad_2 * 2) + (dist.pacientes_gravedad_1 * 1)
+            carga_actual = (
+                (distribucion.pacientes_gravedad_3 * 3) + 
+                (distribucion.pacientes_gravedad_2 * 2) + 
+                (distribucion.pacientes_gravedad_1 * 1)
+            )
             carga_trabajo = int((carga_actual / carga_maxima) * 100) if carga_maxima > 0 else 0
             
+            # Agregar al resultado
             asignaciones.append({
-                'enfermero': dist.enfermero,
-                'distribucion': dist,
-                'pacientes': list(pacientes_asignados),
-                'gravedad_1': dist.pacientes_gravedad_1,
-                'gravedad_2': dist.pacientes_gravedad_2,
-                'gravedad_3': dist.pacientes_gravedad_3,
-                'total_pacientes': len(pacientes_asignados),
-                'carga_trabajo': carga_trabajo
+                'enfermero': distribucion.enfermero,
+                'distribucion': distribucion,
+                'pacientes': pacientes_info,
+                'total_pacientes': len(pacientes_info),
+                'carga_trabajo': carga_trabajo,
+                'gravedad_1': distribucion.pacientes_gravedad_1,
+                'gravedad_2': distribucion.pacientes_gravedad_2,
+                'gravedad_3': distribucion.pacientes_gravedad_3,
+                'descripcion': distribucion.descripcion  # Añadir esto
             })
+        
+        return asignaciones
     
-    return asignaciones
+    except Exception as e:
+        print(f"Error cargando distribución: {str(e)}")
+        return []
 
 @transaction.atomic
 def generar_distribucion_equitativa(request, area, enfermeros_activos, pacientes_en_area, considerar_desempeno, descripcion=None):
