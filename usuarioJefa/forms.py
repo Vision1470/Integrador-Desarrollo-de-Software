@@ -2,6 +2,8 @@ from django import forms
 from django.db.models import Q
 from .models import *
 from login.models import Usuarios, AreaEspecialidad
+import calendar
+from django.db import models
 
 class PacienteForm(forms.ModelForm):
     class Meta:
@@ -48,10 +50,6 @@ class PacienteForm(forms.ModelForm):
                 self.paciente_inactivo = paciente
                 raise forms.ValidationError('INACTIVO')  # Usamos esto como señal
         return num_seguridad_social
-    
-    ###
-    ###
-    ###
 
 class ActivarSobrecargaForm(forms.ModelForm):
     class Meta:

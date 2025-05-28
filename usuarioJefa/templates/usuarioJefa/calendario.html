@@ -4,7 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Calendario de Área</title>
-    <style>
+   <style>
         :root {
             --primary-color: #0A2342;
             --secondary-color: #2E4057;
@@ -106,6 +106,115 @@
         .action-button.warning { background-color: var(--warning-color); color: var(--text-color); }
         .action-button.info { background-color: var(--info-color); }
         .action-button.danger { background-color: var(--danger-color); }
+
+        /* Estilos para mensajes de Django */
+        .messages-container {
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            z-index: 9999;
+            max-width: 500px;
+            width: 100%;
+        }
+
+        .alert {
+            display: flex;
+            align-items: flex-start;
+            justify-content: space-between;
+            padding: 15px 20px;
+            margin-bottom: 10px;
+            border: 1px solid transparent;
+            border-radius: 8px;
+            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1);
+            animation: slideInRight 0.3s ease-out;
+            backdrop-filter: blur(10px);
+            position: relative;
+        }
+
+        @keyframes slideInRight {
+            from {
+                transform: translateX(100%);
+                opacity: 0;
+            }
+            to {
+                transform: translateX(0);
+                opacity: 1;
+            }
+        }
+
+        .message-content {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            flex: 1;
+        }
+
+        .message-icon {
+            font-size: 1.2rem;
+            margin-right: 5px;
+        }
+
+        .message-text {
+            font-size: 0.95rem;
+            line-height: 1.4;
+            white-space: pre-line;
+        }
+
+        .close-message {
+            background: none;
+            border: none;
+            font-size: 1.5rem;
+            cursor: pointer;
+            opacity: 0.7;
+            transition: opacity 0.3s ease;
+            padding: 0;
+            margin-left: 15px;
+            line-height: 1;
+            color: inherit;
+        }
+
+        .close-message:hover {
+            opacity: 1;
+        }
+
+        .alert-success {
+            background-color: rgba(212, 237, 218, 0.95);
+            border-color: var(--success-color);
+            color: #155724;
+        }
+
+        .alert-error {
+            background-color: rgba(248, 215, 218, 0.95);
+            border-color: var(--danger-color);
+            color: #721c24;
+        }
+
+        .alert-warning {
+            background-color: rgba(255, 243, 205, 0.95);
+            border-color: var(--warning-color);
+            color: #856404;
+        }
+
+        .alert-info {
+            background-color: rgba(209, 236, 241, 0.95);
+            border-color: var(--info-color);
+            color: #0c5460;
+        }
+
+        .alert {
+            animation: slideInRight 0.3s ease-out, fadeOut 0.5s ease-in 8s forwards;
+        }
+
+        @keyframes fadeOut {
+            from {
+                opacity: 1;
+                transform: translateX(0);
+            }
+            to {
+                opacity: 0;
+                transform: translateX(100%);
+            }
+        }
 
         /* Vista Toggle */
         .vista-toggle {
@@ -231,6 +340,8 @@
         .enfermero-emergencia {
             background: var(--emergency-color);
             position: relative;
+            animation: pulseEmergency 2s infinite;
+            box-shadow: 0 0 10px rgba(255, 107, 107, 0.5);
         }
 
         .enfermero-emergencia::after {
@@ -239,6 +350,46 @@
             top: -2px;
             right: -2px;
             font-size: 0.7rem;
+        }
+
+        /* Enfermero temporalmente ausente */
+        .enfermero-ausencia-temporal {
+            background: linear-gradient(135deg, var(--accent-color), var(--warning-color)) !important;
+            color: var(--white);
+            border: 2px dashed var(--warning-color);
+            position: relative;
+        }
+
+        .enfermero-ausencia-temporal::before {
+            content: "⚡";
+            position: absolute;
+            top: -5px;
+            right: -5px;
+            background: var(--warning-color);
+            color: var(--text-color);
+            border-radius: 50%;
+            width: 18px;
+            height: 18px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 0.8rem;
+            font-weight: bold;
+        }
+
+        @keyframes pulseEmergency {
+            0% { 
+                opacity: 1; 
+                transform: scale(1);
+            }
+            50% { 
+                opacity: 0.8; 
+                transform: scale(1.05);
+            }
+            100% { 
+                opacity: 1; 
+                transform: scale(1);
+            }
         }
 
         /* Vista Mensual */
@@ -319,7 +470,78 @@
 
         .day-enfermero.emergencia {
             background: var(--emergency-color);
+            animation: pulseEmergency 2s infinite;
+            box-shadow: 0 0 8px rgba(255, 107, 107, 0.5);
         }
+
+        /* Día con enfermero temporalmente ausente */
+        .day-enfermero.temporal-ausente {
+            background: linear-gradient(135deg, var(--accent-color), var(--warning-color));
+            border: 2px dashed var(--warning-color);
+            color: var(--white);
+            position: relative;
+        }
+
+        .day-enfermero.temporal-ausente::after {
+            content: "⚡";
+            position: absolute;
+            top: -2px;
+            right: -2px;
+            font-size: 0.7rem;
+            background: var(--warning-color);
+            color: var(--text-color);
+            border-radius: 50%;
+            width: 14px;
+            height: 14px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: bold;
+        }
+
+        /* Tooltip mejorado */
+        .enfermero-item[title]:hover,
+        .day-enfermero[title]:hover {
+            cursor: help;
+            z-index: 1000;
+            position: relative;
+        }
+
+        /* Leyenda para entender los iconos */
+        .leyenda-emergencias {
+            margin-top: 20px;
+            padding: 15px;
+            background: #f8f9fa;
+            border-radius: 8px;
+            border-left: 4px solid var(--info-color);
+        }
+
+        .leyenda-emergencias h4 {
+            color: var(--primary-color);
+            margin-bottom: 10px;
+            font-size: 1rem;
+        }
+
+        .leyenda-item {
+            display: flex;
+            align-items: center;
+            margin-bottom: 8px;
+            font-size: 0.9rem;
+        }
+
+        .leyenda-icon {
+            margin-right: 10px;
+            padding: 4px 8px;
+            border-radius: 12px;
+            color: white;
+            font-weight: bold;
+            min-width: 30px;
+            text-align: center;
+        }
+
+        .leyenda-normal { background: var(--accent-color); }
+        .leyenda-ausente { background: linear-gradient(135deg, var(--accent-color), var(--warning-color)); }
+        .leyenda-emergencia { background: var(--emergency-color); }
 
         /* Formularios */
         .form-section {
@@ -375,6 +597,28 @@
         textarea {
             resize: vertical;
             min-height: 80px;
+        }
+
+        /* Sección de herramientas de desarrollo */
+        .dev-tools {
+            margin-top: 30px;
+            padding: 20px;
+            background: #fff3cd;
+            border: 2px solid var(--warning-color);
+            border-radius: 8px;
+            text-align: center;
+        }
+
+        .dev-tools h3 {
+            color: #856404;
+            margin-bottom: 15px;
+            font-size: 1.1rem;
+        }
+
+        .dev-tools p {
+            color: #856404;
+            margin-bottom: 15px;
+            font-size: 0.9rem;
         }
 
         /* Paneles flotantes */
@@ -483,6 +727,19 @@
             .bimestral-table td { height: 150px; padding: 15px; }
             .calendar-table td { height: 100px; padding: 10px; }
             .floating-buttons { position: relative; bottom: auto; right: auto; margin-top: 20px; }
+            .messages-container {
+                top: 10px;
+                right: 10px;
+                left: 10px;
+                max-width: none;
+            }
+            .alert {
+                padding: 12px 15px;
+                font-size: 0.9rem;
+            }
+            .message-text {
+                font-size: 0.85rem;
+            }
         }
     </style>
 </head>
@@ -502,6 +759,31 @@
     </div>
     
     <div class="container">
+        {% if messages %}
+<div class="messages-container">
+    {% for message in messages %}
+        <div class="alert alert-{{ message.tags }} alert-dismissible" role="alert">
+            <div class="message-content">
+                {% if message.tags == 'error' %}
+                    <span class="message-icon">❌</span>
+                {% elif message.tags == 'success' %}
+                    <span class="message-icon">✅</span>
+                {% elif message.tags == 'warning' %}
+                    <span class="message-icon">⚠️</span>
+                {% elif message.tags == 'info' %}
+                    <span class="message-icon">ℹ️</span>
+                {% else %}
+                    <span class="message-icon">📢</span>
+                {% endif %}
+                <span class="message-text">{{ message }}</span>
+            </div>
+            <button type="button" class="close-message" onclick="this.parentElement.remove()">
+                <span>&times;</span>
+            </button>
+        </div>
+    {% endfor %}
+</div>
+{% endif %}
         <div class="header">
             <h1>Calendario de Área</h1>
             <div class="menu-buttons">
@@ -661,7 +943,7 @@
                 <div class="form-inline">
                     <div class="form-group">
                         <label class="form-label">Enfermero:</label>
-                        <select name="enfermero" required onchange="updateAreas(this.value)">
+                        <select name="enfermero" required>
                             <option value="">Seleccionar enfermero</option>
                             {% for enfermero in enfermeros %}
                                 <option value="{{ enfermero.id }}">{{ enfermero.username }}</option>
@@ -674,9 +956,7 @@
                         <select name="area" required>
                             <option value="">Seleccionar área</option>
                             {% for area in all_areas %}
-                                <option value="{{ area.id }}" 
-                                        class="area-option"
-                                        data-disabled-for="{% for enf_id, area_id in areas_excluidas.items %}{% if area_id == area.id %}{{ enf_id }} {% endif %}{% endfor %}">
+                                <option value="{{ area.id }}">
                                     {{ area.nombre }}
                                 </option>
                             {% endfor %}
@@ -785,6 +1065,19 @@
             <div style="margin-top: 20px; text-align: center;">
                 <a href="{% url 'jefa:lista_areas_sobrecarga' %}" class="action-button info">Gestión de Sobrecarga</a>
             </div>
+        </div>
+
+        <!-- Sección de herramientas de desarrollo/pruebas -->
+        <div class="dev-tools">
+            <h3>⚙️ Herramientas de Desarrollo</h3>
+            <p><strong>Advertencia:</strong> Esta acción eliminará todas las asignaciones y emergencias del sistema. Solo usar para pruebas.</p>
+            <form method="POST" action="{% url 'jefa:limpiar_todas_asignaciones' %}" 
+                  onsubmit="return confirm('⚠️ ¿Estás COMPLETAMENTE SEGURO de que deseas ELIMINAR TODAS las asignaciones y emergencias?\n\nEsta acción NO se puede deshacer.\n\n¿Continuar?')">
+                {% csrf_token %}
+                <button type="submit" class="action-button danger">
+                    🗑️ Limpiar Todas las Asignaciones
+                </button>
+            </form>
         </div>
 
         <!-- Paneles flotantes -->
@@ -995,22 +1288,6 @@
             window.location.href = url.toString();
         }
 
-        // Funciones de formularios
-        function updateAreas(enfermeroId) {
-            document.querySelectorAll('[name="area"] option').forEach(option => {
-                option.disabled = false;
-            });
-    
-            if (enfermeroId) {
-                document.querySelectorAll('[name="area"] option').forEach(option => {
-                    const disabledFor = option.getAttribute('data-disabled-for');
-                    if (disabledFor && disabledFor.includes(enfermeroId)) {
-                        option.disabled = true;
-                    }
-                });
-            }
-        }
-
         // Funciones de paneles flotantes
         function toggleHistorialAsignaciones() {
             const panel = document.getElementById('historialAsignacionesPanel');
@@ -1081,6 +1358,24 @@
                     }
                 });
             }
+
+            // Validar formulario de creación de asignación
+            const formCrear = document.querySelector('form[action*="crear_asignacion"]');
+            if (formCrear) {
+                formCrear.addEventListener('submit', function(e) {
+                    const enfermero = this.enfermero.value;
+                    const area = this.area.value;
+                    const bimestre = this.bimestre.value;
+                    
+                    if (!enfermero || !area || !bimestre) {
+                        e.preventDefault();
+                        alert('Por favor, completa todos los campos requeridos.');
+                        return false;
+                    }
+                    
+                    console.log('Enviando formulario con:', {enfermero, area, bimestre});
+                });
+            }
         });
 
         // Funciones utilitarias
@@ -1111,12 +1406,31 @@
                 setTimeout(() => notif.remove(), 300);
             }, 3000);
         }
-
-        // Mostrar mensajes de Django si existen
         document.addEventListener('DOMContentLoaded', function() {
-            // Los mensajes se manejan aquí si es necesario
-        });
-    </script>
+    const alerts = document.querySelectorAll('.alert');
+    
+    alerts.forEach(function(alert) {
+        // Auto-remover después de 8 segundos
+        setTimeout(function() {
+            if (alert.parentNode) {
+                alert.style.animation = 'fadeOut 0.5s ease-in forwards';
+                setTimeout(function() {
+                    if (alert.parentNode) {
+                        alert.remove();
+                    }
+                }, 500);
+            }
+        }, 8000);
+    });
+});
+
+// Función para cerrar mensaje manualmente
+function cerrarMensaje(elemento) {
+    elemento.style.animation = 'fadeOut 0.5s ease-in forwards';
+    setTimeout(function() {
+        elemento.remove();
+    }, 500);
+}
     </script>
 </body>
 </html>

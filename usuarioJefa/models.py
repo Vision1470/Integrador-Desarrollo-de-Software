@@ -196,7 +196,13 @@ class AsignacionCalendario(models.Model):
     activo = models.BooleanField(default=True)
 
     class Meta:
-        unique_together = ['enfermero', 'fecha_inicio', 'fecha_fin']
+        constraints = [
+            models.UniqueConstraint(
+                fields=['enfermero', 'fecha_inicio', 'fecha_fin'],
+                condition=models.Q(activo=True),
+                name='unique_active_assignment'
+            )
+        ]
 
 class HistorialCambios(models.Model):
     asignacion = models.ForeignKey(AsignacionCalendario, on_delete=models.CASCADE)

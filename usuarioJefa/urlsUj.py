@@ -16,6 +16,7 @@ urlpatterns = [
     path('calendario/crear/', views.crear_asignacion, name='crear_asignacion'),
     path('calendario/modificar/', views.modificar_asignacion, name='modificar_asignacion'), 
     path('calendario/eliminar/<int:asignacion_id>/', views.eliminar_asignacion, name='eliminar_asignacion'),
+    path('calendario/limpiar-todo/', views.limpiar_todas_asignaciones, name='limpiar_todas_asignaciones'),  # NUEVA URL
     
     # URLs para asignaciones de emergencia
     path('emergencia/crear/', views.crear_emergencia, name='crear_emergencia'),
