@@ -795,7 +795,7 @@ def calendario_area(request):
 
 def obtener_datos_bimestres(area, año):
     """
-    Obtiene datos de asignaciones para todos los bimestres del año con indicadores de emergencia
+    Obtiene datos de asignaciones para todos los bimestres del año con indicadores de emergencia CORREGIDOS
     """
     bimestres_data = []
     
@@ -854,13 +854,19 @@ def obtener_datos_bimestres(area, año):
             
             if emergencia_salida:
                 # El enfermero tiene una emergencia que lo saca temporalmente
+                # Formatear fechas para mostrar en el tooltip
+                fecha_inicio_emergencia = emergencia_salida.fecha_inicio.strftime("%d/%m")
+                fecha_fin_emergencia = emergencia_salida.fecha_fin.strftime("%d/%m")
+                
                 asignaciones_combinadas.append({
                     'enfermero': asignacion.enfermero,
                     'es_emergencia': False,
                     'tipo': 'normal_con_ausencia_temporal',
                     'area_temporal': emergencia_salida.area_destino.nombre,
-                    'fecha_inicio_emergencia': emergencia_salida.fecha_inicio,
-                    'fecha_fin_emergencia': emergencia_salida.fecha_fin
+                    'fecha_inicio_emergencia': fecha_inicio_emergencia,
+                    'fecha_fin_emergencia': fecha_fin_emergencia,
+                    'motivo': emergencia_salida.motivo,
+                    'tooltip': f"Temporalmente en {emergencia_salida.area_destino.nombre} ({fecha_inicio_emergencia} - {fecha_fin_emergencia}): {emergencia_salida.motivo}"
                 })
             else:
                 # El enfermero está normalmente en esta área
@@ -872,14 +878,18 @@ def obtener_datos_bimestres(area, año):
         
         # Agregar emergencias de llegada
         for emergencia in emergencias_llegada:
+            fecha_inicio_emergencia = emergencia.fecha_inicio.strftime("%d/%m")
+            fecha_fin_emergencia = emergencia.fecha_fin.strftime("%d/%m")
+            
             asignaciones_combinadas.append({
                 'enfermero': emergencia.enfermero,
                 'es_emergencia': True,
                 'tipo': 'emergencia_llegada',
                 'area_origen': emergencia.area_origen.nombre,
                 'motivo': emergencia.motivo,
-                'fecha_inicio': emergencia.fecha_inicio,
-                'fecha_fin': emergencia.fecha_fin
+                'fecha_inicio': fecha_inicio_emergencia,
+                'fecha_fin': fecha_fin_emergencia,
+                'tooltip': f"Emergencia desde {emergencia.area_origen.nombre} ({fecha_inicio_emergencia} - {fecha_fin_emergencia}): {emergencia.motivo}"
             })
         
         bimestres_data.append({
@@ -893,7 +903,7 @@ def obtener_datos_bimestres(area, año):
 
 def obtener_datos_mensual(area, mes, año):
     """
-    Obtiene datos detallados para la vista mensual con indicadores de emergencia
+    Obtiene datos detallados para la vista mensual con indicadores de emergencia CORREGIDOS
     """
     # Generar calendario del mes
     cal = calendar.monthcalendar(año, mes)
@@ -944,30 +954,56 @@ def obtener_datos_mensual(area, mes, año):
     
     for dia in range(1, dias_mes + 1):
         fecha_dia = datetime(año, mes, dia).date()
-        fecha_dia_tz = timezone.make_aware(datetime.combine(fecha_dia, datetime.min.time()))
+        
+        # CORRECCIÓN: Crear rangos de tiempo específicos para el día
+        inicio_dia_tz = timezone.make_aware(datetime.combine(fecha_dia, datetime.min.time()))
+        fin_dia_tz = timezone.make_aware(datetime.combine(fecha_dia, datetime.max.time()))
+        
+        print(f"DEBUG: Procesando día {dia} - Rango: {inicio_dia_tz} a {fin_dia_tz}")
         
         # Asignaciones normales para este día
         for asignacion in asignaciones_normales:
             if asignacion.fecha_inicio <= fecha_dia <= asignacion.fecha_fin:
-                # Verificar si este enfermero tiene una emergencia de SALIDA en este día
+                # CORRECCIÓN: Verificar si hay emergencia que cubra EXACTAMENTE este día
                 emergencia_salida = emergencias_salida.filter(
                     enfermero=asignacion.enfermero,
-                    fecha_inicio__lte=fecha_dia_tz,
-                    fecha_fin__gte=fecha_dia_tz
+                    fecha_inicio__lte=fin_dia_tz,      # La emergencia debe haber empezado antes del fin del día
+                    fecha_fin__gte=inicio_dia_tz       # La emergencia debe terminar después del inicio del día
                 ).first()
                 
                 if emergencia_salida:
-                    # El enfermero está temporalmente en otra área
-                    asignaciones_dia.append({
-                        'aplica_dia': dia,
-                        'enfermero': asignacion.enfermero,
-                        'es_emergencia': False,
-                        'tipo': 'temporal_ausente',
-                        'area_temporal': emergencia_salida.area_destino.nombre,
-                        'motivo_emergencia': emergencia_salida.motivo
-                    })
+                    # Verificación adicional: ¿La emergencia realmente cubre este día específico?
+                    emergencia_inicio_date = emergencia_salida.fecha_inicio.date()
+                    emergencia_fin_date = emergencia_salida.fecha_fin.date()
+                    
+                    print(f"DEBUG: Emergencia encontrada para {asignacion.enfermero.username}")
+                    print(f"DEBUG: Emergencia del {emergencia_inicio_date} al {emergencia_fin_date}")
+                    print(f"DEBUG: Día actual: {fecha_dia}")
+                    
+                    # VERIFICACIÓN FINAL: Solo mostrar ausencia si la fecha del día está EN el rango de emergencia
+                    if emergencia_inicio_date <= fecha_dia <= emergencia_fin_date:
+                        print(f"DEBUG: ✅ Día {dia} - {asignacion.enfermero.username} está EN emergencia")
+                        asignaciones_dia.append({
+                            'aplica_dia': dia,
+                            'enfermero': asignacion.enfermero,
+                            'es_emergencia': False,
+                            'tipo': 'temporal_ausente',
+                            'area_temporal': emergencia_salida.area_destino.nombre,
+                            'motivo_emergencia': emergencia_salida.motivo,
+                            'tooltip': f"Temporalmente en {emergencia_salida.area_destino.nombre}: {emergencia_salida.motivo}"
+                        })
+                    else:
+                        print(f"DEBUG: ❌ Día {dia} - {asignacion.enfermero.username} NO está en emergencia este día")
+                        # El enfermero está normalmente en su área este día
+                        asignaciones_dia.append({
+                            'aplica_dia': dia,
+                            'enfermero': asignacion.enfermero,
+                            'es_emergencia': False,
+                            'tipo': 'normal'
+                        })
                 else:
-                    # El enfermero está normalmente en su área
+                    print(f"DEBUG: ➡️ Día {dia} - {asignacion.enfermero.username} asignación normal")
+                    # El enfermero está normalmente en su área este día
                     asignaciones_dia.append({
                         'aplica_dia': dia,
                         'enfermero': asignacion.enfermero,
@@ -975,19 +1011,22 @@ def obtener_datos_mensual(area, mes, año):
                         'tipo': 'normal'
                     })
         
-        # Emergencias de LLEGADA para este día
+        # Emergencias de LLEGADA para este día específico
         for emergencia in emergencias_llegada:
-            fecha_inicio_date = emergencia.fecha_inicio.date()
-            fecha_fin_date = emergencia.fecha_fin.date()
+            emergencia_inicio_date = emergencia.fecha_inicio.date()
+            emergencia_fin_date = emergencia.fecha_fin.date()
             
-            if fecha_inicio_date <= fecha_dia <= fecha_fin_date:
+            # VERIFICACIÓN: Solo mostrar llegada si la fecha del día está EN el rango de emergencia
+            if emergencia_inicio_date <= fecha_dia <= emergencia_fin_date:
+                print(f"DEBUG: ✅ Día {dia} - Llegada de emergencia: {emergencia.enfermero.username}")
                 asignaciones_dia.append({
                     'aplica_dia': dia,
                     'enfermero': emergencia.enfermero,
                     'es_emergencia': True,
                     'tipo': 'emergencia_llegada',
                     'area_origen': emergencia.area_origen.nombre,
-                    'motivo': emergencia.motivo
+                    'motivo': emergencia.motivo,
+                    'tooltip': f"Emergencia desde {emergencia.area_origen.nombre}: {emergencia.motivo}"
                 })
     
     print(f"DEBUG: Total asignaciones por día procesadas: {len(asignaciones_dia)}")
@@ -1576,9 +1615,11 @@ def crear_asignacion(request):
     return redirect('jefa:calendario_area')
 
 @transaction.atomic
+@transaction.atomic
 def modificar_asignacion(request):
     """
-    Modifica una asignación existente con mensajes de error mejorados
+    Modifica una asignación existente creando períodos específicos sin afectar 
+    las fechas no modificadas de la asignación original.
     """
     if request.method == 'POST':
         enfermero_id = request.POST.get('enfermero')
@@ -1588,45 +1629,34 @@ def modificar_asignacion(request):
 
         # Validar que todos los campos estén presentes
         if not all([enfermero_id, area_nueva_id, fecha_inicio_str, fecha_fin_str]):
-            messages.error(request, '❌ Error: Todos los campos son obligatorios para modificar una asignación. Completa enfermero, área, fecha de inicio y fecha de fin.')
+            messages.error(request, '❌ Error: Todos los campos son obligatorios para modificar una asignación.')
             return redirect('jefa:calendario_area')
 
         try:
             enfermero = get_object_or_404(Usuarios, id=enfermero_id, tipoUsuario='EN')
             area_nueva = get_object_or_404(AreaEspecialidad, id=area_nueva_id)
-            fecha_inicio = datetime.strptime(fecha_inicio_str, '%Y-%m-%d').date()
-            fecha_fin = datetime.strptime(fecha_fin_str, '%Y-%m-%d').date()
+            fecha_inicio_mod = datetime.strptime(fecha_inicio_str, '%Y-%m-%d').date()
+            fecha_fin_mod = datetime.strptime(fecha_fin_str, '%Y-%m-%d').date()
 
             # Validar fechas
-            if fecha_fin <= fecha_inicio:
+            if fecha_fin_mod <= fecha_inicio_mod:
                 messages.error(
                     request, 
-                    f'📅 Error de fechas: La fecha de fin ({fecha_fin.strftime("%d/%m/%Y")}) '
-                    f'debe ser posterior a la fecha de inicio ({fecha_inicio.strftime("%d/%m/%Y")}). '
-                    f'Por favor corrige las fechas.'
+                    f'📅 Error de fechas: La fecha de fin ({fecha_fin_mod.strftime("%d/%m/%Y")}) '
+                    f'debe ser posterior a la fecha de inicio ({fecha_inicio_mod.strftime("%d/%m/%Y")}).'
                 )
                 return redirect('jefa:calendario_area')
 
-            # Validar que las fechas no sean muy antiguas
-            fecha_limite_pasado = timezone.now().date() - timedelta(days=30)
-            if fecha_inicio < fecha_limite_pasado:
-                messages.warning(
-                    request,
-                    f'⚠️ Advertencia: La fecha de inicio ({fecha_inicio.strftime("%d/%m/%Y")}) '
-                    f'es anterior a {fecha_limite_pasado.strftime("%d/%m/%Y")}. '
-                    f'Asegúrate de que esta modificación sea correcta.'
-                )
-
-            # Buscar asignación activa que cubra el período indicado
-            asignacion = AsignacionCalendario.objects.filter(
+            # Buscar asignación original que cubra el período de modificación
+            asignacion_original = AsignacionCalendario.objects.filter(
                 enfermero=enfermero,
                 activo=True,
-                fecha_inicio__lte=fecha_inicio,
-                fecha_fin__gte=fecha_inicio
+                fecha_inicio__lte=fecha_inicio_mod,
+                fecha_fin__gte=fecha_inicio_mod
             ).first()
             
-            if not asignacion:
-                # Buscar cualquier asignación activa del enfermero para dar más información
+            if not asignacion_original:
+                # Buscar asignaciones activas del enfermero para dar información
                 asignaciones_activas = AsignacionCalendario.objects.filter(
                     enfermero=enfermero,
                     activo=True
@@ -1643,100 +1673,161 @@ def modificar_asignacion(request):
                         request, 
                         f'🔍 No se encontró una asignación activa para el enfermero '
                         f'{enfermero.first_name} {enfermero.apellidos} que cubra la fecha de inicio '
-                        f'{fecha_inicio.strftime("%d/%m/%Y")}. '
-                        f'Asignaciones activas encontradas:\n' + '\n'.join(asignaciones_info)
+                        f'{fecha_inicio_mod.strftime("%d/%m/%Y")}. '
+                        f'Asignaciones activas:\n' + '\n'.join(asignaciones_info)
                     )
                 else:
                     messages.error(
                         request,
                         f'🔍 No se encontraron asignaciones activas para el enfermero '
-                        f'{enfermero.first_name} {enfermero.apellidos}. '
-                        f'Asegúrate de que el enfermero tenga al menos una asignación activa antes de modificar.'
+                        f'{enfermero.first_name} {enfermero.apellidos}.'
                     )
                 return redirect('jefa:calendario_area')
-            
-            # Guardar datos anteriores para el historial y mensajes
-            area_anterior = asignacion.area
-            fecha_inicio_anterior = asignacion.fecha_inicio
-            fecha_fin_anterior = asignacion.fecha_fin
-            
-            # Verificar si hay conflictos con otras asignaciones del mismo enfermero
+
+            # Verificar que la fecha de fin de modificación no exceda la asignación original
+            if fecha_fin_mod > asignacion_original.fecha_fin:
+                messages.error(
+                    request,
+                    f'📅 Error: La fecha de fin de la modificación ({fecha_fin_mod.strftime("%d/%m/%Y")}) '
+                    f'no puede ser posterior al fin de la asignación original ({asignacion_original.fecha_fin.strftime("%d/%m/%Y")}).'
+                )
+                return redirect('jefa:calendario_area')
+
+            # Verificar conflictos con otras asignaciones (excluyendo la original)
             conflictos = AsignacionCalendario.objects.filter(
                 enfermero=enfermero,
                 activo=True,
-                fecha_inicio__lt=fecha_fin,
-                fecha_fin__gt=fecha_inicio
-            ).exclude(id=asignacion.id)
+                fecha_inicio__lt=fecha_fin_mod,
+                fecha_fin__gt=fecha_inicio_mod
+            ).exclude(id=asignacion_original.id)
             
             if conflictos.exists():
                 conflicto = conflictos.first()
                 messages.error(
                     request, 
-                    f'⚠️ Conflicto de fechas: Las nuevas fechas '
-                    f'({fecha_inicio.strftime("%d/%m/%Y")} - {fecha_fin.strftime("%d/%m/%Y")}) '
-                    f'entran en conflicto con otra asignación existente del enfermero '
-                    f'{enfermero.first_name} {enfermero.apellidos}: '
-                    f'{conflicto.area.nombre} '
-                    f'({conflicto.fecha_inicio.strftime("%d/%m/%Y")} - {conflicto.fecha_fin.strftime("%d/%m/%Y")}). '
-                    f'Por favor ajusta las fechas para evitar solapamientos.'
+                    f'⚠️ Conflicto de fechas: Las fechas de modificación entran en conflicto '
+                    f'con otra asignación: {conflicto.area.nombre} '
+                    f'({conflicto.fecha_inicio.strftime("%d/%m/%Y")} - {conflicto.fecha_fin.strftime("%d/%m/%Y")}).'
                 )
                 return redirect('jefa:calendario_area')
 
             # Verificar si el cambio es realmente necesario
-            if (area_nueva == area_anterior and 
-                fecha_inicio == fecha_inicio_anterior and 
-                fecha_fin == fecha_fin_anterior):
+            if (area_nueva == asignacion_original.area and 
+                fecha_inicio_mod == asignacion_original.fecha_inicio and 
+                fecha_fin_mod == asignacion_original.fecha_fin):
                 messages.info(
                     request,
-                    f'ℹ️ Sin cambios: La nueva asignación es idéntica a la existente. '
-                    f'No se realizaron modificaciones.'
+                    f'ℹ️ Sin cambios: La modificación es idéntica a la asignación existente.'
                 )
                 return redirect(f'{reverse("jefa:calendario_area")}?area={area_nueva_id}')
+
+            # LÓGICA DE MODIFICACIÓN INTELIGENTE
             
-            # Realizar la modificación
-            asignacion.area = area_nueva
-            asignacion.fecha_inicio = fecha_inicio
-            asignacion.fecha_fin = fecha_fin
-            asignacion.save()
+            # Paso 1: Guardar datos originales para el historial
+            area_original = asignacion_original.area
+            fecha_inicio_original = asignacion_original.fecha_inicio
+            fecha_fin_original = asignacion_original.fecha_fin
+            bimestre_original = asignacion_original.bimestre
+            year_original = asignacion_original.year
+
+            # Paso 2: Calcular qué partes de la asignación original mantener
             
-            # Registrar el cambio en el historial
-            HistorialCambios.objects.create(
-                asignacion=asignacion,
-                area_anterior=area_anterior,
-                area_nueva=area_nueva,
-                fecha_inicio_anterior=fecha_inicio_anterior,
-                fecha_fin_anterior=fecha_fin_anterior,
-                fecha_inicio_nueva=fecha_inicio,
-                fecha_fin_nueva=fecha_fin
+            # ¿Hay período ANTES de la modificación que debemos mantener?
+            periodo_anterior = None
+            if fecha_inicio_mod > fecha_inicio_original:
+                periodo_anterior = {
+                    'fecha_inicio': fecha_inicio_original,
+                    'fecha_fin': fecha_inicio_mod - timedelta(days=1),
+                    'area': area_original
+                }
+
+            # ¿Hay período DESPUÉS de la modificación que debemos mantener?
+            periodo_posterior = None
+            if fecha_fin_mod < fecha_fin_original:
+                periodo_posterior = {
+                    'fecha_inicio': fecha_fin_mod + timedelta(days=1),
+                    'fecha_fin': fecha_fin_original,
+                    'area': area_original
+                }
+
+            # Paso 3: Desactivar la asignación original
+            asignacion_original.activo = False
+            asignacion_original.save()
+
+            # Paso 4: Crear las nuevas asignaciones
+            
+            asignaciones_creadas = []
+            
+            # Crear período anterior (mantiene área original)
+            if periodo_anterior:
+                asignacion_anterior = AsignacionCalendario.objects.create(
+                    enfermero=enfermero,
+                    area=periodo_anterior['area'],
+                    fecha_inicio=periodo_anterior['fecha_inicio'],
+                    fecha_fin=periodo_anterior['fecha_fin'],
+                    bimestre=bimestre_original,
+                    year=year_original,
+                    activo=True
+                )
+                asignaciones_creadas.append(f"Período mantenido: {periodo_anterior['area'].nombre} ({periodo_anterior['fecha_inicio'].strftime('%d/%m/%Y')} - {periodo_anterior['fecha_fin'].strftime('%d/%m/%Y')})")
+
+            # Crear período de modificación (nueva área)
+            asignacion_modificada = AsignacionCalendario.objects.create(
+                enfermero=enfermero,
+                area=area_nueva,
+                fecha_inicio=fecha_inicio_mod,
+                fecha_fin=fecha_fin_mod,
+                bimestre=bimestre_original,  # Mantener bimestre original
+                year=year_original,
+                activo=True
             )
-            
-            # Crear mensaje detallado de éxito
-            cambios = []
-            if area_nueva != area_anterior:
-                cambios.append(f'Área: {area_anterior.nombre} → {area_nueva.nombre}')
-            if fecha_inicio != fecha_inicio_anterior:
-                cambios.append(f'Fecha inicio: {fecha_inicio_anterior.strftime("%d/%m/%Y")} → {fecha_inicio.strftime("%d/%m/%Y")}')
-            if fecha_fin != fecha_fin_anterior:
-                cambios.append(f'Fecha fin: {fecha_fin_anterior.strftime("%d/%m/%Y")} → {fecha_fin.strftime("%d/%m/%Y")}')
-            
+            asignaciones_creadas.append(f"Período modificado: {area_nueva.nombre} ({fecha_inicio_mod.strftime('%d/%m/%Y')} - {fecha_fin_mod.strftime('%d/%m/%Y')})")
+
+            # Crear período posterior (mantiene área original)
+            if periodo_posterior:
+                asignacion_posterior = AsignacionCalendario.objects.create(
+                    enfermero=enfermero,
+                    area=periodo_posterior['area'],
+                    fecha_inicio=periodo_posterior['fecha_inicio'],
+                    fecha_fin=periodo_posterior['fecha_fin'],
+                    bimestre=bimestre_original,
+                    year=year_original,
+                    activo=True
+                )
+                asignaciones_creadas.append(f"Período mantenido: {periodo_posterior['area'].nombre} ({periodo_posterior['fecha_inicio'].strftime('%d/%m/%Y')} - {periodo_posterior['fecha_fin'].strftime('%d/%m/%Y')})")
+
+            # Paso 5: Registrar el cambio en el historial
+            # Usamos la asignación modificada como referencia
+            HistorialCambios.objects.create(
+                asignacion=asignacion_modificada,
+                area_anterior=area_original,
+                area_nueva=area_nueva,
+                fecha_inicio_anterior=fecha_inicio_original,
+                fecha_fin_anterior=fecha_fin_original,
+                fecha_inicio_nueva=fecha_inicio_mod,
+                fecha_fin_nueva=fecha_fin_mod
+            )
+
+            # Paso 6: Mensaje de éxito detallado
             messages.success(
                 request, 
-                f'✅ Asignación modificada exitosamente para {enfermero.first_name} {enfermero.apellidos}. '
-                f'Cambios realizados: {" | ".join(cambios)}. '
-                f'El cambio ha sido registrado en el historial.'
+                f'✅ Modificación aplicada exitosamente para {enfermero.first_name} {enfermero.apellidos}. '
+                f'Se ha dividido la asignación original preservando los períodos no modificados:\n\n'
+                f'• Asignación original: {area_original.nombre} ({fecha_inicio_original.strftime("%d/%m/%Y")} - {fecha_fin_original.strftime("%d/%m/%Y")})\n'
+                f'• Nuevas asignaciones creadas:\n' + '\n'.join([f'  - {creada}' for creada in asignaciones_creadas])
             )
-            
-            # Redirigir con área seleccionada
+
+            # Redirigir mostrando ambas áreas si es necesario
             return redirect(f'{reverse("jefa:calendario_area")}?area={area_nueva_id}')
 
         except ValueError as e:
-            messages.error(request, f'📅 Error de formato: Las fechas ingresadas no tienen el formato correcto. Usa el formato DD/MM/AAAA. Error: {str(e)}')
+            messages.error(request, f'📅 Error de formato en las fechas: {str(e)}')
         except Usuarios.DoesNotExist:
-            messages.error(request, f'👤 Error: No se encontró el enfermero seleccionado. Por favor actualiza la página e intenta nuevamente.')
+            messages.error(request, f'👤 Error: No se encontró el enfermero seleccionado.')
         except AreaEspecialidad.DoesNotExist:
-            messages.error(request, f'🏢 Error: No se encontró el área seleccionada. Por favor actualiza la página e intenta nuevamente.')
+            messages.error(request, f'🏢 Error: No se encontró el área seleccionada.')
         except Exception as e:
-            messages.error(request, f'❌ Error inesperado al modificar la asignación: {str(e)}. Por favor intenta nuevamente o contacta al administrador.')
+            messages.error(request, f'❌ Error inesperado: {str(e)}')
 
     return redirect('jefa:calendario_area')
     

@@ -4,8 +4,8 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Calendario de Área</title>
-   <style>
-        :root {
+    <style>
+         :root {
             --primary-color: #0A2342;
             --secondary-color: #2E4057;
             --accent-color: #1E90FF;
@@ -816,123 +816,157 @@
 
         <!-- Vista Bimestral -->
         <div id="vista-bimestral" class="vista-bimestral">
-            <div class="bimestral-header">
-                <h2>Planificación Anual {{ año_actual }} - {{ area_seleccionada.nombre }}</h2>
-                <p>Haz clic en un bimestre para ver el detalle mensual</p>
-            </div>
-            
-            <table class="bimestral-table">
-                <thead>
-                    <tr>
-                        <th>Bimestre 1<br><small>Enero - Febrero</small></th>
-                        <th>Bimestre 2<br><small>Marzo - Abril</small></th>
-                        <th>Bimestre 3<br><small>Mayo - Junio</small></th>
-                    </tr>
-                </thead>
-                <tbody>
-                    <tr>
-                        {% if bimestres_data %}
-                            {% for bimestre in bimestres_data %}
-                                {% if forloop.counter0 < 3 %}
-                                <td class="bimestre-cell" data-bimestre="{{ bimestre.numero }}">
-                                    <div class="bimestre-info">
-                                        Bimestre {{ bimestre.numero }}
-                                    </div>
-                                    {% for asignacion in bimestre.asignaciones %}
-                                        <span class="enfermero-item {% if asignacion.es_emergencia %}enfermero-emergencia{% endif %}">
-                                            {{ asignacion.enfermero.username }}
-                                        </span>
-                                    {% empty %}
-                                        <em style="color: #666;">Sin asignaciones</em>
-                                    {% endfor %}
-                                </td>
+    <div class="bimestral-header">
+        <h2>Planificación Anual {{ año_actual }} - {{ area_seleccionada.nombre }}</h2>
+        <p>Haz clic en un bimestre para ver el detalle mensual</p>
+    </div>
+    
+    <table class="bimestral-table">
+        <thead>
+            <tr>
+                <th>Bimestre 1<br><small>Enero - Febrero</small></th>
+                <th>Bimestre 2<br><small>Marzo - Abril</small></th>
+                <th>Bimestre 3<br><small>Mayo - Junio</small></th>
+            </tr>
+        </thead>
+        <tbody>
+            <tr>
+                {% if bimestres_data %}
+                    {% for bimestre in bimestres_data %}
+                        {% if forloop.counter0 < 3 %}
+                        <td class="bimestre-cell" data-bimestre="{{ bimestre.numero }}">
+                            <div class="bimestre-info">
+                                Bimestre {{ bimestre.numero }}
+                            </div>
+                            {% for asignacion in bimestre.asignaciones %}
+                                {% if asignacion.tipo == 'normal' %}
+                                    <span class="enfermero-item" title="{{ asignacion.enfermero.username }} - Asignación normal">
+                                        {{ asignacion.enfermero.username }}
+                                    </span>
+                                {% elif asignacion.tipo == 'normal_con_ausencia_temporal' %}
+                                    <span class="enfermero-item enfermero-ausencia-temporal" 
+                                          title="{{ asignacion.tooltip }}">
+                                        {{ asignacion.enfermero.username }}
+                                    </span>
+                                {% elif asignacion.tipo == 'emergencia_llegada' %}
+                                    <span class="enfermero-item enfermero-emergencia" 
+                                          title="{{ asignacion.tooltip }}">
+                                        {{ asignacion.enfermero.username }}
+                                    </span>
                                 {% endif %}
+                            {% empty %}
+                                <em style="color: #666;">Sin asignaciones</em>
                             {% endfor %}
-                        {% else %}
-                            <td class="bimestre-cell" data-bimestre="1"><em>Bimestre 1</em><br>Sin datos</td>
-                            <td class="bimestre-cell" data-bimestre="2"><em>Bimestre 2</em><br>Sin datos</td>
-                            <td class="bimestre-cell" data-bimestre="3"><em>Bimestre 3</em><br>Sin datos</td>
+                        </td>
                         {% endif %}
-                    </tr>
-                </tbody>
-            </table>
-            
-            <table class="bimestral-table">
-                <thead>
-                    <tr>
-                        <th>Bimestre 4<br><small>Julio - Agosto</small></th>
-                        <th>Bimestre 5<br><small>Septiembre - Octubre</small></th>
-                        <th>Bimestre 6<br><small>Noviembre - Diciembre</small></th>
-                    </tr>
-                </thead>
-                <tbody>
-                    <tr>
-                        {% if bimestres_data %}
-                            {% for bimestre in bimestres_data %}
-                                {% if forloop.counter0 >= 3 %}
-                                <td onclick="verDetalleBimestre({{ bimestre.numero }})">
-                                    <div class="bimestre-info">
-                                        Bimestre {{ bimestre.numero }}
-                                    </div>
-                                    {% for asignacion in bimestre.asignaciones %}
-                                        <span class="enfermero-item {% if asignacion.es_emergencia %}enfermero-emergencia{% endif %}">
-                                            {{ asignacion.enfermero.username }}
-                                        </span>
-                                    {% empty %}
-                                        <em style="color: #666;">Sin asignaciones</em>
-                                    {% endfor %}
-                                </td>
+                    {% endfor %}
+                {% else %}
+                    <td class="bimestre-cell" data-bimestre="1"><em>Bimestre 1</em><br>Sin datos</td>
+                    <td class="bimestre-cell" data-bimestre="2"><em>Bimestre 2</em><br>Sin datos</td>
+                    <td class="bimestre-cell" data-bimestre="3"><em>Bimestre 3</em><br>Sin datos</td>
+                {% endif %}
+            </tr>
+        </tbody>
+    </table>
+    
+    <table class="bimestral-table">
+        <thead>
+            <tr>
+                <th>Bimestre 4<br><small>Julio - Agosto</small></th>
+                <th>Bimestre 5<br><small>Septiembre - Octubre</small></th>
+                <th>Bimestre 6<br><small>Noviembre - Diciembre</small></th>
+            </tr>
+        </thead>
+        <tbody>
+            <tr>
+                {% if bimestres_data %}
+                    {% for bimestre in bimestres_data %}
+                        {% if forloop.counter0 >= 3 %}
+                        <td class="bimestre-cell" data-bimestre="{{ bimestre.numero }}">
+                            <div class="bimestre-info">
+                                Bimestre {{ bimestre.numero }}
+                            </div>
+                            {% for asignacion in bimestre.asignaciones %}
+                                {% if asignacion.tipo == 'normal' %}
+                                    <span class="enfermero-item" title="{{ asignacion.enfermero.username }} - Asignación normal">
+                                        {{ asignacion.enfermero.username }}
+                                    </span>
+                                {% elif asignacion.tipo == 'normal_con_ausencia_temporal' %}
+                                    <span class="enfermero-item enfermero-ausencia-temporal" 
+                                          title="{{ asignacion.tooltip }}">
+                                        {{ asignacion.enfermero.username }}
+                                    </span>
+                                {% elif asignacion.tipo == 'emergencia_llegada' %}
+                                    <span class="enfermero-item enfermero-emergencia" 
+                                          title="{{ asignacion.tooltip }}">
+                                        {{ asignacion.enfermero.username }}
+                                    </span>
                                 {% endif %}
+                            {% empty %}
+                                <em style="color: #666;">Sin asignaciones</em>
                             {% endfor %}
-                        {% else %}
-                            <td><em>Bimestre 4</em><br>Sin datos</td>
-                            <td><em>Bimestre 5</em><br>Sin datos</td>
-                            <td><em>Bimestre 6</em><br>Sin datos</td>
+                        </td>
                         {% endif %}
-                    </tr>
-                </tbody>
-            </table>
+                    {% endfor %}
+                {% else %}
+                    <td><em>Bimestre 4</em><br>Sin datos</td>
+                    <td><em>Bimestre 5</em><br>Sin datos</td>
+                    <td><em>Bimestre 6</em><br>Sin datos</td>
+                {% endif %}
+            </tr>
+        </tbody>
+    </table>
         </div>
 
         <!-- Vista Mensual -->
         <div id="vista-mensual" class="vista-mensual">
-            <div class="mensual-header">
-                <div class="mensual-nav">
-                    <button class="nav-button" onclick="cambiarMes(-1)">‹ Anterior</button>
-                    <h2 id="mes-titulo">{{ mes_actual }} {{ año_actual }}</h2>
-                    <button class="nav-button" onclick="cambiarMes(1)">Siguiente ›</button>
-                </div>
-                <button class="action-button" onclick="volverBimestral()">← Volver a Vista Bimestral</button>
-            </div>
+    <div class="mensual-header">
+        <div class="mensual-nav">
+            <button class="nav-button" onclick="cambiarMes(-1)">‹ Anterior</button>
+            <h2 id="mes-titulo">{{ mes_actual }} {{ año_actual }}</h2>
+            <button class="nav-button" onclick="cambiarMes(1)">Siguiente ›</button>
+        </div>
+        <button class="action-button" onclick="volverBimestral()">← Volver a Vista Bimestral</button>
+    </div>
         
             <table class="calendar-table">
-                <thead>
-                    <tr>
-                        <th>Domingo</th><th>Lunes</th><th>Martes</th><th>Miércoles</th>
-                        <th>Jueves</th><th>Viernes</th><th>Sábado</th>
-                    </tr>
-                </thead>
-                <tbody>
-                    {% for semana in calendario %}
-                    <tr>
-                        {% for dia in semana %}
-                        <td>
-                            {% if dia != 0 %}
-                                <div class="day-number">{{ dia }}</div>
-                                {% for asignacion in asignaciones_dia %}
-                                    {% if asignacion.aplica_dia == dia %}
-                                        <div class="day-enfermero {% if asignacion.es_emergencia %}emergencia{% endif %}">
-                                            {{ asignacion.enfermero.username }}
-                                        </div>
-                                    {% endif %}
-                                {% endfor %}
+        <thead>
+            <tr>
+                <th>Domingo</th><th>Lunes</th><th>Martes</th><th>Miércoles</th>
+                <th>Jueves</th><th>Viernes</th><th>Sábado</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for semana in calendario %}
+            <tr>
+                {% for dia in semana %}
+                <td>
+                    {% if dia != 0 %}
+                        <div class="day-number">{{ dia }}</div>
+                        {% for asignacion in asignaciones_dia %}
+                            {% if asignacion.aplica_dia == dia %}
+                                {% if asignacion.tipo == 'normal' %}
+                                    <div class="day-enfermero" title="{{ asignacion.enfermero.username }} - Asignación normal">
+                                        {{ asignacion.enfermero.username }}
+                                    </div>
+                                {% elif asignacion.tipo == 'temporal_ausente' %}
+                                    <div class="day-enfermero temporal-ausente" title="{{ asignacion.tooltip }}">
+                                        {{ asignacion.enfermero.username }}
+                                    </div>
+                                {% elif asignacion.tipo == 'emergencia_llegada' %}
+                                    <div class="day-enfermero emergencia" title="{{ asignacion.tooltip }}">
+                                        {{ asignacion.enfermero.username }}
+                                    </div>
+                                {% endif %}
                             {% endif %}
-                        </td>
                         {% endfor %}
-                    </tr>
-                    {% endfor %}
-                </tbody>
-            </table>
+                    {% endif %}
+                </td>
+                {% endfor %}
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
         </div>
 
         <!-- Formularios de gestión -->
