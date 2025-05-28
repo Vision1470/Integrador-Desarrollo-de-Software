@@ -3,6 +3,7 @@ from django.utils import timezone
 from django.db.models import Q
 from login.models import Usuarios, AreaEspecialidad
 from django.apps import apps
+from django.core.exceptions import ValidationError
 
 class Hospital(models.Model):
     nombre = models.CharField(max_length=200)
@@ -318,3 +319,105 @@ class AsignacionPaciente(models.Model):
         
     def __str__(self):
         return f"Paciente {self.paciente.nombres} asignado a {self.distribucion.enfermero.username}"
+    
+class AsignacionEmergencia(models.Model):
+    """
+    Modelo para manejar asignaciones temporales de emergencia.
+    Estas asignaciones son espontáneas y temporales, sobrescribiendo
+    las asignaciones normales del calendario por períodos específicos.
+    """
+    enfermero = models.ForeignKey(
+        'login.Usuarios', 
+        on_delete=models.CASCADE,
+        limit_choices_to={'tipoUsuario': 'EN'}
+    )
+    area_origen = models.ForeignKey(
+        'login.AreaEspecialidad', 
+        on_delete=models.CASCADE,
+        related_name='emergencias_origen',
+        help_text="Área de donde viene el enfermero"
+    )
+    area_destino = models.ForeignKey(
+        'login.AreaEspecialidad', 
+        on_delete=models.CASCADE,
+        related_name='emergencias_destino',
+        help_text="Área a donde va temporalmente"
+    )
+    fecha_inicio = models.DateTimeField(
+        help_text="Inicio de la asignación temporal"
+    )
+    fecha_fin = models.DateTimeField(
+        help_text="Fin de la asignación temporal"
+    )
+    motivo = models.TextField(
+        help_text="Razón de la asignación de emergencia"
+    )
+    activa = models.BooleanField(
+        default=True,
+        help_text="Si la asignación de emergencia está activa"
+    )
+    creada_por = models.ForeignKey(
+        'login.Usuarios',
+        on_delete=models.CASCADE,
+        related_name='emergencias_creadas',
+        limit_choices_to={'tipoUsuario': 'JP'}
+    )
+    fecha_creacion = models.DateTimeField(auto_now_add=True)
+    fecha_finalizacion = models.DateTimeField(null=True, blank=True)
+    
+    class Meta:
+        verbose_name = "Asignación de Emergencia"
+        verbose_name_plural = "Asignaciones de Emergencia"
+        ordering = ['-fecha_creacion']
+    
+    def __str__(self):
+        estado = "Activa" if self.activa else "Finalizada"
+        return f"Emergencia: {self.enfermero.username} - {self.area_destino.nombre} ({estado})"
+    
+    def clean(self):
+        """Validaciones del modelo"""
+        if self.fecha_fin <= self.fecha_inicio:
+            raise ValidationError('La fecha de fin debe ser posterior a la fecha de inicio')
+        
+        if self.area_origen == self.area_destino:
+            raise ValidationError('El área de origen y destino no pueden ser la misma')
+    
+    def save(self, *args, **kwargs):
+        self.clean()
+        super().save(*args, **kwargs)
+    
+    def finalizar(self):
+        """Finaliza la asignación de emergencia"""
+        self.activa = False
+        self.fecha_finalizacion = timezone.now()
+        self.save()
+    
+    def esta_vigente(self, fecha=None):
+        """Verifica si la asignación está vigente en una fecha específica"""
+        if fecha is None:
+            fecha = timezone.now()
+        
+        return (
+            self.activa and 
+            self.fecha_inicio <= fecha <= self.fecha_fin
+        )
+
+    @classmethod
+    def obtener_asignaciones_vigentes(cls, enfermero=None, area=None, fecha=None):
+        """Obtiene asignaciones de emergencia vigentes"""
+        if fecha is None:
+            fecha = timezone.now()
+        
+        filtros = {
+            'activa': True,
+            'fecha_inicio__lte': fecha,
+            'fecha_fin__gte': fecha
+        }
+        
+        if enfermero:
+            filtros['enfermero'] = enfermero
+        
+        if area:
+            filtros['area_destino'] = area
+            
+        return cls.objects.filter(**filtros)
