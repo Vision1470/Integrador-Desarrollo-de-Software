@@ -1236,7 +1236,7 @@
         </div>
     </div>
 
-    <script>
+   <script>
         // Variables globales
         var vistaActual = 'bimestral';
         var mesActual = {% if mes_actual %}{{ mes_actual }}{% else %}1{% endif %};
@@ -1269,8 +1269,26 @@
             // Actualizar título del mes
             actualizarTituloMes();
             
-            // Aquí podrías hacer una llamada AJAX para cargar los datos del mes específico
-            cargarDatosMes(mesActual, añoActual);
+            // Construir URL con parámetros para cargar el mes específico
+            const areaSelect = document.getElementById('area');
+            const areaId = areaSelect ? areaSelect.value : '';
+            
+            if (areaId) {
+                const url = new URL(window.location.href);
+                url.searchParams.set('area', areaId);
+                url.searchParams.set('vista', 'mensual');
+                url.searchParams.set('mes', mesActual);
+                url.searchParams.set('año', añoActual);
+                
+                // Recargar solo si es necesario cambiar de mes
+                const mesActualPagina = {% if mes_actual %}{{ mes_actual }}{% else %}new Date().getMonth() + 1{% endif %};
+                if (mesActual !== mesActualPagina) {
+                    window.location.href = url.toString();
+                } else {
+                    console.log(`Ya estás en el mes ${mesActual}`);
+                    mostrarNotificacion(`Mostrando vista mensual del bimestre ${numeroBimestre}`, 'info');
+                }
+            }
         }
 
         function volverBimestral() {
@@ -1279,6 +1297,7 @@
         }
 
         function cambiarMes(direccion) {
+            const mesAnterior = mesActual;
             mesActual += direccion;
             
             if (mesActual > 12) {
@@ -1290,7 +1309,21 @@
             }
             
             actualizarTituloMes();
-            cargarDatosMes(mesActual, añoActual);
+            
+            // Solo recargar si realmente cambió el mes
+            const areaSelect = document.getElementById('area');
+            const areaId = areaSelect ? areaSelect.value : '';
+            
+            if (areaId) {
+                const url = new URL(window.location.href);
+                url.searchParams.set('area', areaId);
+                url.searchParams.set('vista', 'mensual');
+                url.searchParams.set('mes', mesActual);
+                url.searchParams.set('año', añoActual);
+                
+                console.log(`Navegando de mes ${mesAnterior} a mes ${mesActual}/${añoActual}`);
+                window.location.href = url.toString();
+            }
         }
 
         function actualizarTituloMes() {
@@ -1303,23 +1336,6 @@
             if (titulo) {
                 titulo.textContent = `${meses[mesActual - 1]} ${añoActual}`;
             }
-        }
-
-        function cargarDatosMes(mes, año) {
-            // Obtener área seleccionada
-            const areaSelect = document.getElementById('area');
-            const areaId = areaSelect ? areaSelect.value : null;
-            
-            if (!areaId) return;
-            
-            // Hacer petición AJAX para cargar datos del mes
-            const url = new URL(window.location.href);
-            url.searchParams.set('mes', mes);
-            url.searchParams.set('año', año);
-            url.searchParams.set('vista', 'mensual');
-            
-            // Redirigir con parámetros
-            window.location.href = url.toString();
         }
 
         // Funciones de paneles flotantes
@@ -1356,6 +1372,35 @@
 
         // Validaciones de formularios
         document.addEventListener('DOMContentLoaded', function() {
+            // Verificar vista inicial basada en parámetros URL
+            const urlParams = new URLSearchParams(window.location.search);
+            const vistaParam = urlParams.get('vista');
+            
+            if (vistaParam === 'mensual') {
+                cambiarVista('mensual');
+                const mesParam = urlParams.get('mes');
+                const añoParam = urlParams.get('año');
+                
+                if (mesParam) {
+                    mesActual = parseInt(mesParam);
+                }
+                if (añoParam) {
+                    añoActual = parseInt(añoParam);
+                }
+                
+                actualizarTituloMes();
+            }
+
+            // Agregar event listeners a las celdas de bimestres
+            document.querySelectorAll('.bimestre-cell').forEach(function(celda) {
+                celda.addEventListener('click', function() {
+                    const bimestre = parseInt(this.dataset.bimestre);
+                    if (bimestre) {
+                        verDetalleBimestre(bimestre);
+                    }
+                });
+            });
+
             // Validar fechas de emergencia
             const formEmergencia = document.querySelector('form[action*="crear_emergencia"]');
             if (formEmergencia) {
@@ -1410,6 +1455,21 @@
                     console.log('Enviando formulario con:', {enfermero, area, bimestre});
                 });
             }
+
+            // Auto-remover alertas después de 8 segundos
+            const alerts = document.querySelectorAll('.alert');
+            alerts.forEach(function(alert) {
+                setTimeout(function() {
+                    if (alert.parentNode) {
+                        alert.style.animation = 'fadeOut 0.5s ease-in forwards';
+                        setTimeout(function() {
+                            if (alert.parentNode) {
+                                alert.remove();
+                            }
+                        }, 500);
+                    }
+                }, 8000);
+            });
         });
 
         // Funciones utilitarias
@@ -1440,31 +1500,12 @@
                 setTimeout(() => notif.remove(), 300);
             }, 3000);
         }
-        document.addEventListener('DOMContentLoaded', function() {
-    const alerts = document.querySelectorAll('.alert');
-    
-    alerts.forEach(function(alert) {
-        // Auto-remover después de 8 segundos
-        setTimeout(function() {
-            if (alert.parentNode) {
-                alert.style.animation = 'fadeOut 0.5s ease-in forwards';
-                setTimeout(function() {
-                    if (alert.parentNode) {
-                        alert.remove();
-                    }
-                }, 500);
-            }
-        }, 8000);
-    });
-});
 
-// Función para cerrar mensaje manualmente
-function cerrarMensaje(elemento) {
-    elemento.style.animation = 'fadeOut 0.5s ease-in forwards';
-    setTimeout(function() {
-        elemento.remove();
-    }, 500);
-}
-    </script>
-</body>
-</html>
+        // Función para cerrar mensaje manualmente
+        function cerrarMensaje(elemento) {
+            elemento.style.animation = 'fadeOut 0.5s ease-in forwards';
+            setTimeout(function() {
+                elemento.remove();
+            }, 500);
+        }
+</script>
