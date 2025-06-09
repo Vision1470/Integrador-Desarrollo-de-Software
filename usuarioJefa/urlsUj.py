@@ -25,6 +25,10 @@ urlpatterns = [
     # APIs AJAX para el calendario
     path('api/mes-datos/', views.get_datos_mes_ajax, name='get_datos_mes_ajax'),
     path('api/enfermeros-disponibles/', views.obtener_enfermeros_disponibles, name='enfermeros_disponibles'),
+
+    #URLs para sugerencias
+    path('sugerencias-anuales/', views.generar_sugerencias_anuales, name='generar_sugerencias_anuales'),
+    path('sugerencias-anuales/<int:año>/', views.generar_sugerencias_anuales, name='generar_sugerencias_anuales_año'),
     
     # URLs existentes de usuarios
     path('usuarios-/', views.usuarios_, name='usuarios_'),

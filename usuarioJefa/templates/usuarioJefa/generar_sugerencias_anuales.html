@@ -1,0 +1,592 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Generar Sugerencias Anuales</title>
+    <style>
+        :root {
+            --primary-color: #0A2342;
+            --secondary-color: #2E4057;
+            --accent-color: #1E90FF;
+            --background-color: #EBF0F5;
+            --white: #FFFFFF;
+            --border-color: #D1D1D1;
+            --success-color: #28a745;
+            --warning-color: #ffc107;
+            --danger-color: #dc3545;
+            --info-color: #17a2b8;
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: 'Roboto', 'Arial', sans-serif;
+        }
+
+        body {
+            background-color: var(--background-color);
+            color: var(--text-color);
+            line-height: 1.6;
+            padding: 20px;
+        }
+
+        .container {
+            background-color: var(--white);
+            border-radius: 8px;
+            box-shadow: 0 15px 30px rgba(0,0,0,0.15);
+            padding: 30px;
+            max-width: 1400px;
+            border-left: 5px solid var(--primary-color);
+            margin: 0 auto;
+        }
+
+        .header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 30px;
+            border-bottom: 2px solid var(--primary-color);
+            padding-bottom: 20px;
+        }
+
+        .header h1 {
+            font-size: 2.2rem;
+            color: var(--primary-color);
+            font-weight: 700;
+        }
+
+        .menu-buttons {
+            display: flex;
+            gap: 15px;
+        }
+
+        .menu-button {
+            background-color: var(--primary-color);
+            color: var(--white);
+            text-decoration: none;
+            padding: 12px 20px;
+            border-radius: 6px;
+            font-size: 0.95rem;
+            font-weight: 600;
+            text-transform: uppercase;
+            transition: all 0.3s ease;
+        }
+
+        .menu-button:hover {
+            background-color: var(--secondary-color);
+            transform: translateY(-2px);
+        }
+
+        .info-cards {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 20px;
+            margin-bottom: 30px;
+        }
+
+        .info-card {
+            background: linear-gradient(135deg, var(--accent-color), var(--primary-color));
+            color: var(--white);
+            padding: 20px;
+            border-radius: 10px;
+            text-align: center;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.1);
+        }
+
+        .info-card h3 {
+            font-size: 2rem;
+            margin-bottom: 5px;
+        }
+
+        .info-card p {
+            font-size: 0.9rem;
+            opacity: 0.9;
+        }
+
+        .year-selector {
+            background-color: #f8f9fa;
+            padding: 25px;
+            border-radius: 8px;
+            margin-bottom: 30px;
+            border: 2px solid var(--border-color);
+        }
+
+        .year-selector h3 {
+            color: var(--primary-color);
+            margin-bottom: 15px;
+            font-size: 1.3rem;
+        }
+
+        .year-form {
+            display: flex;
+            align-items: center;
+            gap: 15px;
+            flex-wrap: wrap;
+        }
+
+        .year-input {
+            padding: 12px 15px;
+            border: 2px solid var(--border-color);
+            border-radius: 6px;
+            font-size: 1.1rem;
+            min-width: 120px;
+        }
+
+        .year-input:focus {
+            outline: none;
+            border-color: var(--accent-color);
+            box-shadow: 0 0 0 3px rgba(30, 144, 255, 0.1);
+        }
+
+        .generate-button {
+            background: linear-gradient(135deg, var(--success-color), #20c997);
+            color: var(--white);
+            border: none;
+            padding: 12px 25px;
+            border-radius: 6px;
+            font-size: 1rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            text-transform: uppercase;
+        }
+
+        .generate-button:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 15px rgba(40, 167, 69, 0.3);
+        }
+
+        .requirements-section {
+            background-color: #f8f9fa;
+            padding: 25px;
+            border-radius: 8px;
+            margin-bottom: 30px;
+            border-left: 5px solid var(--info-color);
+        }
+
+        .requirements-section h3 {
+            color: var(--primary-color);
+            margin-bottom: 20px;
+            font-size: 1.4rem;
+        }
+
+        .requirements-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            gap: 20px;
+        }
+
+        .requirement-card {
+            background-color: var(--white);
+            padding: 20px;
+            border-radius: 8px;
+            border: 1px solid var(--border-color);
+            box-shadow: 0 2px 8px rgba(0,0,0,0.05);
+        }
+
+        .requirement-card h4 {
+            color: var(--accent-color);
+            margin-bottom: 10px;
+            font-size: 1.1rem;
+        }
+
+        .requirement-card ul {
+            list-style: none;
+            padding-left: 0;
+        }
+
+        .requirement-card li {
+            padding: 5px 0;
+            padding-left: 20px;
+            position: relative;
+        }
+
+        .requirement-card li:before {
+            content: "✓";
+            position: absolute;
+            left: 0;
+            color: var(--success-color);
+            font-weight: bold;
+        }
+
+        .current-status {
+            background-color: #fff3cd;
+            border: 1px solid #ffeaa7;
+            border-radius: 8px;
+            padding: 20px;
+            margin-bottom: 30px;
+        }
+
+        .current-status h3 {
+            color: #856404;
+            margin-bottom: 15px;
+        }
+
+        .status-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: 15px;
+            margin-top: 15px;
+        }
+
+        .status-item {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 10px;
+            background-color: var(--white);
+            border-radius: 6px;
+            border: 1px solid #ffeaa7;
+        }
+
+        .status-label {
+            font-weight: 500;
+        }
+
+        .status-value {
+            font-weight: bold;
+            color: var(--primary-color);
+        }
+
+        .alert {
+            padding: 15px 20px;
+            border-radius: 6px;
+            margin-bottom: 20px;
+            border-left: 4px solid;
+        }
+
+        .alert-info {
+            background-color: #d1ecf1;
+            border-color: var(--info-color);
+            color: #0c5460;
+        }
+
+        .stats-summary {
+            margin: 20px 0;
+            display: flex;
+            gap: 10px;
+            flex-wrap: wrap;
+        }
+
+        .badge {
+            display: inline-block;
+            padding: 6px 12px;
+            border-radius: 20px;
+            font-size: 0.85rem;
+            font-weight: 600;
+            text-align: center;
+        }
+
+        .badge.especialidad {
+            background-color: #d4edda;
+            color: #155724;
+            border: 1px solid #c3e6cb;
+        }
+
+        .badge.fortalezas {
+            background-color: #d1ecf1;
+            color: #0c5460;
+            border: 1px solid #bee5eb;
+        }
+
+        .badge.aleatoria {
+            background-color: #fff3cd;
+            color: #856404;
+            border: 1px solid #ffeaa7;
+        }
+
+        .badge.existente {
+            background-color: #f8d7da;
+            color: #721c24;
+            border: 1px solid #f5c6cb;
+        }
+
+        .action-section {
+            background: linear-gradient(135deg, #28a745, #20c997);
+            color: var(--white);
+            padding: 25px;
+            border-radius: 10px;
+            margin-bottom: 30px;
+            text-align: center;
+        }
+
+        .action-section h3 {
+            margin-bottom: 15px;
+            font-size: 1.4rem;
+        }
+
+        .action-buttons {
+            display: flex;
+            gap: 15px;
+            justify-content: center;
+            flex-wrap: wrap;
+        }
+
+        .action-button {
+            background-color: var(--white);
+            color: var(--primary-color);
+            border: none;
+            padding: 12px 25px;
+            border-radius: 6px;
+            font-size: 1rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            text-decoration: none;
+            text-transform: uppercase;
+        }
+
+        .action-button:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 15px rgba(0,0,0,0.2);
+        }
+
+        .action-button.apply {
+            background-color: #ffc107;
+            color: #212529;
+        }
+
+        .sugerencias-detalle {
+            background-color: #f8f9fa;
+            padding: 25px;
+            border-radius: 8px;
+            margin-bottom: 30px;
+            border-left: 5px solid var(--info-color);
+        }
+
+        .sugerencias-detalle h3 {
+            color: var(--primary-color);
+            margin-bottom: 15px;
+            font-size: 1.3rem;
+        }
+
+        @media (max-width: 768px) {
+            .container {
+                padding: 20px;
+            }
+            
+            .header {
+                flex-direction: column;
+                gap: 15px;
+                text-align: center;
+            }
+            
+            .year-form {
+                flex-direction: column;
+                align-items: stretch;
+            }
+            
+            .year-input, .generate-button {
+                width: 100%;
+            }
+            
+            .info-cards {
+                grid-template-columns: 1fr;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>🎯 Sugerencias Anuales de Asignaciones</h1>
+            <div class="menu-buttons">
+                <a href="{% url 'jefa:calendario_area' %}" class="menu-button">📅 Calendario</a>
+                <a href="{% url 'jefa:lista_areas_sobrecarga' %}" class="menu-button">⚠️ Sobrecarga</a>
+                <a href="{% url 'jefa:menu_jefa' %}" class="menu-button">🏠 Menú</a>
+            </div>
+        </div>
+
+        {% if messages %}
+            {% for message in messages %}
+                <div class="alert alert-{{ message.tags }}">
+                    {{ message }}
+                </div>
+            {% endfor %}
+        {% endif %}
+
+        <div class="info-cards">
+            <div class="info-card">
+                <h3>{{ enfermeros|length }}</h3>
+                <p>Enfermeros Activos</p>
+            </div>
+            <div class="info-card">
+                <h3>{{ areas|length }}</h3>
+                <p>Áreas Hospitalarias</p>
+            </div>
+            <div class="info-card">
+                <h3>6</h3>
+                <p>Bimestres por Año</p>
+            </div>
+            <div class="info-card">
+                <h3>{{ areas_nivel_bajo|length }}</h3>
+                <p>Áreas Nivel 1-2</p>
+            </div>
+        </div>
+
+        <div class="current-status">
+            <h3>📊 Estado Actual del Sistema</h3>
+            <p><strong>Año seleccionado:</strong> {{ año }}</p>
+            
+            <div class="status-grid">
+                <div class="status-item">
+                    <span class="status-label">Enfermeros con Especialidad:</span>
+                    <span class="status-value">{{ enfermeros|length }}</span>
+                </div>
+                <div class="status-item">
+                    <span class="status-label">Áreas Disponibles:</span>
+                    <span class="status-value">{{ areas|length }}</span>
+                </div>
+                <div class="status-item">
+                    <span class="status-label">Bimestres a Planificar:</span>
+                    <span class="status-value">6</span>
+                </div>
+                <div class="status-item">
+                    <span class="status-label">Áreas para Personal sin Parámetros:</span>
+                    <span class="status-value">{{ areas_nivel_bajo|length }}</span>
+                </div>
+            </div>
+        </div>
+
+        {% if modo == 'mostrar' %}
+        <!-- MODO: Mostrar sugerencias generadas -->
+        <div class="alert alert-success">
+            <strong>✅ Sugerencias Generadas Exitosamente</strong><br>
+            Se han generado las sugerencias para el año {{ año }}. Revisa la distribución y aplícala si estás conforme.
+        </div>
+
+        <div class="action-section">
+            <h3>🚀 Aplicar Sugerencias al Sistema</h3>
+            <p>Las sugerencias han sido generadas siguiendo los requerimientos RQNF77-85. 
+               Revisa la distribución y aplícala si estás conforme.</p>
+            
+            <div class="action-buttons">
+                <form method="post" style="display: inline;">
+                    {% csrf_token %}
+                    <input type="hidden" name="aplicar_sugerencias" value="true">
+                    <input type="hidden" name="año" value="{{ año }}">
+                    <button type="submit" class="action-button apply" 
+                            onclick="return confirm('¿Estás seguro de aplicar estas sugerencias al calendario? Esta acción creará asignaciones para todo el año.')">
+                        ✅ Aplicar Todas las Sugerencias
+                    </button>
+                </form>
+                
+                <a href="{% url 'jefa:generar_sugerencias_anuales' %}" class="action-button">
+                    🔄 Generar Nuevas Sugerencias
+                </a>
+                
+                <a href="{% url 'jefa:calendario_area' %}" class="action-button">
+                    👀 Ver Calendario Actual
+                </a>
+            </div>
+        </div>
+
+        <!-- Aquí irían las tablas de sugerencias por bimestre -->
+        <div class="sugerencias-detalle">
+            <!-- El contenido de sugerencias se mostrará aquí -->
+            <h3>📋 Distribución Sugerida por Bimestre</h3>
+            <p><strong>Total de sugerencias generadas:</strong> {{ estadisticas.total_sugerencias|default:0 }}</p>
+            
+            <!-- Mostrar un resumen por categoría -->
+            {% if estadisticas %}
+            <div class="stats-summary">
+                <span class="badge especialidad">🎯 Especialidad: {{ estadisticas.por_categoria.especialidad|default:0 }}</span>
+                <span class="badge fortalezas">💪 Fortalezas: {{ estadisticas.por_categoria.fortalezas|default:0 }}</span>
+                <span class="badge aleatoria">🎲 Aleatoria: {{ estadisticas.por_categoria.aleatoria|default:0 }}</span>
+                <span class="badge existente">📂 Existente: {{ estadisticas.por_categoria.existente|default:0 }}</span>
+            </div>
+            {% endif %}
+            
+            <!-- Agregar aquí el contenido del template de sugerencias_anuales.html -->
+            <div class="alert alert-info">
+                <strong>ℹ️ Información:</strong>
+                Las sugerencias se generaron correctamente. Usa el botón "✅ Aplicar Todas las Sugerencias" 
+                para crear las asignaciones en el calendario, o "🔄 Generar Nuevas Sugerencias" para cambiar el año.
+            </div>
+        </div>
+
+        {% else %}
+        <!-- MODO: Seleccionar año (formulario inicial) -->
+        <div class="year-selector">
+            <h3>🗓️ Generar Sugerencias para Año</h3>
+            <form method="post" class="year-form">
+                {% csrf_token %}
+                <label for="año_input" style="font-weight: 600;">Año:</label>
+                <input type="number" 
+                       id="año_input" 
+                       name="año" 
+                       value="{{ año }}" 
+                       min="2024" 
+                       max="2030" 
+                       class="year-input"
+                       required>
+                
+                <button type="submit" class="generate-button">
+                    🔍 Generar y Mostrar Sugerencias
+                </button>
+            </form>
+        </div>
+        {% endif %}
+
+        <div class="requirements-section">
+            <h3>📋 Algoritmo de Sugerencias (Basado en Requerimientos)</h3>
+            <div class="requirements-grid">
+                <div class="requirement-card">
+                    <h4>🎯 Primera Rotación (Bimestre 1)</h4>
+                    <ul>
+                        <li>Área de mayor desempeño (especialidad)</li>
+                        <li>Actividades de mayor desempeño (fortalezas)</li>
+                        <li>Asignación aleatoria equitativa sin parámetros</li>
+                        <li>Solo áreas de nivel 1-2 para personal sin parámetros</li>
+                    </ul>
+                </div>
+                
+                <div class="requirement-card">
+                    <h4>🔄 Rotaciones Subsecuentes (Bimestres 2-6)</h4>
+                    <ul>
+                        <li>Mismos parámetros que primera rotación</li>
+                        <li>No repetir área del bimestre anterior</li>
+                        <li>No repetir área de últimas 2 rotaciones</li>
+                        <li>Distribución equitativa entre áreas disponibles</li>
+                    </ul>
+                </div>
+                
+                <div class="requirement-card">
+                    <h4>⚖️ Criterios de Priorización</h4>
+                    <ul>
+                        <li>1️⃣ Área de especialidad (máxima prioridad)</li>
+                        <li>2️⃣ Fortalezas coincidentes con área</li>
+                        <li>3️⃣ Distribución equitativa de carga</li>
+                        <li>4️⃣ Asignación aleatoria como último recurso</li>
+                    </ul>
+                </div>
+                
+                <div class="requirement-card">
+                    <h4>🎲 Manejo de Casos Especiales</h4>
+                    <ul>
+                        <li>Personal sin área de especialidad</li>
+                        <li>Personal sin fortalezas registradas</li>
+                        <li>Conflictos de no repetición de áreas</li>
+                        <li>Distribución equilibrada automática</li>
+                    </ul>
+                </div>
+            </div>
+        </div>
+
+        <div class="alert alert-info">
+            <strong>ℹ️ Información:</strong>
+            Las sugerencias se generan automáticamente siguiendo los requerimientos RQNF77-85. 
+            El algoritmo considera la especialidad de cada enfermero, sus fortalezas, y garantiza 
+            una rotación equitativa sin repetir áreas consecutivas.
+        </div>
+
+        <div class="alert alert-warning">
+            <strong>⚠️ Importante:</strong>
+            Las sugerencias generadas son propuestas que puedes revisar antes de aplicar. 
+            Una vez aplicadas, se crearán las asignaciones automáticamente en el calendario.
+        </div>
+    </div>
+</body>
+</html>
