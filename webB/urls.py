@@ -1,28 +1,25 @@
-"""
-URL configuration for webB project.
-
-The `urlpatterns` list routes URLs to views. For more information please see:
-    https://docs.djangoproject.com/en/5.1/topics/http/urls/
-Examples:
-Function views
-    1. Add an import:  from my_app import views
-    2. Add a URL to urlpatterns:  path('', views.home, name='home')
-Class-based views
-    1. Add an import:  from other_app.views import Home
-    2. Add a URL to urlpatterns:  path('', Home.as_view(), name='home')
-Including another URLconf
-    1. Import the include() function: from django.urls import include, path
-    2. Add a URL to urlpatterns:  path('blog/', include('blog.urls'))
-"""
 from django.contrib import admin
-from django.urls import path, include 
+from django.urls import path, include
+from django.shortcuts import redirect
+from django.contrib.auth import logout
+from django.contrib import messages
 
+def home_view(request):
+    """Función para manejar la página principal y forzar logout si es necesario"""
+    # Si hay un usuario autenticado, cerrar su sesión
+    if request.user.is_authenticated:
+        username = request.user.username
+        logout(request)
+        print(f"DEBUG: Sesión cerrada automáticamente para {username} desde página principal")
+    
+    # Siempre redirigir al login
+    return redirect('login:login')
 
 urlpatterns = [
     path('admin/', admin.site.urls),
-    path('', include('login.urlsLog')),
-    #path('', include('areas.urlsAr')),
-    path('enfermeria/', include('usuarioEnfermeria.urlsUe')),
-    path('doctor/', include('usuarioDoctor.urlsUd')),
+    path('', home_view, name='home'),  # Usar la nueva función
+    path('login/', include('login.urlsLog')),
     path('jefa/', include('usuarioJefa.urlsUj')),
+    path('doctor/', include('usuarioDoctor.urlsUd')),
+    path('enfermeria/', include('usuarioEnfermeria.urlsUe')),
 ]

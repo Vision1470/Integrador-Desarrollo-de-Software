@@ -180,6 +180,38 @@
                 gap: 15px;
             }
         }
+
+         .session-alert {
+            background-color: #FFE5E5;
+            border: 1px solid #D8000C;
+            border-radius: 4px;
+            padding: 15px;
+            margin-bottom: 20px;
+            text-align: left;
+        }
+
+        .session-alert p {
+            color: #D8000C;
+            margin: 0 0 10px 0;
+            font-weight: 500;
+        }
+
+        .session-alert a {
+            color: #D8000C;
+            font-weight: 600;
+            text-decoration: none;
+            padding: 8px 16px;
+            border: 1px solid #D8000C;
+            border-radius: 4px;
+            display: inline-block;
+            transition: all 0.3s ease;
+        }
+
+        .session-alert a:hover {
+            background-color: #D8000C;
+            color: white;
+            text-decoration: none;
+        }
     </style>
 </head>
 <body>
@@ -195,10 +227,27 @@
         </div>
         {% endif %}
 
+        {% if user.is_authenticated %}
+        <div class="session-alert">
+            <p>Ya tienes una sesión activa como: <strong>{{ user.username }}</strong> ({{ user.get_tipoUsuario_display }})</p>
+            <div style="margin-top: 10px;">
+                <a href="{% url 'login:logout' %}" style="margin-right: 10px;">Cerrar sesión</a>
+                {% if user.tipoUsuario == 'JP' %}
+                <a href="{% url 'jefa:menu_jefa' %}" style="background-color: var(--accent-color); border-color: var(--accent-color);">Ir al menú</a>
+                {% elif user.tipoUsuario == 'EN' %}
+                <a href="{% url 'enfermeria:pacientes_enfermeria' %}" style="background-color: var(--accent-color); border-color: var(--accent-color);">Ir al menú</a>
+                {% elif user.tipoUsuario == 'DR' %}
+                <a href="{% url 'doctor:pacientes_doctor' %}" style="background-color: var(--accent-color); border-color: var(--accent-color);">Ir al menú</a>
+                {% endif %}
+            </div>
+        </div>
+        {% endif %}
+
         <div class="login-header">
             <h1>Sistema Hospitalario</h1>
             <h3>Inicie sesión para acceder al sistema</h3>
         </div>
+
 
         <div class="first-access">
             ¿Es tu primer ingreso? <a href="{% url 'login:primer_ingreso' %}">Registrarse</a>

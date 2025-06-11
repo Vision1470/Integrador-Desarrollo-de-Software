@@ -57,7 +57,27 @@ MIDDLEWARE = [
     'django.contrib.auth.middleware.AuthenticationMiddleware',
     'django.contrib.messages.middleware.MessageMiddleware',
     'django.middleware.clickjacking.XFrameOptionsMiddleware',
+    'login.middleware.VerificarUsuarioActivoMiddleware',
 ]
+
+# Configuración de sesiones más estricta
+SESSION_COOKIE_AGE = 1800  # 30 minutos
+SESSION_EXPIRE_AT_BROWSER_CLOSE = True
+SESSION_SAVE_EVERY_REQUEST = True
+SESSION_COOKIE_HTTPONLY = True
+
+# Borrar sesiones expiradas automáticamente
+SESSION_ENGINE = 'django.contrib.sessions.backends.db'
+
+# URL de login por defecto
+LOGIN_URL = '/login/'
+LOGIN_REDIRECT_URL = '/login/'  # Redirige al login después de login exitoso (se maneja en la vista)
+LOGOUT_REDIRECT_URL = '/login/'  # Redirige al login después de logout
+
+# Configuración adicional de seguridad
+SESSION_COOKIE_SECURE = False  # True en producción con HTTPS
+SESSION_COOKIE_HTTPONLY = True  # Evita acceso por JavaScript
+SESSION_COOKIE_SAMESITE = 'Lax'  # Protección CSRF
 
 ROOT_URLCONF = 'webB.urls'
 
@@ -131,3 +151,5 @@ STATIC_URL = 'static/'
 # https://docs.djangoproject.com/en/5.1/ref/settings/#default-auto-field
 
 DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
+
+
