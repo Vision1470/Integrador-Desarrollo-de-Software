@@ -1,0 +1,639 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Simulador de Eventos - Asignación de Padecimientos</title>
+    <style>
+        :root {
+            --primary-color: #0A2342;
+            --secondary-color: #2E4057;
+            --accent-color: #1E90FF;
+            --background-color: #EBF0F5;
+            --white: #FFFFFF;
+            --border-color: #D1D1D1;
+            --success-color: #28a745;
+            --text-color: #333333;
+            --warning-color: #ffc107;
+            --danger-color: #dc3545;
+            --info-color: #17a2b8;
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: 'Roboto', 'Arial', sans-serif;
+        }
+
+        body {
+            background-color: var(--background-color);
+            color: var(--text-color);
+            line-height: 1.6;
+            padding: 20px;
+        }
+
+        .container {
+            background-color: var(--white);
+            border-radius: 8px;
+            box-shadow: 0 15px 30px rgba(0,0,0,0.15);
+            padding: 30px;
+            max-width: 1400px;
+            margin: 0 auto;
+            border-left: 5px solid var(--primary-color);
+        }
+
+        .header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 30px;
+            border-bottom: 2px solid var(--primary-color);
+            padding-bottom: 15px;
+        }
+
+        .header h1 {
+            font-size: 2rem;
+            color: var(--primary-color);
+            font-weight: 700;
+        }
+
+        .menu-button {
+            background-color: var(--secondary-color);
+            color: var(--white);
+            text-decoration: none;
+            padding: 10px 15px;
+            border-radius: 4px;
+            font-weight: 600;
+            text-transform: uppercase;
+            transition: background-color 0.3s ease;
+            margin-left: 10px;
+        }
+
+        .menu-button:hover {
+            background-color: var(--accent-color);
+        }
+
+        .info-box {
+            background-color: #e7f3ff;
+            border: 1px solid var(--accent-color);
+            border-radius: 4px;
+            padding: 15px;
+            margin-bottom: 20px;
+        }
+
+        .info-box h4 {
+            color: var(--primary-color);
+            margin-bottom: 8px;
+        }
+
+        .simulacion-info {
+            background-color: #f8f9fa;
+            border: 1px solid var(--border-color);
+            border-radius: 4px;
+            padding: 15px;
+            margin-bottom: 30px;
+        }
+
+        .simulacion-info h3 {
+            color: var(--primary-color);
+            margin-bottom: 10px;
+        }
+
+        .area-section {
+            margin-bottom: 40px;
+            border: 2px solid var(--border-color);
+            border-radius: 8px;
+            overflow: hidden;
+        }
+
+        .area-header {
+            background-color: var(--primary-color);
+            color: var(--white);
+            padding: 15px 20px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .area-title {
+            font-weight: 600;
+            font-size: 1.2rem;
+        }
+
+        .area-stats {
+            font-size: 0.9rem;
+            opacity: 0.9;
+        }
+
+        .area-content {
+            padding: 0;
+            background-color: var(--white);
+        }
+
+        .pacientes-table {
+            width: 100%;
+            border-collapse: collapse;
+        }
+
+        .pacientes-table th {
+            background-color: var(--secondary-color);
+            color: var(--white);
+            padding: 12px;
+            text-align: left;
+            font-weight: 600;
+            border-bottom: 1px solid var(--border-color);
+        }
+
+        .pacientes-table td {
+            padding: 15px 12px;
+            border-bottom: 1px solid var(--border-color);
+            vertical-align: top;
+        }
+
+        .pacientes-table tr:nth-child(even) {
+            background-color: #f8f9fa;
+        }
+
+        .paciente-name {
+            font-weight: 600;
+            color: var(--primary-color);
+            margin-bottom: 8px;
+        }
+
+        .gravedad-select {
+            padding: 8px;
+            border: 1px solid var(--border-color);
+            border-radius: 4px;
+            font-size: 0.9rem;
+            width: 100%;
+            max-width: 120px;
+        }
+
+        .gravedad-1 {
+            background-color: #d4edda;
+            border-color: var(--success-color);
+        }
+
+        .gravedad-2 {
+            background-color: #fff3cd;
+            border-color: var(--warning-color);
+        }
+
+        .gravedad-3 {
+            background-color: #f8d7da;
+            border-color: var(--danger-color);
+        }
+
+        .padecimientos-container {
+            max-height: 200px;
+            overflow-y: auto;
+            border: 1px solid var(--border-color);
+            border-radius: 4px;
+            padding: 10px;
+            background-color: #f8f9fa;
+        }
+
+        .padecimiento-group {
+            margin-bottom: 8px;
+        }
+
+        .padecimiento-checkbox {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            padding: 4px;
+            cursor: pointer;
+            border-radius: 3px;
+            transition: background-color 0.2s ease;
+        }
+
+        .padecimiento-checkbox:hover {
+            background-color: #e6f3ff;
+        }
+
+        .padecimiento-checkbox input[type="checkbox"] {
+            width: 16px;
+            height: 16px;
+        }
+
+        .padecimiento-label {
+            font-size: 0.9rem;
+            flex-grow: 1;
+        }
+
+        .padecimientos-seleccionados {
+            margin-top: 8px;
+            padding: 8px;
+            background-color: #e7f3ff;
+            border-radius: 4px;
+            font-size: 0.85rem;
+        }
+
+        .padecimientos-count {
+            font-weight: 600;
+            color: var(--primary-color);
+        }
+
+        .quick-actions {
+            display: flex;
+            gap: 8px;
+            margin-bottom: 10px;
+            flex-wrap: wrap;
+        }
+
+        .btn-quick {
+            background-color: var(--info-color);
+            color: var(--white);
+            border: none;
+            padding: 6px 10px;
+            border-radius: 4px;
+            font-size: 0.8rem;
+            cursor: pointer;
+            transition: background-color 0.3s ease;
+        }
+
+        .btn-quick:hover {
+            background-color: #138496;
+        }
+
+        .btn-quick.clear {
+            background-color: var(--secondary-color);
+        }
+
+        .btn-quick.clear:hover {
+            background-color: #1c2a3a;
+        }
+
+        .submit-button {
+            background-color: var(--success-color);
+            color: var(--white);
+            padding: 15px 30px;
+            border: none;
+            border-radius: 4px;
+            font-size: 1.1rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: background-color 0.3s ease;
+            width: 100%;
+            text-transform: uppercase;
+            margin-top: 30px;
+        }
+
+        .submit-button:hover {
+            background-color: #218838;
+        }
+
+        .resumen-general {
+            background-color: var(--primary-color);
+            color: var(--white);
+            padding: 20px;
+            border-radius: 8px;
+            margin: 20px 0;
+            text-align: center;
+        }
+
+        .messages {
+            margin-bottom: 20px;
+        }
+
+        .messages .alert {
+            padding: 12px 15px;
+            border-radius: 4px;
+            margin-bottom: 10px;
+        }
+
+        .messages .alert-success {
+            background-color: #d4edda;
+            border: 1px solid #c3e6cb;
+            color: #155724;
+        }
+
+        .messages .alert-error {
+            background-color: #f8d7da;
+            border: 1px solid #f5c6cb;
+            color: #721c24;
+        }
+
+        @media (max-width: 768px) {
+            .container {
+                padding: 15px;
+            }
+            
+            .header {
+                flex-direction: column;
+                gap: 15px;
+            }
+            
+            .area-header {
+                flex-direction: column;
+                align-items: flex-start;
+                gap: 5px;
+            }
+            
+            .pacientes-table {
+                font-size: 0.85rem;
+            }
+            
+            .pacientes-table th,
+            .pacientes-table td {
+                padding: 8px;
+            }
+            
+            .padecimientos-container {
+                max-height: 150px;
+            }
+            
+            .quick-actions {
+                justify-content: center;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <!-- Header -->
+        <div class="header">
+            <h1>Simulador de Eventos - Asignación de Padecimientos</h1>
+            <div>
+                <a href="{% url 'jefa:lista_simulaciones' %}" class="menu-button">Ver Simulaciones</a>
+                <a href="{% url 'jefa:menu_jefa' %}" class="menu-button">Menú Principal</a>
+            </div>
+        </div>
+
+        <!-- Mensajes -->
+        {% if messages %}
+        <div class="messages">
+            {% for message in messages %}
+            <div class="alert alert-{{ message.tags }}">
+                {{ message }}
+            </div>
+            {% endfor %}
+        </div>
+        {% endif %}
+
+        <!-- Información de la simulación -->
+        <div class="simulacion-info">
+            <h3>Simulación: {{ simulacion.nombre }}</h3>
+            <p><strong>Total de pacientes generados:</strong> {{ simulacion.total_pacientes }}</p>
+        </div>
+
+        <!-- Información del paso -->
+        <div class="info-box">
+            <h4>Paso 4 de 4: Asignación de Padecimientos</h4>
+            <p>Para cada paciente simulado, selecciona su nivel de gravedad y los padecimientos que presenta. Puedes asignar múltiples padecimientos por paciente.</p>
+        </div>
+
+        <!-- Formulario -->
+        <form method="post" id="form-padecimientos">
+            {% csrf_token %}
+            
+            {% for area_info in areas_con_pacientes %}
+            <div class="area-section">
+                <div class="area-header">
+                    <div class="area-title">{{ area_info.area.area_real.nombre }}</div>
+                    <div class="area-stats">{{ area_info.pacientes|length }} pacientes | {{ area_info.area.cantidad_enfermeros }} enfermeros</div>
+                </div>
+                
+                <div class="area-content">
+                    <table class="pacientes-table">
+                        <thead>
+                            <tr>
+                                <th style="width: 150px;">Paciente</th>
+                                <th style="width: 130px;">Nivel de Gravedad</th>
+                                <th>Padecimientos</th>
+                                <th style="width: 100px;">Acciones</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for paciente in area_info.pacientes %}
+                            <tr>
+                                <td>
+                                    <div class="paciente-name">{{ paciente.nombre_simulado }}</div>
+                                    <div style="font-size: 0.8rem; color: #666;">ID: {{ paciente.id }}</div>
+                                </td>
+                                <td>
+                                    <select name="gravedad_{{ paciente.id }}" 
+                                            class="gravedad-select" 
+                                            onchange="actualizarGravedad({{ paciente.id }})">
+                                        <option value="1" selected>Leve</option>
+                                        <option value="2">Moderado</option>
+                                        <option value="3">Grave</option>
+                                    </select>
+                                </td>
+                                <td>
+                                    <!--
+                                    <div class="quick-actions">
+                                        <button type="button" class="btn-quick" onclick="seleccionarComunes({{ paciente.id }})">Comunes</button>
+                                        <button type="button" class="btn-quick" onclick="seleccionarRespiratorios({{ paciente.id }})">Respiratorios</button>
+                                        <button type="button" class="btn-quick" onclick="seleccionarDigestivos({{ paciente.id }})">Digestivos</button>
+                                        <button type="button" class="btn-quick clear" onclick="limpiarSeleccion({{ paciente.id }})">Limpiar</button>
+                                    </div>
+                                -->
+                                    <div class="padecimientos-container" id="container_{{ paciente.id }}">
+                                        {% for padecimiento in padecimientos_disponibles %}
+                                        <div class="padecimiento-group">
+                                            <label class="padecimiento-checkbox">
+                                                <input type="checkbox" 
+                                                       name="padecimientos_{{ paciente.id }}" 
+                                                       value="{{ padecimiento.id }}"
+                                                       onchange="actualizarContador({{ paciente.id }})">
+                                                <span class="padecimiento-label">{{ padecimiento.nombre }}</span>
+                                            </label>
+                                        </div>
+                                        {% endfor %}
+                                    </div>
+                                    
+                                    <div class="padecimientos-seleccionados" id="seleccionados_{{ paciente.id }}">
+                                        <span class="padecimientos-count">Padecimientos seleccionados: 0</span>
+                                    </div>
+                                </td>
+                                <!--<td style="text-align: center;">
+                                    <button type="button" class="btn-quick" onclick="copiarConfiguracion({{ paciente.id }})">Copiar</button>
+                                </td> -->
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+            {% endfor %}
+
+            <!-- Resumen general -->
+            <div class="resumen-general">
+                <h3>Resumen de la Simulación</h3>
+                <p>Total de pacientes configurados: <span id="total-configurados">0</span> de {{ simulacion.total_pacientes }}</p>
+            </div>
+
+            <!-- Botón de envío -->
+            <button type="submit" class="submit-button">
+                Generar Resultados de la Simulación
+            </button>
+        </form>
+    </div>
+
+    <script>
+        // Variable global para copiar configuración
+        let configuracionCopiada = null;
+
+        function actualizarGravedad(pacienteId) {
+            const select = document.querySelector(`select[name="gravedad_${pacienteId}"]`);
+            const className = `gravedad-${select.value}`;
+            
+            // Remover clases anteriores
+            select.classList.remove('gravedad-1', 'gravedad-2', 'gravedad-3');
+            // Agregar nueva clase
+            select.classList.add(className);
+        }
+
+        function actualizarContador(pacienteId) {
+            const checkboxes = document.querySelectorAll(`input[name="padecimientos_${pacienteId}"]:checked`);
+            const contador = document.getElementById(`seleccionados_${pacienteId}`);
+            
+            contador.innerHTML = `<span class="padecimientos-count">Padecimientos seleccionados: ${checkboxes.length}</span>`;
+            
+            // Actualizar resumen general
+            actualizarResumenGeneral();
+        }
+
+        function actualizarResumenGeneral() {
+            let totalConfigurados = 0;
+            
+            {% for area_info in areas_con_pacientes %}
+                {% for paciente in area_info.pacientes %}
+                const checkboxes{{ paciente.id }} = document.querySelectorAll('input[name="padecimientos_{{ paciente.id }}"]:checked');
+                if (checkboxes{{ paciente.id }}.length > 0) {
+                    totalConfigurados++;
+                }
+                {% endfor %}
+            {% endfor %}
+            
+            document.getElementById('total-configurados').textContent = totalConfigurados;
+        }
+
+        function seleccionarComunes(pacienteId) {
+            // Padecimientos comunes (esto se puede ajustar según los datos reales)
+            const padecimientosComunes = ['Hipertensión', 'Diabetes', 'Gripe', 'Dolor de cabeza', 'Gastritis'];
+            seleccionarPorNombres(pacienteId, padecimientosComunes);
+        }
+
+        function seleccionarRespiratorios(pacienteId) {
+            const padecimientosRespiratorios = ['Gripe', 'Neumonía', 'Asma', 'Bronquitis', 'COVID-19'];
+            seleccionarPorNombres(pacienteId, padecimientosRespiratorios);
+        }
+
+        function seleccionarDigestivos(pacienteId) {
+            const padecimientosDigestivos = ['Gastritis', 'Úlcera', 'Diarrea', 'Estreñimiento', 'Reflujo'];
+            seleccionarPorNombres(pacienteId, padecimientosDigestivos);
+        }
+
+        function seleccionarPorNombres(pacienteId, nombres) {
+            // Limpiar selección actual
+            limpiarSeleccion(pacienteId);
+            
+            // Seleccionar por nombres
+            const checkboxes = document.querySelectorAll(`input[name="padecimientos_${pacienteId}"]`);
+            checkboxes.forEach(checkbox => {
+                const label = checkbox.parentNode.querySelector('.padecimiento-label').textContent;
+                if (nombres.some(nombre => label.toLowerCase().includes(nombre.toLowerCase()))) {
+                    checkbox.checked = true;
+                }
+            });
+            
+            actualizarContador(pacienteId);
+        }
+
+        function limpiarSeleccion(pacienteId) {
+            const checkboxes = document.querySelectorAll(`input[name="padecimientos_${pacienteId}"]`);
+            checkboxes.forEach(checkbox => {
+                checkbox.checked = false;
+            });
+            actualizarContador(pacienteId);
+        }
+
+        function copiarConfiguracion(pacienteId) {
+            const gravedad = document.querySelector(`select[name="gravedad_${pacienteId}"]`).value;
+            const padecimientos = [];
+            
+            const checkboxes = document.querySelectorAll(`input[name="padecimientos_${pacienteId}"]:checked`);
+            checkboxes.forEach(checkbox => {
+                padecimientos.push(checkbox.value);
+            });
+            
+            configuracionCopiada = {
+                gravedad: gravedad,
+                padecimientos: padecimientos
+            };
+            
+            // Mostrar mensaje de confirmación
+            alert(`Configuración copiada: Gravedad ${gravedad}, ${padecimientos.length} padecimientos. Haz clic en cualquier otro paciente para pegar.`);
+            
+            // Agregar evento de clic a otras filas
+            habilitarPegado();
+        }
+
+        function habilitarPegado() {
+            const filas = document.querySelectorAll('.pacientes-table tbody tr');
+            filas.forEach(fila => {
+                fila.style.cursor = 'pointer';
+                fila.style.backgroundColor = '#e7f3ff';
+                
+                fila.onclick = function() {
+                    if (configuracionCopiada) {
+                        // Obtener ID del paciente de esta fila
+                        const pacienteId = this.querySelector('select[name^="gravedad_"]').name.split('_')[1];
+                        pegarConfiguracion(pacienteId);
+                        
+                        // Remover eventos y estilos
+                        deshabilitarPegado();
+                    }
+                };
+            });
+        }
+
+        function deshabilitarPegado() {
+            const filas = document.querySelectorAll('.pacientes-table tbody tr');
+            filas.forEach(fila => {
+                fila.style.cursor = 'default';
+                fila.style.backgroundColor = '';
+                fila.onclick = null;
+            });
+        }
+
+        function pegarConfiguracion(pacienteId) {
+            if (!configuracionCopiada) return;
+            
+            // Pegar gravedad
+            document.querySelector(`select[name="gravedad_${pacienteId}"]`).value = configuracionCopiada.gravedad;
+            actualizarGravedad(pacienteId);
+            
+            // Limpiar y pegar padecimientos
+            limpiarSeleccion(pacienteId);
+            
+            configuracionCopiada.padecimientos.forEach(padecimientoId => {
+                const checkbox = document.querySelector(`input[name="padecimientos_${pacienteId}"][value="${padecimientoId}"]`);
+                if (checkbox) {
+                    checkbox.checked = true;
+                }
+            });
+            
+            actualizarContador(pacienteId);
+            configuracionCopiada = null;
+            
+            alert('Configuración pegada exitosamente');
+        }
+
+        // Inicializar al cargar la página
+        document.addEventListener('DOMContentLoaded', function() {
+            // Inicializar contadores
+            {% for area_info in areas_con_pacientes %}
+                {% for paciente in area_info.pacientes %}
+                actualizarContador({{ paciente.id }});
+                actualizarGravedad({{ paciente.id }});
+                {% endfor %}
+            {% endfor %}
+        });
+    </script>
+</body>
+</html>

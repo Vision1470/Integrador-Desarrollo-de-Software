@@ -427,3 +427,103 @@ class AsignacionEmergencia(models.Model):
             filtros['area_destino'] = area
             
         return cls.objects.filter(**filtros)
+    
+# Modelos para el Simulador de Eventos
+class SimulacionEvento(models.Model):
+    nombre = models.CharField(max_length=200, help_text="Nombre/etiqueta para identificar la simulación")
+    descripcion = models.TextField(blank=True, help_text="Descripción opcional de la simulación")
+    creada_por = models.ForeignKey(
+        'login.Usuarios',
+        on_delete=models.CASCADE,
+        limit_choices_to={'tipoUsuario': 'JP'}
+    )
+    fecha_creacion = models.DateTimeField(auto_now_add=True)
+    activa = models.BooleanField(default=True, help_text="Si la simulación está activa para comparaciones")
+    
+    # Resultados calculados
+    total_areas = models.IntegerField(default=0)
+    total_enfermeros = models.IntegerField(default=0)
+    total_pacientes = models.IntegerField(default=0)
+    carga_trabajo_promedio = models.DecimalField(max_digits=5, decimal_places=2, default=0)
+    
+    class Meta:
+        verbose_name = "Simulación de Evento"
+        verbose_name_plural = "Simulaciones de Eventos"
+        ordering = ['-fecha_creacion']
+    
+    def __str__(self):
+        return f"{self.nombre} - {self.fecha_creacion.strftime('%d/%m/%Y')}"
+
+class AreaSimulada(models.Model):
+    simulacion = models.ForeignKey(SimulacionEvento, on_delete=models.CASCADE, related_name='areas_simuladas')
+    area_real = models.ForeignKey('login.AreaEspecialidad', on_delete=models.CASCADE)
+    cantidad_enfermeros = models.IntegerField(default=0, help_text="Cantidad de enfermeros asignados en la simulación")
+    cantidad_pacientes = models.IntegerField(default=0, help_text="Cantidad de pacientes en esta área")
+    en_sobrecarga = models.BooleanField(default=False, help_text="Si el área está marcada como sobrecargada")
+    
+    # Métricas calculadas
+    carga_trabajo_area = models.DecimalField(max_digits=5, decimal_places=2, default=0)
+    ratio_pacientes_enfermero = models.DecimalField(max_digits=5, decimal_places=2, default=0)
+    
+    class Meta:
+        verbose_name = "Área Simulada"
+        verbose_name_plural = "Áreas Simuladas"
+        unique_together = ['simulacion', 'area_real']
+    
+    def __str__(self):
+        return f"{self.area_real.nombre} - {self.simulacion.nombre}"
+
+class EnfermeroSimulado(models.Model):
+    area_simulada = models.ForeignKey(AreaSimulada, on_delete=models.CASCADE, related_name='enfermeros_asignados')
+    enfermero_real = models.ForeignKey(
+        'login.Usuarios', 
+        on_delete=models.CASCADE,
+        limit_choices_to={'tipoUsuario': 'EN'}
+    )
+    pacientes_asignados = models.IntegerField(default=0, help_text="Cantidad de pacientes asignados a este enfermero")
+    carga_trabajo_individual = models.DecimalField(max_digits=5, decimal_places=2, default=0)
+    
+    class Meta:
+        verbose_name = "Enfermero Simulado"
+        verbose_name_plural = "Enfermeros Simulados"
+        unique_together = ['area_simulada', 'enfermero_real']
+    
+    def __str__(self):
+        return f"{self.enfermero_real.username} - {self.area_simulada.area_real.nombre}"
+
+class PacienteSimulado(models.Model):
+    NIVELES_GRAVEDAD = [
+        (1, 'Leve'),
+        (2, 'Moderado'),
+        (3, 'Grave')
+    ]
+    
+    area_simulada = models.ForeignKey(AreaSimulada, on_delete=models.CASCADE, related_name='pacientes_simulados')
+    enfermero_asignado = models.ForeignKey(
+        EnfermeroSimulado, 
+        on_delete=models.SET_NULL, 
+        null=True, 
+        blank=True,
+        related_name='pacientes_a_cargo'
+    )
+    nombre_simulado = models.CharField(max_length=100, help_text="Nombre generado: Paciente 1, Paciente 2, etc.")
+    nivel_gravedad = models.IntegerField(choices=NIVELES_GRAVEDAD, default=1)
+    
+    class Meta:
+        verbose_name = "Paciente Simulado"
+        verbose_name_plural = "Pacientes Simulados"
+    
+    def __str__(self):
+        return f"{self.nombre_simulado} - {self.area_simulada.area_real.nombre}"
+
+class PadecimientoSimulado(models.Model):
+    paciente_simulado = models.ForeignKey(PacienteSimulado, on_delete=models.CASCADE, related_name='padecimientos')
+    padecimiento = models.ForeignKey('usuarioDoctor.Padecimiento', on_delete=models.CASCADE)
+    
+    class Meta:
+        verbose_name = "Padecimiento Simulado"
+        verbose_name_plural = "Padecimientos Simulados"
+        unique_together = ['paciente_simulado', 'padecimiento']
+    
+    def __str__(self):
+        return f"{self.padecimiento.nombre} - {self.paciente_simulado.nombre_simulado}"

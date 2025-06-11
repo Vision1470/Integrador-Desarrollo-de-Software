@@ -3759,7 +3759,7 @@ def ajustar_distribucion_manual(request, area_id):
         'pacientes_no_asignados': pacientes_no_asignados,
     })
 
-def ver_distribucion(request, area_id):
+def ver_distribucion(request, area_id):    
     """
     Vista para visualizar la distribución actual de pacientes en un área.
     """
@@ -3856,3 +3856,426 @@ def ver_distribucion(request, area_id):
     }
     
     return render(request, 'usuarioJefa/ver_distribucion.html', context)
+
+
+#////////////////////////////////////////////////////
+# SIMULADOR DE EVENTOS
+#///////////////////////////////////////////////////////////
+
+@login_required
+def simulador_inicio(request):
+    """
+    Paso 1: Selección de áreas para la simulación
+    """
+    if request.user.tipoUsuario != 'JP':
+        messages.error(request, 'No tienes permisos para acceder al simulador')
+        return redirect('jefa:menu_jefa')
+    
+    areas_disponibles = AreaEspecialidad.objects.all().order_by('nombre')
+    
+    if request.method == 'POST':
+        nombre_simulacion = request.POST.get('nombre_simulacion', '').strip()
+        descripcion = request.POST.get('descripcion', '').strip()
+        areas_seleccionadas = request.POST.getlist('areas_seleccionadas')
+        
+        # Validaciones
+        if not nombre_simulacion:
+            messages.error(request, 'El nombre de la simulación es obligatorio')
+            return render(request, 'usuarioJefa/simulador_inicio.html', {
+                'areas_disponibles': areas_disponibles
+            })
+        
+        if not areas_seleccionadas:
+            messages.error(request, 'Debes seleccionar al menos un área')
+            return render(request, 'usuarioJefa/simulador_inicio.html', {
+                'areas_disponibles': areas_disponibles
+            })
+        
+        try:
+            with transaction.atomic():
+                # Crear simulación
+                simulacion = SimulacionEvento.objects.create(
+                    nombre=nombre_simulacion,
+                    descripcion=descripcion,
+                    creada_por=request.user,
+                    total_areas=len(areas_seleccionadas)
+                )
+                
+                # Crear áreas simuladas
+                for area_id in areas_seleccionadas:
+                    area = get_object_or_404(AreaEspecialidad, id=area_id)
+                    AreaSimulada.objects.create(
+                        simulacion=simulacion,
+                        area_real=area
+                    )
+                
+                messages.success(request, f'Simulación "{nombre_simulacion}" creada. Ahora asigna enfermeros por área.')
+                return redirect('jefa:simulador_enfermeros', simulacion_id=simulacion.id)
+                
+        except Exception as e:
+            messages.error(request, f'Error al crear simulación: {str(e)}')
+    
+    return render(request, 'usuarioJefa/simulador_inicio.html', {
+        'areas_disponibles': areas_disponibles
+    })
+
+@login_required
+def simulador_enfermeros(request, simulacion_id):
+    """
+    Paso 2: Asignación de enfermeros por área
+    """
+    if request.user.tipoUsuario != 'JP':
+        messages.error(request, 'No tienes permisos para acceder al simulador')
+        return redirect('jefa:menu_jefa')
+    
+    simulacion = get_object_or_404(SimulacionEvento, id=simulacion_id, creada_por=request.user)
+    areas_simuladas = AreaSimulada.objects.filter(simulacion=simulacion).select_related('area_real')
+    enfermeros_disponibles = Usuarios.objects.filter(tipoUsuario='EN', estaActivo=True).order_by('username')
+    
+    if request.method == 'POST':
+        try:
+            with transaction.atomic():
+                # AGREGAR: Limpiar enfermeros simulados existentes
+                for area_simulada in areas_simuladas:
+                    EnfermeroSimulado.objects.filter(area_simulada=area_simulada).delete()
+        
+                total_enfermeros = 0
+                
+                for area_simulada in areas_simuladas:
+                    # Obtener cantidad y enfermeros seleccionados para esta área
+                    cantidad_key = f'cantidad_enfermeros_{area_simulada.id}'
+                    enfermeros_key = f'enfermeros_{area_simulada.id}'
+                    
+                    cantidad_enfermeros = int(request.POST.get(cantidad_key, 0))
+                    enfermeros_seleccionados = request.POST.getlist(enfermeros_key)
+                    
+                    # Validar que la cantidad coincida con los seleccionados
+                    if cantidad_enfermeros != len(enfermeros_seleccionados):
+                        messages.error(request, f'En {area_simulada.area_real.nombre}: selecciona exactamente {cantidad_enfermeros} enfermeros')
+                        return render(request, 'usuarioJefa/simulador_enfermeros.html', {
+                            'simulacion': simulacion,
+                            'areas_simuladas': areas_simuladas,
+                            'enfermeros_disponibles': enfermeros_disponibles
+                        })
+                    
+                    # Actualizar área simulada
+                    area_simulada.cantidad_enfermeros = cantidad_enfermeros
+                    area_simulada.save()
+                    
+                    # Crear enfermeros simulados
+                    for enfermero_id in enfermeros_seleccionados:
+                        enfermero = get_object_or_404(Usuarios, id=enfermero_id, tipoUsuario='EN')
+                        EnfermeroSimulado.objects.create(
+                            area_simulada=area_simulada,
+                            enfermero_real=enfermero
+                        )
+                    
+                    total_enfermeros += cantidad_enfermeros
+                
+                # Actualizar total en simulación
+                simulacion.total_enfermeros = total_enfermeros
+                simulacion.save()
+                
+                messages.success(request, 'Enfermeros asignados correctamente. Ahora define la cantidad de pacientes.')
+                return redirect('jefa:simulador_pacientes', simulacion_id=simulacion.id)
+                
+        except Exception as e:
+            messages.error(request, f'Error al asignar enfermeros: {str(e)}')
+    
+    return render(request, 'usuarioJefa/simulador_enfermeros.html', {
+        'simulacion': simulacion,
+        'areas_simuladas': areas_simuladas,
+        'enfermeros_disponibles': enfermeros_disponibles
+    })
+
+@login_required
+def simulador_pacientes(request, simulacion_id):
+    """
+    Paso 3: Definir cantidad de pacientes por área y generar pacientes simulados
+    """
+    if request.user.tipoUsuario != 'JP':
+        messages.error(request, 'No tienes permisos para acceder al simulador')
+        return redirect('jefa:menu_jefa')
+    
+    simulacion = get_object_or_404(SimulacionEvento, id=simulacion_id, creada_por=request.user)
+    areas_simuladas = AreaSimulada.objects.filter(simulacion=simulacion).select_related('area_real')
+    
+    if request.method == 'POST':
+        try:
+            with transaction.atomic():
+                total_pacientes = 0
+                
+                for area_simulada in areas_simuladas:
+                    cantidad_key = f'cantidad_pacientes_{area_simulada.id}'
+                    cantidad_pacientes = int(request.POST.get(cantidad_key, 0))
+                    
+                    if cantidad_pacientes < 0:
+                        messages.error(request, f'La cantidad de pacientes no puede ser negativa en {area_simulada.area_real.nombre}')
+                        return render(request, 'usuarioJefa/simulador_pacientes.html', {
+                            'simulacion': simulacion,
+                            'areas_simuladas': areas_simuladas
+                        })
+                    
+                    # Actualizar área simulada
+                    area_simulada.cantidad_pacientes = cantidad_pacientes
+                    area_simulada.ratio_pacientes_enfermero = (
+                        cantidad_pacientes / area_simulada.cantidad_enfermeros 
+                        if area_simulada.cantidad_enfermeros > 0 else 0
+                    )
+                    area_simulada.save()
+                    
+                    # Generar pacientes simulados
+                    for i in range(1, cantidad_pacientes + 1):
+                        PacienteSimulado.objects.create(
+                            area_simulada=area_simulada,
+                            nombre_simulado=f"Paciente {i}"
+                        )
+                    
+                    total_pacientes += cantidad_pacientes
+                
+                # Actualizar total en simulación
+                simulacion.total_pacientes = total_pacientes
+                simulacion.save()
+                
+                if total_pacientes > 0:
+                    messages.success(request, f'{total_pacientes} pacientes generados. Ahora asigna padecimientos.')
+                    return redirect('jefa:simulador_padecimientos', simulacion_id=simulacion.id)
+                else:
+                    messages.warning(request, 'Simulación creada sin pacientes. Puedes ver los resultados.')
+                    return redirect('jefa:simulador_resultados', simulacion_id=simulacion.id)
+                
+        except Exception as e:
+            messages.error(request, f'Error al generar pacientes: {str(e)}')
+    
+    return render(request, 'usuarioJefa/simulador_pacientes.html', {
+        'simulacion': simulacion,
+        'areas_simuladas': areas_simuladas
+    })
+
+@login_required
+def simulador_padecimientos(request, simulacion_id):
+    """
+    Paso 4: Asignar padecimientos a pacientes simulados
+    """
+    if request.user.tipoUsuario != 'JP':
+        messages.error(request, 'No tienes permisos para acceder al simulador')
+        return redirect('jefa:menu_jefa')
+    
+    simulacion = get_object_or_404(SimulacionEvento, id=simulacion_id, creada_por=request.user)
+    
+    # Obtener pacientes agrupados por área
+    areas_con_pacientes = []
+    for area_simulada in AreaSimulada.objects.filter(simulacion=simulacion).select_related('area_real'):
+        pacientes = PacienteSimulado.objects.filter(area_simulada=area_simulada)
+        if pacientes.exists():
+            areas_con_pacientes.append({
+                'area': area_simulada,
+                'pacientes': pacientes
+            })
+    
+    padecimientos_disponibles = Padecimiento.objects.filter(activo=True).order_by('nombre')
+    
+    if request.method == 'POST':
+        try:
+            with transaction.atomic():
+                # Procesar padecimientos para cada paciente
+                for area_info in areas_con_pacientes:
+                    for paciente in area_info['pacientes']:
+                        # Obtener padecimientos seleccionados para este paciente
+                        padecimientos_key = f'padecimientos_{paciente.id}'
+                        gravedad_key = f'gravedad_{paciente.id}'
+                        
+                        padecimientos_ids = request.POST.getlist(padecimientos_key)
+                        nivel_gravedad = int(request.POST.get(gravedad_key, 1))
+                        
+                        # Actualizar nivel de gravedad
+                        paciente.nivel_gravedad = nivel_gravedad
+                        paciente.save()
+                        
+                        # Crear padecimientos simulados
+                        for padecimiento_id in padecimientos_ids:
+                            padecimiento = get_object_or_404(Padecimiento, id=padecimiento_id)
+                            PadecimientoSimulado.objects.create(
+                                paciente_simulado=paciente,
+                                padecimiento=padecimiento
+                            )
+                
+                messages.success(request, 'Padecimientos asignados correctamente. Generando resultados...')
+                return redirect('jefa:simulador_resultados', simulacion_id=simulacion.id)
+                
+        except Exception as e:
+            messages.error(request, f'Error al asignar padecimientos: {str(e)}')
+    
+    return render(request, 'usuarioJefa/simulador_padecimientos.html', {
+        'simulacion': simulacion,
+        'areas_con_pacientes': areas_con_pacientes,
+        'padecimientos_disponibles': padecimientos_disponibles
+    })
+
+@login_required
+@login_required
+def simulador_resultados(request, simulacion_id):
+    """
+    Paso 5: Mostrar resultados de la simulación en tablas con distribución automática
+    """
+    if request.user.tipoUsuario != 'JP':
+        messages.error(request, 'No tienes permisos para acceder al simulador')
+        return redirect('jefa:menu_jefa')
+    
+    simulacion = get_object_or_404(SimulacionEvento, id=simulacion_id, creada_por=request.user)
+    
+    # Obtener datos de la simulación
+    areas_simuladas = AreaSimulada.objects.filter(simulacion=simulacion).select_related('area_real')
+    
+    # NUEVO: Distribuir pacientes automáticamente antes de mostrar resultados
+    distribuir_pacientes_automaticamente(simulacion)
+    
+    # Preparar datos para las tablas
+    resumen_areas = []
+    detalle_enfermeros = []
+    detalle_pacientes = []
+    
+    total_carga = 0
+    areas_con_datos = 0
+    
+    for area_simulada in areas_simuladas:
+        # Enfermeros del área
+        enfermeros = EnfermeroSimulado.objects.filter(area_simulada=area_simulada).select_related('enfermero_real')
+        
+        # Pacientes del área
+        pacientes = PacienteSimulado.objects.filter(area_simulada=area_simulada).prefetch_related('padecimientos__padecimiento')
+        
+        # Calcular métricas del área
+        if area_simulada.cantidad_enfermeros > 0:
+            carga_area = (area_simulada.cantidad_pacientes / area_simulada.cantidad_enfermeros) * 10  # Factor de 10 para porcentaje
+            total_carga += carga_area
+            areas_con_datos += 1
+        else:
+            carga_area = 0
+        
+        area_simulada.carga_trabajo_area = carga_area
+        area_simulada.save()
+        
+        # Agregar al resumen
+        resumen_areas.append({
+            'area': area_simulada,
+            'enfermeros_count': enfermeros.count(),
+            'pacientes_count': pacientes.count(),
+            'carga_trabajo': carga_area
+        })
+        
+        # Agregar enfermeros al detalle con pacientes asignados
+        for enfermero in enfermeros:
+            # Contar pacientes asignados a este enfermero
+            pacientes_asignados = PacienteSimulado.objects.filter(enfermero_asignado=enfermero).count()
+            
+            # Calcular carga individual
+            carga_individual = (pacientes_asignados / 6) * 100 if pacientes_asignados > 0 else 0  # Máximo 6 pacientes = 100%
+            
+            # Actualizar enfermero simulado
+            enfermero.pacientes_asignados = pacientes_asignados
+            enfermero.carga_trabajo_individual = carga_individual
+            enfermero.save()
+            
+            detalle_enfermeros.append(enfermero)
+        
+        # Agregar pacientes al detalle
+        for paciente in pacientes:
+            padecimientos_nombres = [p.padecimiento.nombre for p in paciente.padecimientos.all()]
+            detalle_pacientes.append({
+                'paciente': paciente,
+                'padecimientos': padecimientos_nombres,
+                'area': area_simulada.area_real.nombre
+            })
+    
+    # Calcular carga promedio general
+    carga_promedio = total_carga / areas_con_datos if areas_con_datos > 0 else 0
+    simulacion.carga_trabajo_promedio = carga_promedio
+    simulacion.save()
+    
+    context = {
+        'simulacion': simulacion,
+        'resumen_areas': resumen_areas,
+        'detalle_enfermeros': detalle_enfermeros,
+        'detalle_pacientes': detalle_pacientes,
+        'carga_promedio': carga_promedio
+    }
+    
+    return render(request, 'usuarioJefa/simulador_resultados.html', context)
+
+def distribuir_pacientes_automaticamente(simulacion):
+    """
+    Distribuye automáticamente los pacientes simulados entre los enfermeros disponibles
+    respetando los límites de gravedad
+    """
+    areas_simuladas = AreaSimulada.objects.filter(simulacion=simulacion)
+    
+    for area_simulada in areas_simuladas:
+        # Obtener enfermeros y pacientes del área
+        enfermeros = list(EnfermeroSimulado.objects.filter(area_simulada=area_simulada))
+        pacientes = list(PacienteSimulado.objects.filter(area_simulada=area_simulada).order_by('-nivel_gravedad'))
+        
+        if not enfermeros or not pacientes:
+            continue
+        
+        # Limpiar asignaciones anteriores
+        PacienteSimulado.objects.filter(area_simulada=area_simulada).update(enfermero_asignado=None)
+        
+        # Inicializar contadores para cada enfermero
+        enfermeros_carga = {}
+        for enfermero in enfermeros:
+            enfermeros_carga[enfermero.id] = {
+                'enfermero': enfermero,
+                'gravedad_1': 0,  # Máximo 3
+                'gravedad_2': 0,  # Máximo 2
+                'gravedad_3': 0,  # Máximo 1
+                'total': 0
+            }
+        
+        # Distribuir pacientes respetando límites de gravedad
+        for paciente in pacientes:
+            mejor_enfermero = None
+            menor_carga = float('inf')
+            
+            # Buscar el enfermero con menos carga que pueda tomar este paciente
+            for enfermero_id, carga in enfermeros_carga.items():
+                puede_tomar = False
+                
+                if paciente.nivel_gravedad == 3 and carga['gravedad_3'] < 1:
+                    puede_tomar = True
+                elif paciente.nivel_gravedad == 2 and carga['gravedad_2'] < 2:
+                    puede_tomar = True
+                elif paciente.nivel_gravedad == 1 and carga['gravedad_1'] < 3:
+                    puede_tomar = True
+                
+                if puede_tomar and carga['total'] < menor_carga:
+                    menor_carga = carga['total']
+                    mejor_enfermero = enfermero_id
+            
+            # Asignar paciente al mejor enfermero
+            if mejor_enfermero:
+                enfermero_obj = enfermeros_carga[mejor_enfermero]['enfermero']
+                paciente.enfermero_asignado = enfermero_obj
+                paciente.save()
+                
+                # Actualizar contadores
+                enfermeros_carga[mejor_enfermero][f'gravedad_{paciente.nivel_gravedad}'] += 1
+                enfermeros_carga[mejor_enfermero]['total'] += 1
+            else:
+                # Si no se puede asignar, dejar sin asignar
+                print(f"No se pudo asignar paciente {paciente.nombre_simulado} de gravedad {paciente.nivel_gravedad}")
+
+@login_required
+def lista_simulaciones(request):
+    """
+    Lista todas las simulaciones creadas
+    """
+    if request.user.tipoUsuario != 'JP':
+        messages.error(request, 'No tienes permisos para acceder al simulador')
+        return redirect('jefa:menu_jefa')
+    
+    simulaciones = SimulacionEvento.objects.all().order_by('-fecha_creacion')
+    
+    return render(request, 'usuarioJefa/lista_simulaciones.html', {
+        'simulaciones': simulaciones
+    })

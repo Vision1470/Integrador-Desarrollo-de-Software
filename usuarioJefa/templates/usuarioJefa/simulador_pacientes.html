@@ -1,0 +1,544 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Simulador de Eventos - Definición de Pacientes</title>
+    <style>
+        :root {
+            --primary-color: #0A2342;
+            --secondary-color: #2E4057;
+            --accent-color: #1E90FF;
+            --background-color: #EBF0F5;
+            --white: #FFFFFF;
+            --border-color: #D1D1D1;
+            --success-color: #28a745;
+            --text-color: #333333;
+            --warning-color: #ffc107;
+            --info-color: #17a2b8;
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: 'Roboto', 'Arial', sans-serif;
+        }
+
+        body {
+            background-color: var(--background-color);
+            color: var(--text-color);
+            line-height: 1.6;
+            padding: 20px;
+        }
+
+        .container {
+            background-color: var(--white);
+            border-radius: 8px;
+            box-shadow: 0 15px 30px rgba(0,0,0,0.15);
+            padding: 30px;
+            max-width: 1200px;
+            margin: 0 auto;
+            border-left: 5px solid var(--primary-color);
+        }
+
+        .header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 30px;
+            border-bottom: 2px solid var(--primary-color);
+            padding-bottom: 15px;
+        }
+
+        .header h1 {
+            font-size: 2rem;
+            color: var(--primary-color);
+            font-weight: 700;
+        }
+
+        .menu-button {
+            background-color: var(--secondary-color);
+            color: var(--white);
+            text-decoration: none;
+            padding: 10px 15px;
+            border-radius: 4px;
+            font-weight: 600;
+            text-transform: uppercase;
+            transition: background-color 0.3s ease;
+            margin-left: 10px;
+        }
+
+        .menu-button:hover {
+            background-color: var(--accent-color);
+        }
+
+        .info-box {
+            background-color: #e7f3ff;
+            border: 1px solid var(--accent-color);
+            border-radius: 4px;
+            padding: 15px;
+            margin-bottom: 20px;
+        }
+
+        .info-box h4 {
+            color: var(--primary-color);
+            margin-bottom: 8px;
+        }
+
+        .simulacion-info {
+            background-color: #f8f9fa;
+            border: 1px solid var(--border-color);
+            border-radius: 4px;
+            padding: 15px;
+            margin-bottom: 30px;
+        }
+
+        .simulacion-info h3 {
+            color: var(--primary-color);
+            margin-bottom: 10px;
+        }
+
+        .stats-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+            gap: 15px;
+            margin-top: 15px;
+        }
+
+        .stat-card {
+            background-color: var(--info-color);
+            color: var(--white);
+            padding: 15px;
+            border-radius: 4px;
+            text-align: center;
+        }
+
+        .stat-number {
+            font-size: 1.8rem;
+            font-weight: 700;
+            display: block;
+        }
+
+        .stat-label {
+            font-size: 0.9rem;
+            margin-top: 5px;
+        }
+
+        .area-section {
+            margin-bottom: 30px;
+            border: 2px solid var(--border-color);
+            border-radius: 8px;
+            overflow: hidden;
+        }
+
+        .area-header {
+            background-color: var(--primary-color);
+            color: var(--white);
+            padding: 15px 20px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .area-title {
+            font-weight: 600;
+            font-size: 1.1rem;
+        }
+
+        .area-enfermeros {
+            font-size: 0.9rem;
+            opacity: 0.9;
+        }
+
+        .area-content {
+            padding: 20px;
+            background-color: var(--white);
+        }
+
+        .form-group {
+            margin-bottom: 20px;
+        }
+
+        .form-label {
+            display: block;
+            margin-bottom: 8px;
+            font-weight: 600;
+            color: var(--primary-color);
+        }
+
+        .input-group {
+            display: flex;
+            align-items: center;
+            gap: 15px;
+            flex-wrap: wrap;
+        }
+
+        input[type="number"] {
+            width: 120px;
+            padding: 12px;
+            border: 1px solid var(--border-color);
+            border-radius: 4px;
+            font-size: 1rem;
+            text-align: center;
+        }
+
+        .input-buttons {
+            display: flex;
+            gap: 5px;
+        }
+
+        .btn-adjust {
+            background-color: var(--secondary-color);
+            color: var(--white);
+            border: none;
+            padding: 8px 12px;
+            border-radius: 4px;
+            cursor: pointer;
+            font-weight: 600;
+            transition: background-color 0.3s ease;
+        }
+
+        .btn-adjust:hover {
+            background-color: var(--accent-color);
+        }
+
+        .ratio-info {
+            background-color: #f8f9fa;
+            border: 1px solid var(--border-color);
+            border-radius: 4px;
+            padding: 12px;
+            margin-top: 10px;
+        }
+
+        .ratio-good {
+            border-color: var(--success-color);
+            background-color: #d4edda;
+        }
+
+        .ratio-warning {
+            border-color: var(--warning-color);
+            background-color: #fff3cd;
+        }
+
+        .ratio-danger {
+            border-color: #dc3545;
+            background-color: #f8d7da;
+        }
+
+        .ratio-text {
+            font-weight: 600;
+            margin-bottom: 4px;
+        }
+
+        .ratio-desc {
+            font-size: 0.9rem;
+            color: #666;
+        }
+
+        .totals-section {
+            background-color: var(--primary-color);
+            color: var(--white);
+            padding: 20px;
+            border-radius: 8px;
+            margin: 30px 0;
+        }
+
+        .totals-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+            gap: 20px;
+        }
+
+        .total-item {
+            text-align: center;
+        }
+
+        .total-number {
+            font-size: 2rem;
+            font-weight: 700;
+            display: block;
+        }
+
+        .total-label {
+            font-size: 0.9rem;
+            opacity: 0.9;
+            margin-top: 5px;
+        }
+
+        .submit-button {
+            background-color: var(--success-color);
+            color: var(--white);
+            padding: 15px 30px;
+            border: none;
+            border-radius: 4px;
+            font-size: 1.1rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: background-color 0.3s ease;
+            width: 100%;
+            text-transform: uppercase;
+            margin-top: 20px;
+        }
+
+        .submit-button:hover {
+            background-color: #218838;
+        }
+
+        .messages {
+            margin-bottom: 20px;
+        }
+
+        .messages .alert {
+            padding: 12px 15px;
+            border-radius: 4px;
+            margin-bottom: 10px;
+        }
+
+        .messages .alert-success {
+            background-color: #d4edda;
+            border: 1px solid #c3e6cb;
+            color: #155724;
+        }
+
+        .messages .alert-error {
+            background-color: #f8d7da;
+            border: 1px solid #f5c6cb;
+            color: #721c24;
+        }
+
+        @media (max-width: 768px) {
+            .container {
+                padding: 15px;
+            }
+            
+            .header {
+                flex-direction: column;
+                gap: 15px;
+            }
+            
+            .area-header {
+                flex-direction: column;
+                align-items: flex-start;
+                gap: 5px;
+            }
+            
+            .input-group {
+                flex-direction: column;
+                align-items: flex-start;
+            }
+            
+            input[type="number"] {
+                width: 100%;
+            }
+            
+            .stats-grid,
+            .totals-grid {
+                grid-template-columns: 1fr 1fr;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <!-- Header -->
+        <div class="header">
+            <h1>Simulador de Eventos - Definición de Pacientes</h1>
+            <div>
+                <a href="{% url 'jefa:lista_simulaciones' %}" class="menu-button">Ver Simulaciones</a>
+                <a href="{% url 'jefa:menu_jefa' %}" class="menu-button">Menú Principal</a>
+            </div>
+        </div>
+
+        <!-- Mensajes -->
+        {% if messages %}
+        <div class="messages">
+            {% for message in messages %}
+            <div class="alert alert-{{ message.tags }}">
+                {{ message }}
+            </div>
+            {% endfor %}
+        </div>
+        {% endif %}
+
+        <!-- Información de la simulación -->
+        <div class="simulacion-info">
+            <h3>Simulación: {{ simulacion.nombre }}</h3>
+            <p><strong>Descripción:</strong> {{ simulacion.descripcion|default:"Sin descripción" }}</p>
+            
+            <div class="stats-grid">
+                <div class="stat-card">
+                    <span class="stat-number">{{ simulacion.total_areas }}</span>
+                    <span class="stat-label">Áreas</span>
+                </div>
+                <div class="stat-card">
+                    <span class="stat-number">{{ simulacion.total_enfermeros }}</span>
+                    <span class="stat-label">Enfermeros</span>
+                </div>
+            </div>
+        </div>
+
+        <!-- Información del paso -->
+        <div class="info-box">
+            <h4>Paso 3 de 4: Definición de Pacientes</h4>
+            <p>Define cuántos pacientes habrá en cada área. El sistema generará automáticamente pacientes simulados (Paciente 1, Paciente 2, etc.) que podrás configurar en el siguiente paso.</p>
+        </div>
+
+        <!-- Formulario -->
+        <form method="post" id="form-pacientes">
+            {% csrf_token %}
+            
+            {% for area_simulada in areas_simuladas %}
+            <div class="area-section">
+                <div class="area-header">
+                    <div class="area-title">{{ area_simulada.area_real.nombre }}</div>
+                    <div class="area-enfermeros">{{ area_simulada.cantidad_enfermeros }} enfermeros asignados</div>
+                </div>
+                
+                <div class="area-content">
+                    <div class="form-group">
+                        <label class="form-label" for="cantidad_pacientes_{{ area_simulada.id }}">
+                            Cantidad de pacientes en esta área:
+                        </label>
+                        
+                        <div class="input-group">
+                            <input type="number" 
+                                   id="cantidad_pacientes_{{ area_simulada.id }}"
+                                   name="cantidad_pacientes_{{ area_simulada.id }}" 
+                                   min="0" 
+                                   max="50"
+                                   value="6"
+                                   onchange="calcularRatio({{ area_simulada.id }}, {{ area_simulada.cantidad_enfermeros }})">
+                            
+                            <div class="input-buttons">
+                                <button type="button" class="btn-adjust" onclick="ajustarPacientes({{ area_simulada.id }}, -1)">-1</button>
+                                <button type="button" class="btn-adjust" onclick="ajustarPacientes({{ area_simulada.id }}, 1)">+1</button>
+                                <button type="button" class="btn-adjust" onclick="ajustarPacientes({{ area_simulada.id }}, 5)">+5</button>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Información de ratio -->
+                    <div class="ratio-info" id="ratio_{{ area_simulada.id }}">
+                        <div class="ratio-text">Ratio: 0 pacientes por enfermero</div>
+                        <div class="ratio-desc">Carga de trabajo: Vacía</div>
+                    </div>
+                </div>
+            </div>
+            {% endfor %}
+
+            <!-- Totales -->
+            <div class="totals-section">
+                <h3 style="text-align: center; margin-bottom: 20px;">Resumen de la Simulación</h3>
+                <div class="totals-grid">
+                    <div class="total-item">
+                        <span class="total-number" id="total-areas">{{ simulacion.total_areas }}</span>
+                        <span class="total-label">Áreas Activas</span>
+                    </div>
+                    <div class="total-item">
+                        <span class="total-number" id="total-enfermeros">{{ simulacion.total_enfermeros }}</span>
+                        <span class="total-label">Enfermeros</span>
+                    </div>
+                    <div class="total-item">
+                        <span class="total-number" id="total-pacientes">0</span>
+                        <span class="total-label">Pacientes</span>
+                    </div>
+                    <div class="total-item">
+                        <span class="total-number" id="ratio-promedio">0.0</span>
+                        <span class="total-label">Ratio Promedio</span>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Botón de envío -->
+            <button type="submit" class="submit-button">
+                Continuar al Paso 4: Asignar Padecimientos
+            </button>
+        </form>
+    </div>
+
+    <script>
+        function ajustarPacientes(areaId, incremento) {
+            const input = document.getElementById(`cantidad_pacientes_${areaId}`);
+            let valor = parseInt(input.value) || 0;
+            valor = Math.max(0, Math.min(50, valor + incremento));
+            input.value = valor;
+    
+            // Disparar evento change para que se ejecute calcularRatio
+            input.dispatchEvent(new Event('change'));
+        }
+
+        function calcularRatio(areaId, cantidadEnfermeros) {
+    const input = document.getElementById(`cantidad_pacientes_${areaId}`);
+    const ratioDiv = document.getElementById(`ratio_${areaId}`);
+    
+    const cantidadPacientes = parseInt(input.value) || 0;
+    const ratio = cantidadEnfermeros > 0 ? (cantidadPacientes / cantidadEnfermeros).toFixed(1) : 0;
+    
+    // Determinar el estado del ratio
+    let estado, descripcion, claseCSS;
+    
+    if (ratio == 0) {
+        estado = "Vacía";
+        descripcion = "No hay pacientes asignados";
+        claseCSS = "ratio-info";
+    } else if (ratio <= 2) {
+        estado = "Baja";
+        descripcion = "Carga de trabajo ligera";
+        claseCSS = "ratio-info ratio-good";
+    } else if (ratio <= 4) {
+        estado = "Normal";
+        descripcion = "Carga de trabajo adecuada";
+        claseCSS = "ratio-info ratio-good";
+    } else if (ratio <= 6) {
+        estado = "Alta";
+        descripcion = "Carga de trabajo elevada";
+        claseCSS = "ratio-info ratio-warning";
+    } else {
+        estado = "Crítica";
+        descripcion = "Carga de trabajo excesiva";
+        claseCSS = "ratio-info ratio-danger";
+    }
+    
+    ratioDiv.className = claseCSS;
+    ratioDiv.innerHTML = `
+        <div class="ratio-text">Ratio: ${ratio} pacientes por enfermero</div>
+        <div class="ratio-desc">Carga de trabajo: ${estado} - ${descripcion}</div>
+    `;
+    
+    // Actualizar totales
+    actualizarTotales();
+}
+
+        function actualizarTotales() {
+            let totalPacientes = 0;
+            let totalRatios = 0;
+            let areasConEnfermeros = 0;
+
+            {% for area_simulada in areas_simuladas %}
+            const pacientes{{ area_simulada.id }} = parseInt(document.getElementById('cantidad_pacientes_{{ area_simulada.id }}').value) || 0;
+            totalPacientes += pacientes{{ area_simulada.id }};
+            
+            {% if area_simulada.cantidad_enfermeros > 0 %}
+            const ratio{{ area_simulada.id }} = pacientes{{ area_simulada.id }} / {{ area_simulada.cantidad_enfermeros }};
+            totalRatios += ratio{{ area_simulada.id }};
+            areasConEnfermeros++;
+            {% endif %}
+            {% endfor %}
+
+            const ratioPromedio = areasConEnfermeros > 0 ? (totalRatios / areasConEnfermeros).toFixed(1) : 0;
+
+            document.getElementById('total-pacientes').textContent = totalPacientes;
+            document.getElementById('ratio-promedio').textContent = ratioPromedio;
+        }
+
+        // Inicializar cálculos al cargar la página
+        document.addEventListener('DOMContentLoaded', function() {
+            {% for area_simulada in areas_simuladas %}
+            calcularRatio({{ area_simulada.id }}, {{ area_simulada.cantidad_enfermeros }});
+            {% endfor %}
+        });
+    </script>
+</body>
+</html>

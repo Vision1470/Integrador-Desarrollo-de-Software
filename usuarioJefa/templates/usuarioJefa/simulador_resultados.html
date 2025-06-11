@@ -1,0 +1,714 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Simulador de Eventos - Resultados</title>
+    <style>
+        :root {
+            --primary-color: #0A2342;
+            --secondary-color: #2E4057;
+            --accent-color: #1E90FF;
+            --background-color: #EBF0F5;
+            --white: #FFFFFF;
+            --border-color: #D1D1D1;
+            --success-color: #28a745;
+            --text-color: #333333;
+            --warning-color: #ffc107;
+            --danger-color: #dc3545;
+            --info-color: #17a2b8;
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: 'Roboto', 'Arial', sans-serif;
+        }
+
+        body {
+            background-color: var(--background-color);
+            color: var(--text-color);
+            line-height: 1.6;
+            padding: 20px;
+        }
+
+        .container {
+            background-color: var(--white);
+            border-radius: 8px;
+            box-shadow: 0 15px 30px rgba(0,0,0,0.15);
+            padding: 30px;
+            max-width: 1400px;
+            margin: 0 auto;
+            border-left: 5px solid var(--primary-color);
+        }
+
+        .header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 30px;
+            border-bottom: 2px solid var(--primary-color);
+            padding-bottom: 15px;
+        }
+
+        .header h1 {
+            font-size: 2rem;
+            color: var(--primary-color);
+            font-weight: 700;
+        }
+
+        .menu-button {
+            background-color: var(--secondary-color);
+            color: var(--white);
+            text-decoration: none;
+            padding: 10px 15px;
+            border-radius: 4px;
+            font-weight: 600;
+            text-transform: uppercase;
+            transition: background-color 0.3s ease;
+            margin-left: 10px;
+        }
+
+        .menu-button:hover {
+            background-color: var(--accent-color);
+        }
+
+        .menu-button.primary {
+            background-color: var(--success-color);
+        }
+
+        .menu-button.primary:hover {
+            background-color: #218838;
+        }
+
+        .simulacion-header {
+            background-color: var(--primary-color);
+            color: var(--white);
+            padding: 20px;
+            border-radius: 8px;
+            margin-bottom: 30px;
+        }
+
+        .simulacion-title {
+            font-size: 1.5rem;
+            font-weight: 700;
+            margin-bottom: 10px;
+        }
+
+        .simulacion-meta {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 15px;
+            margin-top: 15px;
+        }
+
+        .meta-item {
+            background-color: rgba(255, 255, 255, 0.1);
+            padding: 10px;
+            border-radius: 4px;
+        }
+
+        .meta-label {
+            font-size: 0.9rem;
+            opacity: 0.8;
+            margin-bottom: 5px;
+        }
+
+        .meta-value {
+            font-size: 1.1rem;
+            font-weight: 600;
+        }
+
+        .section {
+            margin-bottom: 40px;
+        }
+
+        .section-title {
+            background-color: var(--secondary-color);
+            color: var(--white);
+            padding: 15px 20px;
+            margin-bottom: 0;
+            font-size: 1.3rem;
+            font-weight: 600;
+            border-radius: 8px 8px 0 0;
+        }
+
+        .section-content {
+            border: 2px solid var(--secondary-color);
+            border-top: none;
+            border-radius: 0 0 8px 8px;
+            overflow: hidden;
+        }
+
+        .resumen-table {
+            width: 100%;
+            border-collapse: collapse;
+        }
+
+        .resumen-table th {
+            background-color: var(--accent-color);
+            color: var(--white);
+            padding: 12px;
+            text-align: left;
+            font-weight: 600;
+        }
+
+        .resumen-table td {
+            padding: 12px;
+            border-bottom: 1px solid var(--border-color);
+        }
+
+        .resumen-table tr:nth-child(even) {
+            background-color: #f8f9fa;
+        }
+
+        .resumen-table tr:hover {
+            background-color: #e6f3ff;
+        }
+
+        .carga-bar {
+            width: 100%;
+            height: 20px;
+            background-color: #e9ecef;
+            border-radius: 10px;
+            overflow: hidden;
+            margin-top: 5px;
+        }
+
+        .carga-fill {
+            height: 100%;
+            transition: width 0.3s ease;
+            border-radius: 10px;
+        }
+
+        .carga-baja {
+            background-color: var(--success-color);
+        }
+
+        .carga-normal {
+            background-color: var(--info-color);
+        }
+
+        .carga-alta {
+            background-color: var(--warning-color);
+        }
+
+        .carga-critica {
+            background-color: var(--danger-color);
+        }
+
+        .status-badge {
+            padding: 4px 8px;
+            border-radius: 4px;
+            font-size: 0.8rem;
+            font-weight: 600;
+            text-transform: uppercase;
+        }
+
+        .status-normal {
+            background-color: var(--success-color);
+            color: var(--white);
+        }
+
+        .status-alto {
+            background-color: var(--warning-color);
+            color: #000;
+        }
+
+        .status-critico {
+            background-color: var(--danger-color);
+            color: var(--white);
+        }
+
+        .detalle-table {
+            width: 100%;
+            border-collapse: collapse;
+            font-size: 0.9rem;
+        }
+
+        .detalle-table th {
+            background-color: var(--info-color);
+            color: var(--white);
+            padding: 10px;
+            text-align: left;
+            font-weight: 600;
+        }
+
+        .detalle-table td {
+            padding: 10px;
+            border-bottom: 1px solid var(--border-color);
+        }
+
+        .detalle-table tr:nth-child(even) {
+            background-color: #f8f9fa;
+        }
+
+        .gravedad-badge {
+            padding: 2px 6px;
+            border-radius: 3px;
+            font-size: 0.75rem;
+            font-weight: 600;
+            text-transform: uppercase;
+        }
+
+        .gravedad-1 {
+            background-color: #d4edda;
+            color: #155724;
+        }
+
+        .gravedad-2 {
+            background-color: #fff3cd;
+            color: #856404;
+        }
+
+        .gravedad-3 {
+            background-color: #f8d7da;
+            color: #721c24;
+        }
+
+        .padecimientos-list {
+            max-width: 300px;
+        }
+
+        .padecimiento-tag {
+            display: inline-block;
+            background-color: #e7f3ff;
+            color: var(--primary-color);
+            padding: 2px 6px;
+            border-radius: 3px;
+            font-size: 0.75rem;
+            margin: 1px;
+        }
+
+        .summary-cards {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 20px;
+            margin-bottom: 30px;
+        }
+
+        .summary-card {
+            background-color: var(--white);
+            border: 2px solid var(--border-color);
+            border-radius: 8px;
+            padding: 20px;
+            text-align: center;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+
+        .summary-card.highlight {
+            border-color: var(--accent-color);
+            background-color: #e7f3ff;
+        }
+
+        .summary-number {
+            font-size: 2.5rem;
+            font-weight: 700;
+            color: var(--primary-color);
+            display: block;
+            margin-bottom: 5px;
+        }
+
+        .summary-label {
+            font-size: 1rem;
+            color: var(--text-color);
+            font-weight: 500;
+        }
+
+        .actions-section {
+            background-color: #f8f9fa;
+            border: 1px solid var(--border-color);
+            border-radius: 8px;
+            padding: 20px;
+            margin-top: 30px;
+        }
+
+        .actions-title {
+            color: var(--primary-color);
+            font-size: 1.2rem;
+            font-weight: 600;
+            margin-bottom: 15px;
+        }
+
+        .actions-buttons {
+            display: flex;
+            gap: 15px;
+            flex-wrap: wrap;
+        }
+
+        .action-button {
+            background-color: var(--accent-color);
+            color: var(--white);
+            text-decoration: none;
+            padding: 12px 20px;
+            border-radius: 4px;
+            font-weight: 600;
+            transition: background-color 0.3s ease;
+            border: none;
+            cursor: pointer;
+        }
+
+        .action-button:hover {
+            background-color: #0056b3;
+        }
+
+        .action-button.secondary {
+            background-color: var(--secondary-color);
+        }
+
+        .action-button.secondary:hover {
+            background-color: #1c2a3a;
+        }
+
+        .messages {
+            margin-bottom: 20px;
+        }
+
+        .messages .alert {
+            padding: 12px 15px;
+            border-radius: 4px;
+            margin-bottom: 10px;
+        }
+
+        .messages .alert-success {
+            background-color: #d4edda;
+            border: 1px solid #c3e6cb;
+            color: #155724;
+        }
+
+        .messages .alert-error {
+            background-color: #f8d7da;
+            border: 1px solid #f5c6cb;
+            color: #721c24;
+        }
+
+        @media (max-width: 768px) {
+            .container {
+                padding: 15px;
+            }
+            
+            .header {
+                flex-direction: column;
+                gap: 15px;
+            }
+            
+            .simulacion-meta {
+                grid-template-columns: 1fr;
+            }
+            
+            .summary-cards {
+                grid-template-columns: 1fr 1fr;
+            }
+            
+            .resumen-table,
+            .detalle-table {
+                font-size: 0.8rem;
+            }
+            
+            .resumen-table th,
+            .resumen-table td,
+            .detalle-table th,
+            .detalle-table td {
+                padding: 8px;
+            }
+            
+            .actions-buttons {
+                flex-direction: column;
+            }
+            
+            .action-button {
+                text-align: center;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <!-- Header -->
+        <div class="header">
+            <h1>Resultados de la Simulación</h1>
+            <div>
+                <a href="{% url 'jefa:simulador_inicio' %}" class="menu-button primary">Nueva Simulación</a>
+                <a href="{% url 'jefa:lista_simulaciones' %}" class="menu-button">Ver Simulaciones</a>
+                <a href="{% url 'jefa:menu_jefa' %}" class="menu-button">Menú Principal</a>
+            </div>
+        </div>
+
+        <!-- Mensajes -->
+        {% if messages %}
+        <div class="messages">
+            {% for message in messages %}
+            <div class="alert alert-{{ message.tags }}">
+                {{ message }}
+            </div>
+            {% endfor %}
+        </div>
+        {% endif %}
+
+        <!-- Información de la simulación -->
+        <div class="simulacion-header">
+            <div class="simulacion-title">{{ simulacion.nombre }}</div>
+            <p>{{ simulacion.descripcion|default:"Sin descripción" }}</p>
+            
+            <div class="simulacion-meta">
+                <div class="meta-item">
+                    <div class="meta-label">Fecha de Creación</div>
+                    <div class="meta-value">{{ simulacion.fecha_creacion|date:"d/m/Y H:i" }}</div>
+                </div>
+                <div class="meta-item">
+                    <div class="meta-label">Creada por</div>
+                    <div class="meta-value">{{ simulacion.creada_por.first_name }} {{ simulacion.creada_por.apellidos }}</div>
+                </div>
+                <div class="meta-item">
+                    <div class="meta-label">Estado</div>
+                    <div class="meta-value">{% if simulacion.activa %}Activa{% else %}Inactiva{% endif %}</div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Resumen General -->
+        <div class="summary-cards">
+            <div class="summary-card highlight">
+                <span class="summary-number">{{ simulacion.total_areas }}</span>
+                <span class="summary-label">Áreas Simuladas</span>
+            </div>
+            <div class="summary-card">
+                <span class="summary-number">{{ simulacion.total_enfermeros }}</span>
+                <span class="summary-label">Enfermeros Asignados</span>
+            </div>
+            <div class="summary-card">
+                <span class="summary-number">{{ simulacion.total_pacientes }}</span>
+                <span class="summary-label">Pacientes Simulados</span>
+            </div>
+            <div class="summary-card highlight">
+                <span class="summary-number">{{ carga_promedio|floatformat:1 }}</span>
+                <span class="summary-label">Carga Promedio</span>
+            </div>
+        </div>
+
+        <!-- Resumen por Áreas -->
+        <div class="section">
+            <div class="section-title">Resumen por Áreas</div>
+            <div class="section-content">
+                <table class="resumen-table">
+                    <thead>
+                        <tr>
+                            <th>Área</th>
+                            <th>Enfermeros</th>
+                            <th>Pacientes</th>
+                            <th>Ratio P/E</th>
+                            <th>Carga de Trabajo</th>
+                            <th>Estado</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for area_data in resumen_areas %}
+                        <tr>
+                            <td><strong>{{ area_data.area.area_real.nombre }}</strong></td>
+                            <td>{{ area_data.enfermeros_count }}</td>
+                            <td>{{ area_data.pacientes_count }}</td>
+                            <td>{{ area_data.area.ratio_pacientes_enfermero|floatformat:1 }}</td>
+                            <td>
+                                <div style="display: flex; align-items: center; gap: 10px;">
+                                    <span>{{ area_data.carga_trabajo|floatformat:1 }}%</span>
+                                    <div class="carga-bar" style="flex-grow: 1;">
+                                        <div class="carga-fill 
+                                            {% if area_data.carga_trabajo <= 30 %}carga-baja
+                                            {% elif area_data.carga_trabajo <= 60 %}carga-normal
+                                            {% elif area_data.carga_trabajo <= 80 %}carga-alta
+                                            {% else %}carga-critica{% endif %}"
+                                            style="width: {{ area_data.carga_trabajo|floatformat:0 }}%;">
+                                        </div>
+                                    </div>
+                                </div>
+                            </td>
+                            <td>
+                                {% if area_data.carga_trabajo <= 60 %}
+                                    <span class="status-badge status-normal">Normal</span>
+                                {% elif area_data.carga_trabajo <= 80 %}
+                                    <span class="status-badge status-alto">Alto</span>
+                                {% else %}
+                                    <span class="status-badge status-critico">Crítico</span>
+                                {% endif %}
+                            </td>
+                        </tr>
+                        {% empty %}
+                        <tr>
+                            <td colspan="6" style="text-align: center; color: #666; font-style: italic;">
+                                No hay áreas configuradas en esta simulación
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+
+        <!-- Detalle de Enfermeros -->
+        <div class="section">
+            <div class="section-title">Detalle de Enfermeros</div>
+            <div class="section-content">
+                <table class="detalle-table">
+                    <thead>
+                        <tr>
+                            <th>Enfermero</th>
+                            <th>Área Asignada</th>
+                            <th>Especialidad</th>
+                            <th>Pacientes Asignados</th>
+                            <th>Carga Individual</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for enfermero in detalle_enfermeros %}
+                        <tr>
+                            <td>
+                                <strong>{{ enfermero.enfermero_real.first_name }} {{ enfermero.enfermero_real.apellidos }}</strong>
+                                <br>
+                                <small style="color: #666;">{{ enfermero.enfermero_real.username }}</small>
+                            </td>
+                            <td>{{ enfermero.area_simulada.area_real.nombre }}</td>
+                            <td>
+                                {% if enfermero.enfermero_real.areaEspecialidad %}
+                                    {{ enfermero.enfermero_real.areaEspecialidad.nombre }}
+                                {% else %}
+                                    <span style="color: #666; font-style: italic;">Sin especialidad</span>
+                                {% endif %}
+                            </td>
+                            <td style="text-align: center;">{{ enfermero.pacientes_asignados }}</td>
+                            <td>
+                                <div style="display: flex; align-items: center; gap: 8px;">
+                                    <span>{{ enfermero.carga_trabajo_individual|floatformat:1 }}%</span>
+                                    <div class="carga-bar" style="width: 60px;">
+                                        <div class="carga-fill 
+                                            {% if enfermero.carga_trabajo_individual <= 30 %}carga-baja
+                                            {% elif enfermero.carga_trabajo_individual <= 60 %}carga-normal
+                                            {% elif enfermero.carga_trabajo_individual <= 80 %}carga-alta
+                                            {% else %}carga-critica{% endif %}"
+                                            style="width: {{ enfermero.carga_trabajo_individual|floatformat:0 }}%;">
+                                        </div>
+                                    </div>
+                                </div>
+                            </td>
+                        </tr>
+                        {% empty %}
+                        <tr>
+                            <td colspan="5" style="text-align: center; color: #666; font-style: italic;">
+                                No hay enfermeros configurados en esta simulación
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+
+        <!-- Detalle de Pacientes -->
+        <div class="section">
+            <div class="section-title">Detalle de Pacientes</div>
+            <div class="section-content">
+                <table class="detalle-table">
+                    <thead>
+                        <tr>
+                            <th>Paciente</th>
+                            <th>Área</th>
+                            <th>Enfermero Asignado</th>
+                            <th>Gravedad</th>
+                            <th>Padecimientos</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for paciente_data in detalle_pacientes %}
+                        <tr>
+                            <td><strong>{{ paciente_data.paciente.nombre_simulado }}</strong></td>
+                            <td>{{ paciente_data.area }}</td>
+                            <td>
+                                {% if paciente_data.paciente.enfermero_asignado %}
+                                    <strong>{{ paciente_data.paciente.enfermero_asignado.enfermero_real.first_name }} {{ paciente_data.paciente.enfermero_asignado.enfermero_real.apellidos }}</strong>
+                                    <br>
+                                    <small style="color: #666;">{{ paciente_data.paciente.enfermero_asignado.enfermero_real.username }}</small>
+                                {% else %}
+                                    <span style="color: #dc3545; font-style: italic;">Sin asignar</span>
+                                {% endif %}
+                            </td>
+                            <td>
+                                <span class="gravedad-badge gravedad-{{ paciente_data.paciente.nivel_gravedad }}">
+                                    {% if paciente_data.paciente.nivel_gravedad == 1 %}Leve
+                                    {% elif paciente_data.paciente.nivel_gravedad == 2 %}Moderado
+                                    {% else %}Grave{% endif %}
+                                </span>
+                            </td>
+                            <td class="padecimientos-list">
+                                {% if paciente_data.padecimientos %}
+                                    {% for padecimiento in paciente_data.padecimientos %}
+                                        <span class="padecimiento-tag">{{ padecimiento }}</span>
+                                    {% endfor %}
+                                {% else %}
+                                    <span style="color: #666; font-style: italic;">Sin padecimientos</span>
+                                {% endif %}
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+
+        <!-- Acciones -->
+        <div class="actions-section">
+            <div class="actions-title">Acciones Disponibles</div>
+            <div class="actions-buttons">
+                <button class="action-button" onclick="window.print()">Imprimir Resultados</button>
+                <a href="{% url 'jefa:simulador_inicio' %}" class="action-button">Nueva Simulación</a>
+                <a href="{% url 'jefa:lista_simulaciones' %}" class="action-button secondary">Ver Todas las Simulaciones</a>
+                <button class="action-button secondary" onclick="exportarDatos()">Exportar Datos</button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        function exportarDatos() {
+            // Función simple para exportar datos como texto
+            let datos = `RESULTADOS DE SIMULACIÓN\n`;
+            datos += `========================\n\n`;
+            datos += `Nombre: {{ simulacion.nombre }}\n`;
+            datos += `Fecha: {{ simulacion.fecha_creacion|date:"d/m/Y H:i" }}\n`;
+            datos += `Creada por: {{ simulacion.creada_por.first_name }} {{ simulacion.creada_por.apellidos }}\n\n`;
+            
+            datos += `RESUMEN GENERAL:\n`;
+            datos += `- Áreas: {{ simulacion.total_areas }}\n`;
+            datos += `- Enfermeros: {{ simulacion.total_enfermeros }}\n`;
+            datos += `- Pacientes: {{ simulacion.total_pacientes }}\n`;
+            datos += `- Carga Promedio: {{ carga_promedio|floatformat:1 }}\n\n`;
+            
+            datos += `DETALLE POR ÁREAS:\n`;
+            {% for area_data in resumen_areas %}
+            datos += `- {{ area_data.area.area_real.nombre }}: {{ area_data.enfermeros_count }} enfermeros, {{ area_data.pacientes_count }} pacientes ({{ area_data.carga_trabajo|floatformat:1 }}% carga)\n`;
+            {% endfor %}
+            
+            // Crear blob y descargar
+            const blob = new Blob([datos], { type: 'text/plain' });
+            const url = window.URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = 'simulacion_{{ simulacion.id }}_resultados.txt';
+            a.click();
+            window.URL.revokeObjectURL(url);
+        }
+
+        // Agregar efectos visuales
+        document.addEventListener('DOMContentLoaded', function() {
+            // Animar barras de carga
+            const barras = document.querySelectorAll('.carga-fill');
+            barras.forEach(barra => {
+                const width = barra.style.width;
+                barra.style.width = '0%';
+                setTimeout(() => {
+                    barra.style.width = width;
+                }, 100);
+            });
+        });
+    </script>
+</body>
+</html>

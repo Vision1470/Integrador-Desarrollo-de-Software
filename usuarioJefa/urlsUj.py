@@ -72,4 +72,11 @@ urlpatterns = [
     path('distribucion/manual/<int:area_id>/', views.distribucion_manual, name='distribucion_manual'),
     path('distribucion/ajustar_manual/<int:area_id>/', views.ajustar_distribucion_manual, name='ajustar_distribucion_manual'),
 
+    # URLs del simulador de eventos
+    path('simulador/', views.simulador_inicio, name='simulador_inicio'),
+    path('simulador/enfermeros/<int:simulacion_id>/', views.simulador_enfermeros, name='simulador_enfermeros'),
+    path('simulador/pacientes/<int:simulacion_id>/', views.simulador_pacientes, name='simulador_pacientes'),
+    path('simulador/padecimientos/<int:simulacion_id>/', views.simulador_padecimientos, name='simulador_padecimientos'),
+    path('simulador/resultados/<int:simulacion_id>/', views.simulador_resultados, name='simulador_resultados'),
+    path('simulador/lista/', views.lista_simulaciones, name='lista_simulaciones'),
 ]

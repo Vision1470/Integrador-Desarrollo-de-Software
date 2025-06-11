@@ -1,0 +1,170 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Lista de Simulaciones</title>
+    <style>
+        :root {
+            --primary-color: #0A2342;
+            --secondary-color: #2E4057;
+            --accent-color: #1E90FF;
+            --background-color: #EBF0F5;
+            --white: #FFFFFF;
+            --border-color: #D1D1D1;
+            --success-color: #28a745;
+            --text-color: #333333;
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: 'Roboto', 'Arial', sans-serif;
+        }
+
+        body {
+            background-color: var(--background-color);
+            color: var(--text-color);
+            line-height: 1.6;
+            padding: 20px;
+        }
+
+        .container {
+            background-color: var(--white);
+            border-radius: 8px;
+            box-shadow: 0 15px 30px rgba(0,0,0,0.15);
+            padding: 30px;
+            max-width: 1200px;
+            margin: 0 auto;
+            border-left: 5px solid var(--primary-color);
+        }
+
+        .header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 30px;
+            border-bottom: 2px solid var(--primary-color);
+            padding-bottom: 15px;
+        }
+
+        .header h1 {
+            font-size: 2rem;
+            color: var(--primary-color);
+            font-weight: 700;
+        }
+
+        .menu-button {
+            background-color: var(--secondary-color);
+            color: var(--white);
+            text-decoration: none;
+            padding: 10px 15px;
+            border-radius: 4px;
+            font-weight: 600;
+            text-transform: uppercase;
+            transition: background-color 0.3s ease;
+            margin-left: 10px;
+        }
+
+        .menu-button:hover {
+            background-color: var(--accent-color);
+        }
+
+        .menu-button.primary {
+            background-color: var(--success-color);
+        }
+
+        .simulaciones-table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-bottom: 20px;
+        }
+
+        .simulaciones-table th {
+            background-color: var(--primary-color);
+            color: var(--white);
+            padding: 15px;
+            text-align: left;
+            font-weight: 600;
+        }
+
+        .simulaciones-table td {
+            padding: 15px;
+            border-bottom: 1px solid var(--border-color);
+        }
+
+        .simulaciones-table tr:nth-child(even) {
+            background-color: #f8f9fa;
+        }
+
+        .simulaciones-table tr:hover {
+            background-color: #e6f3ff;
+        }
+
+        .action-button {
+            background-color: var(--accent-color);
+            color: var(--white);
+            text-decoration: none;
+            padding: 6px 12px;
+            border-radius: 4px;
+            font-size: 0.9rem;
+            margin-right: 5px;
+            transition: background-color 0.3s ease;
+        }
+
+        .action-button:hover {
+            background-color: #0056b3;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>Lista de Simulaciones</h1>
+            <div>
+                <a href="{% url 'jefa:simulador_inicio' %}" class="menu-button primary">Nueva Simulación</a>
+                <a href="{% url 'jefa:menu_jefa' %}" class="menu-button">Menú Principal</a>
+            </div>
+        </div>
+
+        <table class="simulaciones-table">
+            <thead>
+                <tr>
+                    <th>Nombre</th>
+                    <th>Fecha Creación</th>
+                    <th>Áreas</th>
+                    <th>Enfermeros</th>
+                    <th>Pacientes</th>
+                    <th>Estado</th>
+                    <th>Acciones</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for simulacion in simulaciones %}
+                <tr>
+                    <td><strong>{{ simulacion.nombre }}</strong></td>
+                    <td>{{ simulacion.fecha_creacion|date:"d/m/Y H:i" }}</td>
+                    <td>{{ simulacion.total_areas }}</td>
+                    <td>{{ simulacion.total_enfermeros }}</td>
+                    <td>{{ simulacion.total_pacientes }}</td>
+                    <td>{% if simulacion.activa %}Activa{% else %}Inactiva{% endif %}</td>
+                    <td>
+                        <a href="{% url 'jefa:simulador_resultados' simulacion.id %}" class="action-button">Ver Resultados</a>
+                    </td>
+                </tr>
+                {% empty %}
+                <tr>
+                    <td colspan="7" style="text-align: center; color: #666; font-style: italic; padding: 40px;">
+                        No hay simulaciones creadas aún.
+                        <br><br>
+                        <a href="{% url 'jefa:simulador_inicio' %}" class="action-button">Crear Primera Simulación</a>
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</body>
+</html>
