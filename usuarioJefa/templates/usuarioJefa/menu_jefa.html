@@ -106,7 +106,7 @@
     <div class="container">
         <div class="header">
             <h1>Menu Jefa de Piso</h1>
-            <form action="{% url 'login:login' %}" method="POST">
+            <form action="{% url 'login:logout' %}" method="POST">
                 {% csrf_token %}
                 <button type="submit" class="logout-button">Cerrar Sesión</button>
             </form>

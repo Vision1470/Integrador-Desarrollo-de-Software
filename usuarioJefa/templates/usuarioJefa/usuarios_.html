@@ -436,8 +436,40 @@
                             <span id="error-message" class="error-message"></span>
                         </div>
                         <div>
-                            <label for="fecha_nacimiento">Fecha de Nacimiento:</label>
-                            <input type="date" id="fecha_nacimiento" name="fecha_nacimiento" required>
+                            <label>Fecha de Nacimiento:</label>
+                            <div style="display: flex; gap: 10px; align-items: center;">
+                                <select id="dia_nacimiento" style="width: 80px;">
+                                    <option value="">Día</option>
+                                    {% for i in "12345678901234567890123456789012"|make_list %}
+                                        <option value="{{ forloop.counter }}">{{ forloop.counter }}</option>
+                                    {% endfor %}
+                                </select>
+                                <select id="mes_nacimiento" style="width: 120px;">
+                                    <option value="">Mes</option>
+                                    <option value="1">Enero</option>
+                                    <option value="2">Febrero</option>
+                                    <option value="3">Marzo</option>
+                                    <option value="4">Abril</option>
+                                    <option value="5">Mayo</option>
+                                    <option value="6">Junio</option>
+                                    <option value="7">Julio</option>
+                                    <option value="8">Agosto</option>
+                                    <option value="9">Septiembre</option>
+                                    <option value="10">Octubre</option>
+                                    <option value="11">Noviembre</option>
+                                    <option value="12">Diciembre</option>
+                                </select>
+                                <select id="año_nacimiento" style="width: 100px;">
+                                    <option value="">Año</option>
+                                    {% now "Y" as current_year %}
+                                    {% for i in "123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890"|make_list %}
+                                        {% if forloop.counter0|add:1940 <= current_year|add:0 %}
+                                            <option value="{{ current_year|add:0|add:-47|add:forloop.counter0 }}">{{ current_year|add:0|add:-47|add:forloop.counter0 }}</option>
+                                        {% endif %}
+                                    {% endfor %}
+                                </select>
+                            </div>
+                            <input type="hidden" id="fecha_nacimiento" name="fecha_nacimiento" required>
                         </div>
                     </div>
 
@@ -530,39 +562,71 @@
             });
 
             // Cálculo automático de edad
-            const fechaNacimientoInput = document.getElementById('fecha_nacimiento');
+            // Cálculo automático de edad con selectores
+            const diaSelect = document.getElementById('dia_nacimiento');
+            const mesSelect = document.getElementById('mes_nacimiento');
+            const añoSelect = document.getElementById('año_nacimiento');
+            const fechaNacimientoHidden = document.getElementById('fecha_nacimiento');
             const edadInput = document.getElementById('edad');
             const errorMessage = document.getElementById('error-message');
             const submitButton = document.getElementById('submit-button');
 
-            function calcularEdad() {
-                const fechaNacimiento = new Date(fechaNacimientoInput.value);
-                const hoy = new Date();
-                let edad = hoy.getFullYear() - fechaNacimiento.getFullYear();
-                const mes = hoy.getMonth() - fechaNacimiento.getMonth();
-                
-                if (mes < 0 || (mes === 0 && hoy.getDate() < fechaNacimiento.getDate())) {
-                    edad--;
-                }
+            function actualizarFecha() {
+                const dia = diaSelect.value;
+                const mes = mesSelect.value;
+                const año = añoSelect.value;
 
-                edadInput.value = edad;
+                if (dia && mes && año) {
+                    // Validar que la fecha sea válida
+                    const fecha = new Date(año, mes - 1, dia);
+                    
+                    // Verificar si la fecha es válida (evita fechas como 31 de febrero)
+                    if (fecha.getDate() == dia && fecha.getMonth() == mes - 1 && fecha.getFullYear() == año) {
+                        // Formatear fecha para el input hidden (YYYY-MM-DD)
+                        const fechaFormateada = `${año}-${mes.padStart(2, '0')}-${dia.padStart(2, '0')}`;
+                        fechaNacimientoHidden.value = fechaFormateada;
+                        
+                        // Calcular edad
+                        const hoy = new Date();
+                        let edad = hoy.getFullYear() - fecha.getFullYear();
+                        const mesActual = hoy.getMonth() - fecha.getMonth();
+                        
+                        if (mesActual < 0 || (mesActual === 0 && hoy.getDate() < fecha.getDate())) {
+                            edad--;
+                        }
 
-                if (edad < 18) {
-                    errorMessage.textContent = 'El usuario debe ser mayor de 18 años.';
-                    submitButton.disabled = true;
-                } else if (edad > 100) {
-                    errorMessage.textContent = 'Verifique la fecha de nacimiento.';
-                    submitButton.disabled = true;
+                        edadInput.value = edad;
+
+                        // Validaciones
+                        if (edad < 18) {
+                            errorMessage.textContent = 'El usuario debe ser mayor de 18 años.';
+                            submitButton.disabled = true;
+                        } else if (edad > 100) {
+                            errorMessage.textContent = 'Verifique la fecha de nacimiento.';
+                            submitButton.disabled = true;
+                        } else {
+                            errorMessage.textContent = '';
+                            submitButton.disabled = false;
+                        }
+                    } else {
+                        errorMessage.textContent = 'La fecha seleccionada no es válida.';
+                        submitButton.disabled = true;
+                        edadInput.value = '';
+                        fechaNacimientoHidden.value = '';
+                    }
                 } else {
+                    // Limpiar si no están todos los campos
+                    edadInput.value = '';
+                    fechaNacimientoHidden.value = '';
                     errorMessage.textContent = '';
                     submitButton.disabled = false;
                 }
             }
 
-            fechaNacimientoInput.addEventListener('input', calcularEdad);
-            const hoy = new Date();
-            const fechaMaxima = hoy.toISOString().split('T')[0];
-            fechaNacimientoInput.setAttribute('max', fechaMaxima);
+            // Agregar event listeners a los tres selectores
+            diaSelect.addEventListener('change', actualizarFecha);
+            mesSelect.addEventListener('change', actualizarFecha);
+            añoSelect.addEventListener('change', actualizarFecha);
 
             // Función para mostrar/ocultar campos según tipo de usuario
             window.toggleFields = function() {

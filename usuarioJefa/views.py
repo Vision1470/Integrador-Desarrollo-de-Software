@@ -296,7 +296,17 @@ def reactivar_paciente(request, paciente_id):
 
 def usuarios_(request):
     # Datos para gestionar usuarios
-    usuarios_activos = Usuarios.objects.filter(estaActivo=True)
+    usuarios_activos = Usuarios.objects.filter(estaActivo=True).order_by(
+    models.Case(
+        models.When(tipoUsuario='JP', then=models.Value(1)),
+        models.When(tipoUsuario='EN', then=models.Value(2)),
+        models.When(tipoUsuario='DR', then=models.Value(3)),
+        default=models.Value(4),
+        output_field=models.IntegerField()
+    ),
+    'first_name',
+    'apellidos'
+    )
     areas = AreaEspecialidad.objects.all()
     fortalezas = Fortaleza.objects.all()
 
@@ -314,8 +324,27 @@ def usuarios_(request):
         contraseña = request.POST.get('contraseña')
 
         try:
-            # Obtener el área de especialidad
-            area_especialidad = AreaEspecialidad.objects.get(id=area_especialidad_id)
+            # Obtener el área de especialidad solo si se proporcionó
+            area_especialidad = None
+            if area_especialidad_id and area_especialidad_id.strip():
+                try:
+                    area_especialidad = AreaEspecialidad.objects.get(id=area_especialidad_id)
+                except AreaEspecialidad.DoesNotExist:
+                    messages.error(request, 'El área de especialidad seleccionada no existe.')
+                    return render(request, 'usuarioJefa/usuarios_.html', {
+                        'usuarios': usuarios_activos,
+                        'areas': areas,
+                        'fortalezas': fortalezas
+                    })
+
+            # Validar que enfermería tenga área de especialidad
+            if tipo_usuario == 'EN' and not area_especialidad:
+                messages.error(request, 'El área de especialidad es obligatoria para usuarios de Enfermería.')
+                return render(request, 'usuarioJefa/usuarios_.html', {
+                    'usuarios': usuarios_activos,
+                    'areas': areas,
+                    'fortalezas': fortalezas
+                })
 
             # Crear el usuario
             usuario = Usuarios.objects.create(
@@ -323,7 +352,7 @@ def usuarios_(request):
                 apellidos=apellidos,
                 edad=edad,
                 fechaNacimiento=fecha_nacimiento,
-                areaEspecialidad=area_especialidad,
+                areaEspecialidad=area_especialidad,  # Puede ser None para doctores
                 tipoUsuario=tipo_usuario,
                 cedula=cedula,
                 username=nombre_temporal,
@@ -335,13 +364,13 @@ def usuarios_(request):
             usuario.set_password(contraseña)
             usuario.save()
 
-            # Asignar las fortalezas al usuario
-            usuario.fortalezas.set(fortalezas_ids)
+            # Asignar las fortalezas al usuario solo si hay alguna seleccionada
+            if fortalezas_ids:
+                usuario.fortalezas.set(fortalezas_ids)
 
             messages.success(request, 'Usuario creado exitosamente.')
             return redirect('jefa:usuarios_')  # Recargar la página principal
-        except AreaEspecialidad.DoesNotExist:
-            messages.error(request, 'El área de especialidad seleccionada no existe.')
+            
         except Exception as e:
             messages.error(request, f'Error al crear el usuario: {str(e)}')
 
