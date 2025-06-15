@@ -269,21 +269,66 @@
                     </div>
                     
                     <div class="form-group">
-                        <label class="form-label">Fortalezas del Área (máximo 4):</label>
-                        <div class="checkbox-grid">
-                            {% for fortaleza in fortalezas %}
-                            <div class="checkbox-item">
-                                <input type="checkbox" name="fortalezas" value="{{ fortaleza.id }}" 
-                                    id="fortaleza_{{ fortaleza.id }}" 
-                                    {% if fortaleza in area.fortalezas.all %}checked{% endif %}
-                                    class="area-fortaleza-checkbox">
-                                <label for="fortaleza_{{ fortaleza.id }}">
-                                    {{ fortaleza.nombre }}
-                                </label>
-                            </div>
-                            {% endfor %}
-                        </div>
-                    </div>
+    <label class="form-label">Fortalezas del Área (máximo 4):</label>
+    <div class="multi-select-container">
+        {% for fortaleza in fortalezas %}
+            <div class="multi-select-item">
+                <input type="checkbox" name="fortalezas" value="{{ fortaleza.id }}" 
+                       id="edit-area-fort-{{ fortaleza.id }}" 
+                       class="area-fortaleza-checkbox"
+                       {% comment %}CORRECCIÓN: Verificar si está asignada desde AMBAS relaciones{% endcomment %}
+                       {% if fortaleza in area.fortalezas.all or area in fortaleza.areas.all %}checked{% endif %}>
+                <label for="edit-area-fort-{{ fortaleza.id }}">
+                    {{ fortaleza.nombre }}
+                    {% if fortaleza.descripcion %}
+                        <small style="color: #666;">({{ fortaleza.descripcion|truncatechars:30 }})</small>
+                    {% endif %}
+                </label>
+            </div>
+        {% endfor %}
+    </div>
+    <small style="color: #666; margin-top: 5px; display: block;">
+        <span id="edit-fortalezas-count">0</span>/4 fortalezas seleccionadas
+    </small>
+</div>
+
+<script>
+// Script mejorado para el conteo y validación
+document.addEventListener('DOMContentLoaded', function() {
+    const editCheckboxes = document.querySelectorAll('.area-fortaleza-checkbox');
+    const editCountSpan = document.getElementById('edit-fortalezas-count');
+    
+    function updateEditCount() {
+        const checked = document.querySelectorAll('.area-fortaleza-checkbox:checked');
+        if (editCountSpan) {
+            editCountSpan.textContent = checked.length;
+            
+            // Cambiar color si está cerca del límite
+            if (checked.length >= 4) {
+                editCountSpan.style.color = '#dc3545'; // Rojo
+            } else if (checked.length >= 3) {
+                editCountSpan.style.color = '#ffc107'; // Amarillo
+            } else {
+                editCountSpan.style.color = '#28a745'; // Verde
+            }
+        }
+    }
+    
+    editCheckboxes.forEach(function(checkbox) {
+        checkbox.addEventListener('change', function() {
+            const checked = document.querySelectorAll('.area-fortaleza-checkbox:checked');
+            if (checked.length > 4) {
+                this.checked = false;
+                alert('No se pueden seleccionar más de 4 fortalezas para un área');
+            }
+            updateEditCount();
+        });
+    });
+    
+    // Contar inicialmente
+    updateEditCount();
+});
+</script>
                     
                     <div class="form-group">
                         <label class="form-label">Padecimientos Tratados en el Área:</label>

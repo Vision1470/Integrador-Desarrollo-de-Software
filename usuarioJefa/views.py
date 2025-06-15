@@ -656,6 +656,11 @@ from usuarioDoctor.models import Padecimiento
 from django.db import transaction
 from usuarioDoctor.models import Padecimiento
 
+# usuarioJefa/views.py - Views actualizadas para múltiples áreas
+
+from django.db import transaction
+from usuarioDoctor.models import Padecimiento
+
 @login_required
 def areas_fortalezas(request):
     """
@@ -674,88 +679,138 @@ def areas_fortalezas(request):
     return render(request, 'usuarioJefa/areas_fortalezas.html', context)
 
 @login_required
+@transaction.atomic
 def crear_area(request):
     """
-    Crear área con fortalezas y padecimientos
+    Crear área con fortalezas y padecimientos - VERSIÓN CORREGIDA
     """
     if request.method == 'POST':
         nombre = request.POST.get('nombre')
-        descripcion = request.POST.get('descripcion')
+        descripcion = request.POST.get('descripcion', '')
         fortalezas_ids = request.POST.getlist('fortalezas')
         padecimientos_ids = request.POST.getlist('padecimientos')
         
         try:
-            area = AreaEspecialidad.objects.create(
-                nombre=nombre,
-                descripcion=descripcion
-            )
+            # Validar datos básicos
+            if not nombre or not nombre.strip():
+                messages.error(request, 'El nombre del área es obligatorio')
+                return redirect('jefa:areas_fortalezas')
+            
+            # Verificar que no exista otra área con el mismo nombre
+            if AreaEspecialidad.objects.filter(nombre=nombre.strip()).exists():
+                messages.error(request, f'Ya existe un área con el nombre "{nombre}"')
+                return redirect('jefa:areas_fortalezas')
             
             # Validar máximo 4 fortalezas
-            if len(fortalezas_ids) <= 4:
-                area.fortalezas.set(fortalezas_ids)
-                
-                # Asignar padecimientos a la nueva área
-                if padecimientos_ids:
-                    padecimientos = Padecimiento.objects.filter(id__in=padecimientos_ids)
-                    for padecimiento in padecimientos:
-                        padecimiento.areas.add(area)
-                
-                messages.success(request, 'Área creada exitosamente.')
-                return redirect('jefa:areas_fortalezas')
-            else:
-                area.delete()
+            if len(fortalezas_ids) > 4:
                 messages.error(request, 'No se pueden asignar más de 4 fortalezas a un área.')
+                return redirect('jefa:areas_fortalezas')
+            
+            # Crear área
+            area = AreaEspecialidad.objects.create(
+                nombre=nombre.strip(),
+                descripcion=descripcion.strip()
+            )
+            
+            # CORRECCIÓN: Asignar fortalezas usando relación bidireccional
+            if fortalezas_ids:
+                fortalezas = Fortaleza.objects.filter(id__in=fortalezas_ids)
+                
+                # Asignar desde el área hacia las fortalezas
+                area.fortalezas.set(fortalezas)
+                
+                # IMPORTANTE: También actualizar la relación inversa
+                for fortaleza in fortalezas:
+                    fortaleza.areas.add(area)
+            
+            # Asignar padecimientos al área
+            if padecimientos_ids:
+                padecimientos = Padecimiento.objects.filter(id__in=padecimientos_ids)
+                for padecimiento in padecimientos:
+                    padecimiento.areas.add(area)
+            
+            messages.success(request, f'Área "{area.nombre}" creada exitosamente con {len(fortalezas_ids)} fortalezas y {len(padecimientos_ids)} padecimientos.')
+            
         except Exception as e:
             messages.error(request, f'Error al crear el área: {str(e)}')
     
-    fortalezas = Fortaleza.objects.all()
-    padecimientos = Padecimiento.objects.filter(activo=True)
-    return render(request, 'usuarioJefa/crear_area.html', {
-        'fortalezas': fortalezas,
-        'padecimientos': padecimientos
-    })
+    return redirect('jefa:areas_fortalezas')
 
 @login_required
+@transaction.atomic
 def editar_area(request, area_id):
     """
-    Editar área con datos precargados
+    Editar área con datos precargados - VERSIÓN CORREGIDA
     """
     area = get_object_or_404(AreaEspecialidad, id=area_id)
     
     if request.method == 'POST':
         nombre = request.POST.get('nombre')
-        descripcion = request.POST.get('descripcion')
+        descripcion = request.POST.get('descripcion', '')
         fortalezas_ids = request.POST.getlist('fortalezas')
         padecimientos_ids = request.POST.getlist('padecimientos')
         
         try:
-            if len(fortalezas_ids) <= 4:
-                area.nombre = nombre
-                area.descripcion = descripcion
-                area.save()
-                
-                # Actualizar fortalezas
-                area.fortalezas.set(fortalezas_ids)
-                
-                # Actualizar padecimientos - primero limpiar las relaciones existentes de esta área
-                # Remover esta área de todos los padecimientos que la tenían
-                padecimientos_anteriores = Padecimiento.objects.filter(areas=area)
-                for padecimiento in padecimientos_anteriores:
-                    padecimiento.areas.remove(area)
-                
-                # Agregar esta área a los padecimientos seleccionados
-                if padecimientos_ids:
-                    padecimientos_nuevos = Padecimiento.objects.filter(id__in=padecimientos_ids)
-                    for padecimiento in padecimientos_nuevos:
-                        padecimiento.areas.add(area)
-                
-                messages.success(request, 'Área actualizada exitosamente.')
+            # Validar datos básicos
+            if not nombre or not nombre.strip():
+                messages.error(request, 'El nombre del área es obligatorio')
                 return redirect('jefa:areas_fortalezas')
-            else:
+            
+            # Verificar que no exista otra área con el mismo nombre (excluyendo la actual)
+            if AreaEspecialidad.objects.filter(nombre=nombre.strip()).exclude(id=area_id).exists():
+                messages.error(request, f'Ya existe otra área con el nombre "{nombre}"')
+                return redirect('jefa:areas_fortalezas')
+            
+            # Validar máximo 4 fortalezas
+            if len(fortalezas_ids) > 4:
                 messages.error(request, 'No se pueden asignar más de 4 fortalezas a un área.')
+                return redirect('jefa:areas_fortalezas')
+            
+            # Actualizar datos básicos
+            area.nombre = nombre.strip()
+            area.descripcion = descripcion.strip()
+            area.save()
+            
+            # CORRECCIÓN: Limpiar y reasignar fortalezas correctamente
+            
+            # 1. Remover esta área de todas las fortalezas que la tenían antes
+            fortalezas_anteriores = list(area.fortalezas.all())
+            for fortaleza_anterior in fortalezas_anteriores:
+                fortaleza_anterior.areas.remove(area)
+            
+            # 2. Limpiar la relación desde el área
+            area.fortalezas.clear()
+            
+            # 3. Asignar nuevas fortalezas
+            if fortalezas_ids:
+                fortalezas_nuevas = Fortaleza.objects.filter(id__in=fortalezas_ids)
+                
+                # Asignar desde el área
+                area.fortalezas.set(fortalezas_nuevas)
+                
+                # Asignar desde las fortalezas (relación inversa)
+                for fortaleza in fortalezas_nuevas:
+                    fortaleza.areas.add(area)
+            
+            # CORRECCIÓN: Limpiar y reasignar padecimientos correctamente
+            
+            # 1. Remover esta área de todos los padecimientos que la tenían
+            padecimientos_anteriores = Padecimiento.objects.filter(areas=area)
+            for padecimiento_anterior in padecimientos_anteriores:
+                padecimiento_anterior.areas.remove(area)
+            
+            # 2. Asignar nuevos padecimientos
+            if padecimientos_ids:
+                padecimientos_nuevos = Padecimiento.objects.filter(id__in=padecimientos_ids)
+                for padecimiento in padecimientos_nuevos:
+                    padecimiento.areas.add(area)
+            
+            messages.success(request, f'Área "{area.nombre}" actualizada exitosamente.')
+            
         except Exception as e:
             messages.error(request, f'Error al actualizar el área: {str(e)}')
     
+    # Para GET request, mostrar formulario con datos precargados
     fortalezas = Fortaleza.objects.all()
     padecimientos = Padecimiento.objects.filter(activo=True)
     
@@ -787,6 +842,25 @@ def crear_fortaleza(request):
     return render(request, 'usuarioJefa/crear_fortaleza.html')
 
 @login_required
+def obtener_area(request, area_id):
+    """
+    API para obtener datos de un área específica para edición
+    """
+    try:
+        area = get_object_or_404(AreaEspecialidad, id=area_id)
+        
+        return JsonResponse({
+            'id': area.id,
+            'nombre': area.nombre,
+            'descripcion': area.descripcion or '',
+            'fortalezas': list(area.fortalezas.values_list('id', flat=True)),
+            'padecimientos': list(area.padecimientos_relacionados.values_list('id', flat=True))
+        })
+        
+    except Exception as e:
+        return JsonResponse({'error': str(e)}, status=500)
+
+@login_required
 def editar_fortaleza(request, fortaleza_id):
     """
     Mantiene la funcionalidad básica existente
@@ -814,7 +888,7 @@ def editar_fortaleza(request, fortaleza_id):
 @transaction.atomic
 def crear_fortaleza_avanzada(request):
     """
-    Nueva vista para crear fortalezas con múltiples áreas y padecimientos
+    Nueva vista para crear fortalezas con múltiples áreas y padecimientos - CORREGIDA
     """
     if request.method == 'POST':
         nombre = request.POST.get('nombre')
@@ -833,16 +907,32 @@ def crear_fortaleza_avanzada(request):
                 messages.error(request, f'Ya existe una fortaleza con el nombre "{nombre}"')
                 return redirect('jefa:areas_fortalezas')
             
+            # Validar que las áreas seleccionadas no excedan el límite de 4 fortalezas
+            for area_id in areas_ids:
+                area = AreaEspecialidad.objects.get(id=area_id)
+                fortalezas_actuales = area.fortalezas.count()
+                if fortalezas_actuales >= 4:
+                    messages.error(request, f'El área "{area.nombre}" ya tiene 4 fortalezas. No se pueden agregar más.')
+                    return redirect('jefa:areas_fortalezas')
+            
             # Crear fortaleza
             fortaleza = Fortaleza.objects.create(
                 nombre=nombre,
                 descripcion=descripcion
             )
             
-            # Asociar áreas múltiples
+            # CORRECCIÓN: Asociar áreas múltiples con validación bidireccional
             if areas_ids:
-                areas = AreaEspecialidad.objects.filter(id__in=areas_ids)
-                fortaleza.areas.set(areas)
+                for area_id in areas_ids:
+                    area = AreaEspecialidad.objects.get(id=area_id)
+                    
+                    # Verificar nuevamente el límite antes de agregar
+                    if area.fortalezas.count() < 4:
+                        # Agregar desde ambos lados de la relación
+                        fortaleza.areas.add(area)
+                        area.fortalezas.add(fortaleza)
+                    else:
+                        messages.warning(request, f'No se pudo agregar a "{area.nombre}" porque ya tiene 4 fortalezas')
             
             # Asociar padecimientos
             if padecimientos_ids:
@@ -907,7 +997,7 @@ def crear_padecimiento(request):
 @transaction.atomic
 def editar_fortaleza_avanzada(request, fortaleza_id):
     """
-    Nueva vista para editar fortalezas con múltiples áreas y padecimientos
+    Nueva vista para editar fortalezas con múltiples áreas y padecimientos - CORREGIDA
     """
     fortaleza = get_object_or_404(Fortaleza, id=fortaleza_id)
     
@@ -928,12 +1018,28 @@ def editar_fortaleza_avanzada(request, fortaleza_id):
             fortaleza.descripcion = descripcion
             fortaleza.save()
             
-            # Actualizar áreas múltiples
+            # CORRECCIÓN: Limpiar y reasignar áreas con validación bidireccional
+            
+            # 1. Obtener áreas actuales para limpiar relaciones
+            areas_actuales = list(fortaleza.areas.all())
+            
+            # 2. Remover esta fortaleza de todas las áreas que la tenían
+            for area_actual in areas_actuales:
+                area_actual.fortalezas.remove(fortaleza)
+                fortaleza.areas.remove(area_actual)
+            
+            # 3. Validar y agregar nuevas áreas
             if areas_ids:
-                areas = AreaEspecialidad.objects.filter(id__in=areas_ids)
-                fortaleza.areas.set(areas)
-            else:
-                fortaleza.areas.clear()
+                for area_id in areas_ids:
+                    area = AreaEspecialidad.objects.get(id=area_id)
+                    
+                    # Verificar límite de 4 fortalezas por área
+                    if area.fortalezas.count() < 4:
+                        # Agregar desde ambos lados
+                        fortaleza.areas.add(area)
+                        area.fortalezas.add(fortaleza)
+                    else:
+                        messages.warning(request, f'No se pudo agregar a "{area.nombre}" porque ya tiene 4 fortalezas')
             
             # Limpiar relaciones existentes con padecimientos
             padecimientos_actuales = list(fortaleza.padecimientos_asociados.all())
@@ -1208,95 +1314,6 @@ def get_compatibilidad_area(request):
     except Exception as e:
         return JsonResponse({'error': str(e)}, status=500)
 
-# =========== FUNCIÓN AUXILIAR PARA ALGORITMOS FUTUROS ===========
-
-def calcular_compatibilidad_enfermero_padecimiento(enfermero, padecimiento):
-    """
-    Función auxiliar que calcula la compatibilidad entre un enfermero y un padecimiento
-    basándose en:
-    1. Si el área de especialidad del enfermero coincide con las áreas del padecimiento
-    2. Si las fortalezas del enfermero coinciden con las fortalezas requeridas del padecimiento
-    
-    Retorna una puntuación de 0 a 100
-    """
-    puntuacion = 0
-    
-    # Verificar coincidencia de área de especialidad (40 puntos máximo)
-    if enfermero.areaEspecialidad and enfermero.areaEspecialidad in padecimiento.areas.all():
-        puntuacion += 40
-    
-    # Verificar coincidencias de fortalezas (60 puntos máximo)
-    fortalezas_enfermero = set(enfermero.fortalezas.all())
-    fortalezas_padecimiento = set(padecimiento.fortalezas.all())
-    
-    if fortalezas_padecimiento:
-        coincidencias = len(fortalezas_enfermero.intersection(fortalezas_padecimiento))
-        total_requeridas = len(fortalezas_padecimiento)
-        porcentaje_coincidencias = (coincidencias / total_requeridas) * 100
-        puntuacion += (porcentaje_coincidencias * 60) / 100
-    
-    return min(puntuacion, 100)  # Máximo 100 puntos
-
-def obtener_enfermeros_compatibles_por_padecimiento(padecimiento, enfermeros_disponibles=None):
-    """
-    Obtiene enfermeros ordenados por compatibilidad con un padecimiento específico
-    
-    Args:
-        padecimiento: Instancia del modelo Padecimiento
-        enfermeros_disponibles: QuerySet opcional de enfermeros a considerar
-    
-    Returns:
-        Lista de tuplas (enfermero, puntuacion_compatibilidad) ordenada por puntuación descendente
-    """
-    if enfermeros_disponibles is None:
-        enfermeros_disponibles = Usuarios.objects.filter(
-            tipoUsuario='EN',
-            estaActivo=True
-        )
-    
-    compatibilidades = []
-    
-    for enfermero in enfermeros_disponibles:
-        puntuacion = calcular_compatibilidad_enfermero_padecimiento(enfermero, padecimiento)
-        compatibilidades.append((enfermero, puntuacion))
-    
-    # Ordenar por puntuación descendente
-    compatibilidades.sort(key=lambda x: x[1], reverse=True)
-    
-    return compatibilidades
-
-def obtener_padecimientos_por_area_y_fortalezas(area, fortalezas_enfermero):
-    """
-    Obtiene padecimientos de un área específica que coincidan con las fortalezas de un enfermero
-    
-    Args:
-        area: Instancia del modelo AreaEspecialidad
-        fortalezas_enfermero: QuerySet de fortalezas del enfermero
-    
-    Returns:
-        QuerySet de padecimientos compatibles ordenados por número de coincidencias
-    """
-    from django.db.models import Count, Q
-    
-    # Obtener padecimientos del área que requieran las fortalezas del enfermero
-    padecimientos_compatibles = Padecimiento.objects.filter(
-        areas=area,
-        activo=True,
-        fortalezas__in=fortalezas_enfermero
-    ).annotate(
-        coincidencias=Count('fortalezas', filter=Q(fortalezas__in=fortalezas_enfermero))
-    ).order_by('-coincidencias')
-    
-    return padecimientos_compatibles
-            
-    
-
-
-
-
-#//////////////////////////////////////////////////////////////////
-#////////////////////////////////////////////////////////////////////
-#/777777777777777777777777777777777777777777777777777777777777777777
 # =========== FUNCIÓN AUXILIAR PARA ALGORITMOS FUTUROS ===========
 
 def calcular_compatibilidad_enfermero_padecimiento(enfermero, padecimiento):

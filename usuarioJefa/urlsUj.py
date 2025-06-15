@@ -98,6 +98,7 @@ path('eliminar-padecimiento/<int:padecimiento_id>/', views.eliminar_padecimiento
 path('api/padecimientos-por-areas/', views.get_padecimientos_por_areas, name='padecimientos_por_areas'),
 path('api/fortalezas-por-areas/', views.get_fortalezas_por_areas, name='fortalezas_por_areas'),
 path('api/compatibilidad-area/', views.get_compatibilidad_area, name='compatibilidad_area'),
+path('api/obtener-area/<int:area_id>/', views.obtener_area, name='obtener_area'),
 
 # APIs para cargar datos en modales de edición
 path('api/obtener-fortaleza/<int:fortaleza_id>/', views.obtener_fortaleza, name='obtener_fortaleza'),

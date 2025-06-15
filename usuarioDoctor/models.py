@@ -42,7 +42,7 @@ class Padecimiento(models.Model):
         for fortaleza in self.fortalezas.all():
             if not fortaleza.padecimientos_asociados.filter(id=self.id).exists():
                 fortaleza.padecimientos_asociados.add(self)
-                
+
 class Cuidado(models.Model):
     nombre = models.CharField(max_length=200)
     

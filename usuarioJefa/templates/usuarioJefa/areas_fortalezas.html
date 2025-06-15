@@ -1,4 +1,3 @@
-<!-- usuarioJefa/templates/usuarioJefa/areas_fortalezas.html -->
 <!DOCTYPE html>
 <html lang="es">
 <head>
@@ -547,18 +546,55 @@
                                               placeholder="Descripción del área..."></textarea>
                                 </div>
                                 
-                                <div class="form-group">
-                                    <label class="form-label">Fortalezas del Área (máximo 4):</label>
-                                    <div class="multi-select-container">
-                                        {% for fortaleza in fortalezas %}
-                                            <div class="multi-select-item">
-                                                <input type="checkbox" name="fortalezas" value="{{ fortaleza.id }}" 
-                                                       id="area-fort-{{ fortaleza.id }}" class="area-fortaleza-checkbox">
-                                                <label for="area-fort-{{ fortaleza.id }}">{{ fortaleza.nombre }}</label>
-                                            </div>
-                                        {% endfor %}
-                                    </div>
-                                </div>
+                                <<div class="form-group">
+    <label class="form-label">Fortalezas del Área (máximo 4):</label>
+    <div class="multi-select-container">
+        {% for fortaleza in fortalezas %}
+            <div class="multi-select-item">
+                <input type="checkbox" name="fortalezas" value="{{ fortaleza.id }}" 
+                       id="area-fort-{{ fortaleza.id }}" class="area-fortaleza-checkbox">
+                <label for="area-fort-{{ fortaleza.id }}">
+                    {{ fortaleza.nombre }}
+                    {% if fortaleza.descripcion %}
+                        <small style="color: #666;">({{ fortaleza.descripcion|truncatechars:30 }})</small>
+                    {% endif %}
+                </label>
+            </div>
+        {% endfor %}
+    </div>
+    <small style="color: #666; margin-top: 5px; display: block;">
+        <span id="fortalezas-count">0</span>/4 fortalezas seleccionadas
+    </small>
+</div>
+
+<script>
+// Agregar este script para contar fortalezas seleccionadas
+document.addEventListener('DOMContentLoaded', function() {
+    const areaCheckboxes = document.querySelectorAll('.area-fortaleza-checkbox');
+    const countSpan = document.getElementById('fortalezas-count');
+    
+    function updateCount() {
+        const checked = document.querySelectorAll('.area-fortaleza-checkbox:checked');
+        if (countSpan) {
+            countSpan.textContent = checked.length;
+        }
+    }
+    
+    areaCheckboxes.forEach(function(checkbox) {
+        checkbox.addEventListener('change', function() {
+            const checked = document.querySelectorAll('.area-fortaleza-checkbox:checked');
+            if (checked.length > 4) {
+                this.checked = false;
+                alert('No se pueden seleccionar más de 4 fortalezas para un área');
+            }
+            updateCount();
+        });
+    });
+    
+    // Contar inicialmente
+    updateCount();
+});
+</script>
                                 
                                 <div class="form-group">
                                     <label class="form-label">Padecimientos Tratados en el Área:</label>
@@ -585,48 +621,51 @@
                         </div>
                         <div class="card-body">
                             <table>
-                                <thead>
-                                    <tr>
-                                        <th>Nombre</th>
-                                        <th>Fortalezas</th>
-                                        <th>Padecimientos</th>
-                                        <th>Acciones</th>
-                                    </tr>
-                                </thead>
-                                <tbody>
-                                    {% for area in areas %}
-                                    <tr>
-                                        <td>
-                                            <strong>{{ area.nombre }}</strong>
-                                            {% if area.descripcion %}
-                                                <br><small>{{ area.descripcion|truncatechars:50 }}</small>
-                                            {% endif %}
-                                        </td>
-                                        <td>
-                                            {% for fortaleza in area.fortalezas.all %}
-                                                <span class="badge badge-info">{{ fortaleza.nombre }}</span>
-                                            {% empty %}
-                                                <em>Sin fortalezas</em>
-                                            {% endfor %}
-                                        </td>
-                                        <td>
-                                            {% for padecimiento in area.padecimientos_relacionados.all %}
-                                                <span class="badge badge-warning">{{ padecimiento.nombre }}</span>
-                                            {% empty %}
-                                                <em>Sin padecimientos</em>
-                                            {% endfor %}
-                                        </td>
-                                        <td>
-                                            <a href="{% url 'jefa:editar_area' area.id %}" class="action-button warning">Editar</a>
-                                        </td>
-                                    </tr>
-                                    {% empty %}
-                                    <tr>
-                                        <td colspan="4" class="text-center">No hay áreas registradas</td>
-                                    </tr>
-                                    {% endfor %}
-                                </tbody>
-                            </table>
+    <thead>
+        <tr>
+            <th>Nombre</th>
+            <th>Fortalezas</th>
+            <th>Padecimientos</th>
+            <th>Acciones</th>
+        </tr>
+    </thead>
+    <tbody>
+        {% for area in areas %}
+        <tr>
+            <td>
+                <strong>{{ area.nombre }}</strong>
+                {% if area.descripcion %}
+                    <br><small>{{ area.descripcion|truncatechars:50 }}</small>
+                {% endif %}
+            </td>
+            <td>
+                {% for fortaleza in area.fortalezas.all %}
+                    <span class="badge badge-info">{{ fortaleza.nombre }}</span>
+                {% empty %}
+                    <em>Sin fortalezas</em>
+                {% endfor %}
+            </td>
+            <td>
+                {% for padecimiento in area.padecimientos_relacionados.all %}
+                    <span class="badge badge-warning">{{ padecimiento.nombre }}</span>
+                {% empty %}
+                    <em>Sin padecimientos</em>
+                {% endfor %}
+            </td>
+            <td>
+                <!-- BOTÓN CORREGIDO -->
+                <button class="action-button warning" onclick="editarArea({{ area.id }})">
+                    Editar
+                </button>
+            </td>
+        </tr>
+        {% empty %}
+        <tr>
+            <td colspan="4" class="text-center">No hay áreas registradas</td>
+        </tr>
+        {% endfor %}
+    </tbody>
+</table>
                         </div>
                     </div>
                 </div>
@@ -945,6 +984,63 @@
 
     <!-- MODALES -->
     
+    <!-- Modal Editar Área -->
+    <div id="modal-editar-area" class="modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3>Editar Área</h3>
+                <button class="modal-close" onclick="cerrarModalArea()">&times;</button>
+            </div>
+            <form id="form-editar-area" method="post" onsubmit="return guardarAreaAjax(event)">
+                {% csrf_token %}
+                <div class="form-group">
+                    <label class="form-label">Nombre:</label>
+                    <input type="text" name="nombre" id="edit-area-nombre" class="form-control" required>
+                </div>
+                <div class="form-group">
+                    <label class="form-label">Descripción:</label>
+                    <textarea name="descripcion" id="edit-area-descripcion" class="form-control"></textarea>
+                </div>
+                <div class="form-group">
+                    <label class="form-label">Fortalezas del Área (máximo 4):</label>
+                    <div id="edit-fortalezas-area" class="multi-select-container">
+                        {% for fortaleza in fortalezas %}
+                            <div class="multi-select-item">
+                                <input type="checkbox" name="fortalezas" value="{{ fortaleza.id }}" 
+                                    id="edit-fort-area-{{ fortaleza.id }}" class="edit-area-fortaleza-checkbox">
+                                <label for="edit-fort-area-{{ fortaleza.id }}">
+                                    {{ fortaleza.nombre }}
+                                    {% if fortaleza.descripcion %}
+                                        <small style="color: #666;">({{ fortaleza.descripcion|truncatechars:30 }})</small>
+                                    {% endif %}
+                                </label>
+                            </div>
+                        {% endfor %}
+                    </div>
+                    <small style="color: #666; margin-top: 5px; display: block;">
+                        <span id="edit-area-fortalezas-count">0</span>/4 fortalezas seleccionadas
+                    </small>
+                </div>
+                <div class="form-group">
+                    <label class="form-label">Padecimientos Tratados:</label>
+                    <div id="edit-padecimientos-area" class="multi-select-container">
+                        {% for padecimiento in padecimientos %}
+                            <div class="multi-select-item">
+                                <input type="checkbox" name="padecimientos" value="{{ padecimiento.id }}" 
+                                    id="edit-pad-area-{{ padecimiento.id }}">
+                                <label for="edit-pad-area-{{ padecimiento.id }}">{{ padecimiento.nombre }}</label>
+                            </div>
+                        {% endfor %}
+                    </div>
+                </div>
+                <div style="text-align: right; margin-top: 20px;">
+                    <button type="button" class="action-button" onclick="cerrarModalArea()">Cancelar</button>
+                    <button type="submit" class="action-button success">Guardar Cambios</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
     <!-- Modal Editar Fortaleza -->
     <div id="modal-editar-fortaleza" class="modal">
         <div class="modal-content">
@@ -1044,6 +1140,153 @@
     </div>
 
     <script>
+
+        // Función para editar área usando modal
+function editarArea(areaId) {
+    const modal = document.getElementById('modal-editar-area');
+    const form = document.getElementById('form-editar-area');
+    
+    form.action = `{% url 'jefa:editar_area' 0 %}`.replace('0', areaId);
+    
+    // Hacer petición AJAX para cargar los datos existentes
+    fetch(`/jefa/api/obtener-area/${areaId}/`)
+        .then(response => response.json())
+        .then(data => {
+            // Cargar datos básicos
+            document.getElementById('edit-area-nombre').value = data.nombre || '';
+            document.getElementById('edit-area-descripcion').value = data.descripcion || '';
+            
+            // Limpiar selecciones previas
+            document.querySelectorAll('#edit-fortalezas-area input[type="checkbox"]').forEach(cb => cb.checked = false);
+            document.querySelectorAll('#edit-padecimientos-area input[type="checkbox"]').forEach(cb => cb.checked = false);
+            
+            // Marcar fortalezas asignadas
+            if (data.fortalezas) {
+                data.fortalezas.forEach(fortalezaId => {
+                    const checkbox = document.querySelector(`#edit-fort-area-${fortalezaId}`);
+                    if (checkbox) checkbox.checked = true;
+                });
+            }
+            
+            // Marcar padecimientos asignados
+            if (data.padecimientos) {
+                data.padecimientos.forEach(padecimientoId => {
+                    const checkbox = document.querySelector(`#edit-pad-area-${padecimientoId}`);
+                    if (checkbox) checkbox.checked = true;
+                });
+            }
+            
+            // Actualizar contador de fortalezas
+            updateAreaFortalezasCount();
+        })
+        .catch(error => {
+            console.error('Error cargando datos del área:', error);
+            // Si falla la carga, mostrar modal vacío
+        });
+    
+    modal.style.display = 'block';
+}
+
+
+// Función para cerrar modal de área
+function cerrarModalArea() {
+    document.getElementById('modal-editar-area').style.display = 'none';
+}
+
+// Función para actualizar contador de fortalezas en edición
+function updateAreaFortalezasCount() {
+    const checked = document.querySelectorAll('.edit-area-fortaleza-checkbox:checked');
+    const countSpan = document.getElementById('edit-area-fortalezas-count');
+    
+    if (countSpan) {
+        countSpan.textContent = checked.length;
+        
+        // Cambiar color según la cantidad
+        if (checked.length >= 4) {
+            countSpan.style.color = '#dc3545'; // Rojo
+        } else if (checked.length >= 3) {
+            countSpan.style.color = '#ffc107'; // Amarillo
+        } else {
+            countSpan.style.color = '#28a745'; // Verde
+        }
+    }
+}
+
+function guardarAreaAjax(event) {
+    event.preventDefault(); // Evitar el envío normal del formulario
+    
+    const form = document.getElementById('form-editar-area');
+    const formData = new FormData(form);
+    
+    // Mostrar indicador de carga
+    const submitButton = form.querySelector('button[type="submit"]');
+    const originalText = submitButton.textContent;
+    submitButton.textContent = 'Guardando...';
+    submitButton.disabled = true;
+    
+    // Enviar via AJAX
+    fetch(form.action, {
+        method: 'POST',
+        body: formData,
+        headers: {
+            'X-CSRFToken': document.querySelector('[name=csrfmiddlewaretoken]').value
+        }
+    })
+    .then(response => {
+        if (response.ok) {
+            // Éxito - cerrar modal y recargar página
+            cerrarModalArea();
+            location.reload(); // Recargar para ver los cambios
+        } else {
+            throw new Error('Error en el servidor');
+        }
+    })
+    .catch(error => {
+        console.error('Error:', error);
+        alert('Error al guardar los cambios. Por favor, inténtalo de nuevo.');
+    })
+    .finally(() => {
+        // Restaurar botón
+        submitButton.textContent = originalText;
+        submitButton.disabled = false;
+    });
+    
+    return false;
+}
+
+// Validación de fortalezas en edición de áreas (máximo 4)
+document.addEventListener('DOMContentLoaded', function() {
+    // Agregar event listeners para el modal de edición de áreas
+    const editAreaCheckboxes = document.querySelectorAll('.edit-area-fortaleza-checkbox');
+    
+    editAreaCheckboxes.forEach(function(checkbox) {
+        checkbox.addEventListener('change', function() {
+            const checked = document.querySelectorAll('.edit-area-fortaleza-checkbox:checked');
+            if (checked.length > 4) {
+                this.checked = false;
+                alert('No se pueden seleccionar más de 4 fortalezas para un área');
+            }
+            updateAreaFortalezasCount();
+        });
+    });
+});
+
+// Modificar la función de cerrar modales para incluir el nuevo modal
+window.onclick = function(event) {
+    const modalFortaleza = document.getElementById('modal-editar-fortaleza');
+    const modalPadecimiento = document.getElementById('modal-editar-padecimiento');
+    const modalArea = document.getElementById('modal-editar-area'); // AGREGAR ESTA LÍNEA
+    
+    if (event.target === modalFortaleza) {
+        modalFortaleza.style.display = 'none';
+    }
+    if (event.target === modalPadecimiento) {
+        modalPadecimiento.style.display = 'none';
+    }
+    if (event.target === modalArea) { // AGREGAR ESTE BLOQUE
+        modalArea.style.display = 'none';
+    }
+}
         // Sistema de tabs
         function showTab(tabName) {
             // Ocultar todos los tabs

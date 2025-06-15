@@ -42,6 +42,7 @@ class Fortaleza(models.Model):
         verbose_name = 'Fortaleza'
         verbose_name_plural = 'Fortalezas'
 
+
 class Usuarios(AbstractUser):
     # Tipos de usuario
     jefaPiso = 'JP'
