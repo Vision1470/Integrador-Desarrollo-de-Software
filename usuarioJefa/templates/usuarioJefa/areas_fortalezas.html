@@ -1,9 +1,10 @@
+<!-- usuarioJefa/templates/usuarioJefa/areas_fortalezas.html -->
 <!DOCTYPE html>
 <html lang="es">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Áreas y Fortalezas</title>
+    <title>Gestión de Áreas, Fortalezas y Padecimientos</title>
     <style>
         :root {
             --primary-color: #0A2342;
@@ -17,6 +18,7 @@
             --success-color: #28a745;
             --warning-color: #ffc107;
             --info-color: #17a2b8;
+            --danger-color: #dc3545;
         }
 
         * {
@@ -39,15 +41,18 @@
             box-shadow: 0 15px 30px rgba(0,0,0,0.15);
             padding: 30px;
             width: 100%;
-            max-width: 1200px;
+            max-width: 1400px;
             border-left: 5px solid var(--primary-color);
+            margin: 0 auto;
         }
 
         .header {
             display: flex;
             justify-content: space-between;
             align-items: center;
-            margin-bottom: 20px;
+            margin-bottom: 30px;
+            border-bottom: 2px solid var(--primary-color);
+            padding-bottom: 15px;
         }
 
         .header h1 {
@@ -109,6 +114,53 @@
             color: var(--text-color);
         }
 
+        .action-button.danger {
+            background-color: var(--danger-color);
+        }
+
+        /* Sistema de tabs */
+        .tab-container {
+            margin-bottom: 30px;
+        }
+
+        .tab-buttons {
+            display: flex;
+            border-bottom: 2px solid var(--border-color);
+            margin-bottom: 20px;
+        }
+
+        .tab-button {
+            padding: 12px 24px;
+            background: none;
+            border: none;
+            cursor: pointer;
+            font-size: 1rem;
+            font-weight: 600;
+            color: #666;
+            border-bottom: 3px solid transparent;
+            transition: all 0.3s ease;
+        }
+
+        .tab-button.active {
+            color: var(--primary-color);
+            border-bottom-color: var(--primary-color);
+            background-color: rgba(10, 35, 66, 0.05);
+        }
+
+        .tab-button:hover {
+            color: var(--primary-color);
+            background-color: rgba(10, 35, 66, 0.05);
+        }
+
+        .tab-content {
+            display: none;
+        }
+
+        .tab-content.active {
+            display: block;
+        }
+
+        /* Mensajes */
         .messages {
             margin-bottom: 20px;
         }
@@ -155,9 +207,10 @@
             color: inherit;
         }
 
+        /* Cards y grids */
         .grid-container {
             display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            grid-template-columns: repeat(auto-fit, minmax(350px, 1fr));
             gap: 20px;
             margin-bottom: 30px;
         }
@@ -175,6 +228,9 @@
             color: var(--white);
             padding: 15px;
             font-weight: 600;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
         }
 
         .card-body {
@@ -187,11 +243,95 @@
             font-size: 1.3rem;
         }
 
+        /* Formularios */
+        .form-section {
+            background-color: #f8f9fa;
+            padding: 20px;
+            border-radius: 8px;
+            margin-bottom: 30px;
+            border: 1px solid var(--border-color);
+        }
+
+        .form-section h3 {
+            color: var(--primary-color);
+            margin-bottom: 15px;
+            font-size: 1.3rem;
+            border-bottom: 1px solid var(--border-color);
+            padding-bottom: 8px;
+        }
+
+        .form-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            gap: 20px;
+            margin-bottom: 20px;
+        }
+
+        .form-group {
+            margin-bottom: 15px;
+        }
+
+        .form-label {
+            display: block;
+            margin-bottom: 5px;
+            font-weight: 600;
+            color: #333;
+        }
+
+        .form-control {
+            width: 100%;
+            padding: 10px;
+            border: 1px solid var(--border-color);
+            border-radius: 4px;
+            font-size: 1rem;
+            transition: border-color 0.3s ease;
+        }
+
+        .form-control:focus {
+            outline: none;
+            border-color: var(--accent-color);
+            box-shadow: 0 0 0 2px rgba(30, 144, 255, 0.2);
+        }
+
+        textarea.form-control {
+            resize: vertical;
+            min-height: 80px;
+        }
+
+        /* Multi-select styling */
+        .multi-select-container {
+            border: 1px solid var(--border-color);
+            border-radius: 4px;
+            max-height: 200px;
+            overflow-y: auto;
+            background: var(--white);
+        }
+
+        .multi-select-item {
+            padding: 8px 12px;
+            border-bottom: 1px solid #eee;
+            display: flex;
+            align-items: center;
+        }
+
+        .multi-select-item:last-child {
+            border-bottom: none;
+        }
+
+        .multi-select-item input[type="checkbox"] {
+            margin-right: 10px;
+        }
+
+        /* Tablas */
         table {
             width: 100%;
             border-collapse: separate;
             border-spacing: 0;
             margin-bottom: 20px;
+            background: var(--white);
+            border-radius: 8px;
+            overflow: hidden;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
         }
 
         table th {
@@ -215,6 +355,11 @@
             background-color: #E6EAE7;
         }
 
+        table tr:last-child td {
+            border-bottom: none;
+        }
+
+        /* Tags/badges */
         .badge {
             display: inline-block;
             padding: 4px 8px;
@@ -230,10 +375,70 @@
             color: var(--white);
         }
 
+        .badge-success {
+            background-color: var(--success-color);
+            color: var(--white);
+        }
+
+        .badge-warning {
+            background-color: var(--warning-color);
+            color: #333;
+        }
+
+        .badge-secondary {
+            background-color: #6c757d;
+            color: var(--white);
+        }
+
         .text-center {
             text-align: center;
         }
 
+        /* Modal styles */
+        .modal {
+            display: none;
+            position: fixed;
+            z-index: 1000;
+            left: 0;
+            top: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(0,0,0,0.5);
+        }
+
+        .modal-content {
+            background-color: var(--white);
+            margin: 5% auto;
+            padding: 20px;
+            border-radius: 8px;
+            width: 90%;
+            max-width: 600px;
+            max-height: 80vh;
+            overflow-y: auto;
+        }
+
+        .modal-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 20px;
+            padding-bottom: 10px;
+            border-bottom: 1px solid var(--border-color);
+        }
+
+        .modal-close {
+            background: none;
+            border: none;
+            font-size: 1.5rem;
+            cursor: pointer;
+            color: #999;
+        }
+
+        .modal-close:hover {
+            color: #333;
+        }
+
+        /* Responsive */
         @media (max-width: 768px) {
             .container {
                 padding: 20px;
@@ -242,15 +447,27 @@
             .grid-container {
                 grid-template-columns: 1fr;
             }
+
+            .form-grid {
+                grid-template-columns: 1fr;
+            }
+            
+            .tab-buttons {
+                flex-direction: column;
+            }
             
             .header {
                 flex-direction: column;
-                align-items: flex-start;
+                gap: 15px;
             }
             
             .menu-buttons {
-                margin-top: 15px;
                 flex-wrap: wrap;
+            }
+
+            .modal-content {
+                width: 95%;
+                margin: 10% auto;
             }
         }
     </style>
@@ -264,7 +481,7 @@
         <a href="{% url 'jefa:almacen_' %}" class="menu-button">Almacen</a>
         <a href="{% url 'jefa:usuarios_' %}" class="menu-button">Usuarios</a>
         <a href="{% url 'jefa:areas_fortalezas' %}" class="menu-button">Areas</a>
-        <form action="{% url 'login:login' %}" method="POST">
+        <form action="{% url 'login:login' %}" method="POST" style="display: inline;">
             {% csrf_token %}
             <button type="submit" class="menu-button">Cerrar Sesión</button>
         </form>
@@ -272,13 +489,13 @@
     
     <div class="container">
         <div class="header">
-            <h1>Gestión de Áreas y Fortalezas</h1>
+            <h1>Gestión de Áreas, Fortalezas y Padecimientos</h1>
             <div class="menu-buttons">
-                <a href="{% url 'jefa:crear_area' %}" class="action-button success">Nueva Área</a>
-                <a href="{% url 'jefa:crear_fortaleza' %}" class="action-button success">Nueva Fortaleza</a>
+                <a href="{% url 'jefa:menu_jefa' %}" class="menu-button">← Menú Principal</a>
             </div>
         </div>
 
+        <!-- Mensajes del sistema -->
         {% if messages %}
         <div class="messages">
             {% for message in messages %}
@@ -290,80 +507,716 @@
         </div>
         {% endif %}
 
-        <div class="grid-container">
-            <!-- Áreas -->
-            <div class="card">
-                <div class="card-header">
-                    <h3 class="card-title">Áreas</h3>
-                </div>
-                <div class="card-body">
-                    <table>
-                        <thead>
-                            <tr>
-                                <th>Nombre</th>
-                                <th>Fortalezas Asignadas</th>
-                                <th>Acciones</th>
-                            </tr>
-                        </thead>
-                        <tbody>
-                            {% for area in areas %}
-                            <tr>
-                                <td>{{ area.nombre }}</td>
-                                <td>
-                                    {% for fortaleza in area.fortalezas.all %}
-                                        <span class="badge badge-info">{{ fortaleza.nombre }}</span>
+        <!-- Sistema de tabs -->
+        <div class="tab-container">
+            <div class="tab-buttons">
+                <button class="tab-button active" onclick="showTab('areas')">
+                    🏢 Gestión de Áreas
+                </button>
+                <button class="tab-button" onclick="showTab('fortalezas')">
+                    💪 Gestión de Fortalezas
+                </button>
+                <button class="tab-button" onclick="showTab('padecimientos')">
+                    🏥 Gestión de Padecimientos
+                </button>
+                <button class="tab-button" onclick="showTab('relaciones')">
+                    🔗 Ver Relaciones
+                </button>
+            </div>
+
+            <!-- TAB 1: ÁREAS -->
+            <div id="areas-tab" class="tab-content active">
+                <div class="grid-container">
+                    <!-- Crear nueva área -->
+                    <div class="card">
+                        <div class="card-header">
+                            <h3 class="card-title">➕ Crear Nueva Área</h3>
+                        </div>
+                        <div class="card-body">
+                            <form method="post" action="{% url 'jefa:crear_area' %}">
+                                {% csrf_token %}
+                                <div class="form-group">
+                                    <label class="form-label" for="area-nombre">Nombre del Área:</label>
+                                    <input type="text" id="area-nombre" name="nombre" class="form-control" 
+                                           placeholder="Ej: Cuidados Intensivos" required>
+                                </div>
+                                
+                                <div class="form-group">
+                                    <label class="form-label" for="area-descripcion">Descripción:</label>
+                                    <textarea id="area-descripcion" name="descripcion" class="form-control" 
+                                              placeholder="Descripción del área..."></textarea>
+                                </div>
+                                
+                                <div class="form-group">
+                                    <label class="form-label">Fortalezas del Área (máximo 4):</label>
+                                    <div class="multi-select-container">
+                                        {% for fortaleza in fortalezas %}
+                                            <div class="multi-select-item">
+                                                <input type="checkbox" name="fortalezas" value="{{ fortaleza.id }}" 
+                                                       id="area-fort-{{ fortaleza.id }}" class="area-fortaleza-checkbox">
+                                                <label for="area-fort-{{ fortaleza.id }}">{{ fortaleza.nombre }}</label>
+                                            </div>
+                                        {% endfor %}
+                                    </div>
+                                </div>
+                                
+                                <div class="form-group">
+                                    <label class="form-label">Padecimientos Tratados en el Área:</label>
+                                    <div class="multi-select-container">
+                                        {% for padecimiento in padecimientos %}
+                                            <div class="multi-select-item">
+                                                <input type="checkbox" name="padecimientos" value="{{ padecimiento.id }}" 
+                                                       id="area-pad-{{ padecimiento.id }}">
+                                                <label for="area-pad-{{ padecimiento.id }}">{{ padecimiento.nombre }}</label>
+                                            </div>
+                                        {% endfor %}
+                                    </div>
+                                </div>
+                                
+                                <button type="submit" class="action-button success">Crear Área</button>
+                            </form>
+                        </div>
+                    </div>
+
+                    <!-- Lista de áreas existentes -->
+                    <div class="card">
+                        <div class="card-header">
+                            <h3 class="card-title">📋 Áreas Existentes</h3>
+                        </div>
+                        <div class="card-body">
+                            <table>
+                                <thead>
+                                    <tr>
+                                        <th>Nombre</th>
+                                        <th>Fortalezas</th>
+                                        <th>Padecimientos</th>
+                                        <th>Acciones</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    {% for area in areas %}
+                                    <tr>
+                                        <td>
+                                            <strong>{{ area.nombre }}</strong>
+                                            {% if area.descripcion %}
+                                                <br><small>{{ area.descripcion|truncatechars:50 }}</small>
+                                            {% endif %}
+                                        </td>
+                                        <td>
+                                            {% for fortaleza in area.fortalezas.all %}
+                                                <span class="badge badge-info">{{ fortaleza.nombre }}</span>
+                                            {% empty %}
+                                                <em>Sin fortalezas</em>
+                                            {% endfor %}
+                                        </td>
+                                        <td>
+                                            {% for padecimiento in area.padecimientos_relacionados.all %}
+                                                <span class="badge badge-warning">{{ padecimiento.nombre }}</span>
+                                            {% empty %}
+                                                <em>Sin padecimientos</em>
+                                            {% endfor %}
+                                        </td>
+                                        <td>
+                                            <a href="{% url 'jefa:editar_area' area.id %}" class="action-button warning">Editar</a>
+                                        </td>
+                                    </tr>
+                                    {% empty %}
+                                    <tr>
+                                        <td colspan="4" class="text-center">No hay áreas registradas</td>
+                                    </tr>
                                     {% endfor %}
-                                </td>
-                                <td>
-                                    <a href="{% url 'jefa:editar_area' area.id %}" class="action-button warning">Editar</a>
-                                </td>
-                            </tr>
-                            {% empty %}
-                            <tr>
-                                <td colspan="3" class="text-center">No hay áreas registradas</td>
-                            </tr>
-                            {% endfor %}
-                        </tbody>
-                    </table>
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
                 </div>
             </div>
 
-            <!-- Fortalezas -->
-            <div class="card">
-                <div class="card-header">
-                    <h3 class="card-title">Fortalezas</h3>
+            <!-- TAB 2: FORTALEZAS -->
+            <div id="fortalezas-tab" class="tab-content">
+                <div class="grid-container">
+                    <!-- Crear nueva fortaleza -->
+                    <div class="card">
+                        <div class="card-header">
+                            <h3 class="card-title">➕ Crear Nueva Fortaleza</h3>
+                        </div>
+                        <div class="card-body">
+                            <form method="post" action="{% url 'jefa:crear_fortaleza_avanzada' %}">
+                                {% csrf_token %}
+                                <div class="form-group">
+                                    <label class="form-label" for="fortaleza-nombre">Nombre de la Fortaleza:</label>
+                                    <input type="text" id="fortaleza-nombre" name="nombre" class="form-control" 
+                                           placeholder="Ej: Manejo de heridas" required>
+                                </div>
+                                
+                                <div class="form-group">
+                                    <label class="form-label" for="fortaleza-descripcion">Descripción:</label>
+                                    <textarea id="fortaleza-descripcion" name="descripcion" class="form-control" 
+                                              placeholder="Descripción de la fortaleza..."></textarea>
+                                </div>
+                                
+                                <div class="form-group">
+                                    <label class="form-label">Áreas donde se aplica:</label>
+                                    <div class="multi-select-container">
+                                        {% for area in areas %}
+                                            <div class="multi-select-item">
+                                                <input type="checkbox" name="areas" value="{{ area.id }}" 
+                                                       id="fort-area-{{ area.id }}">
+                                                <label for="fort-area-{{ area.id }}">{{ area.nombre }}</label>
+                                            </div>
+                                        {% endfor %}
+                                    </div>
+                                </div>
+                                
+                                <div class="form-group">
+                                    <label class="form-label">Padecimientos Relacionados:</label>
+                                    <div class="multi-select-container">
+                                        {% for padecimiento in padecimientos %}
+                                            <div class="multi-select-item">
+                                                <input type="checkbox" name="padecimientos" value="{{ padecimiento.id }}" 
+                                                       id="fort-pad-{{ padecimiento.id }}">
+                                                <label for="fort-pad-{{ padecimiento.id }}">
+                                                    {{ padecimiento.nombre }}
+                                                    {% if padecimiento.areas.all %}
+                                                        <small>({{ padecimiento.areas.all|join:", " }})</small>
+                                                    {% endif %}
+                                                </label>
+                                            </div>
+                                        {% endfor %}
+                                    </div>
+                                </div>
+                                
+                                <button type="submit" class="action-button success">Crear Fortaleza</button>
+                            </form>
+                        </div>
+                    </div>
+
+                    <!-- Lista de fortalezas existentes -->
+                    <div class="card">
+                        <div class="card-header">
+                            <h3 class="card-title">💪 Fortalezas Existentes</h3>
+                        </div>
+                        <div class="card-body">
+                            <table>
+                                <thead>
+                                    <tr>
+                                        <th>Nombre</th>
+                                        <th>Áreas</th>
+                                        <th>Padecimientos</th>
+                                        <th>Usuarios</th>
+                                        <th>Acciones</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    {% for fortaleza in fortalezas %}
+                                    <tr>
+                                        <td>
+                                            <strong>{{ fortaleza.nombre }}</strong>
+                                            {% if fortaleza.descripcion %}
+                                                <br><small>{{ fortaleza.descripcion|truncatechars:50 }}</small>
+                                            {% endif %}
+                                        </td>
+                                        <td>
+                                            {% for area in fortaleza.areas.all %}
+                                                <span class="badge badge-info">{{ area.nombre }}</span>
+                                            {% empty %}
+                                                <span class="badge badge-secondary">Sin áreas</span>
+                                            {% endfor %}
+                                        </td>
+                                        <td>
+                                            {% for padecimiento in fortaleza.padecimientos_asociados.all %}
+                                                <span class="badge badge-warning">{{ padecimiento.nombre }}</span>
+                                            {% empty %}
+                                                <em>Sin padecimientos</em>
+                                            {% endfor %}
+                                        </td>
+                                        <td>
+                                            {{ fortaleza.usuarios_set.count }} usuario(s)
+                                        </td>
+                                        <td>
+                                            <button class="action-button warning" onclick="editarFortaleza({{ fortaleza.id }})">
+                                                Editar
+                                            </button>
+                                            <button class="action-button danger" onclick="eliminarFortaleza({{ fortaleza.id }})">
+                                                Eliminar
+                                            </button>
+                                        </td>
+                                    </tr>
+                                    {% empty %}
+                                    <tr>
+                                        <td colspan="5" class="text-center">No hay fortalezas registradas</td>
+                                    </tr>
+                                    {% endfor %}
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
                 </div>
-                <div class="card-body">
-                    <table>
-                        <thead>
-                            <tr>
-                                <th>Nombre</th>
-                                <th>Descripción</th>
-                                <th>Acciones</th>
-                            </tr>
-                        </thead>
-                        <tbody>
-                            {% for fortaleza in fortalezas %}
-                            <tr>
-                                <td>{{ fortaleza.nombre }}</td>
-                                <td>{{ fortaleza.descripcion|truncatechars:50 }}</td>
-                                <td>
-                                    <a href="{% url 'jefa:editar_fortaleza' fortaleza.id %}" class="action-button warning">Editar</a>
-                                </td>
-                            </tr>
-                            {% empty %}
-                            <tr>
-                                <td colspan="3" class="text-center">No hay fortalezas registradas</td>
-                            </tr>
-                            {% endfor %}
-                        </tbody>
-                    </table>
+            </div>
+
+            <!-- TAB 3: PADECIMIENTOS -->
+            <div id="padecimientos-tab" class="tab-content">
+                <div class="grid-container">
+                    <!-- Crear nuevo padecimiento -->
+                    <div class="card">
+                        <div class="card-header">
+                            <h3 class="card-title">➕ Crear Nuevo Padecimiento</h3>
+                        </div>
+                        <div class="card-body">
+                            <form method="post" action="{% url 'jefa:crear_padecimiento' %}">
+                                {% csrf_token %}
+                                <div class="form-group">
+                                    <label class="form-label" for="padecimiento-nombre">Nombre del Padecimiento:</label>
+                                    <input type="text" id="padecimiento-nombre" name="nombre" class="form-control" 
+                                           placeholder="Ej: Hipertensión arterial" required>
+                                </div>
+                                
+                                <div class="form-group">
+                                    <label class="form-label" for="padecimiento-descripcion">Descripción:</label>
+                                    <textarea id="padecimiento-descripcion" name="descripcion" class="form-control" 
+                                              placeholder="Descripción médica del padecimiento..."></textarea>
+                                </div>
+                                
+                                <div class="form-group">
+                                    <label class="form-label">Áreas donde se maneja:</label>
+                                    <div class="multi-select-container">
+                                        {% for area in areas %}
+                                            <div class="multi-select-item">
+                                                <input type="checkbox" name="areas" value="{{ area.id }}" 
+                                                       id="pad-area-{{ area.id }}">
+                                                <label for="pad-area-{{ area.id }}">{{ area.nombre }}</label>
+                                            </div>
+                                        {% endfor %}
+                                    </div>
+                                </div>
+                                
+                                <div class="form-group">
+                                    <label class="form-label">Fortalezas Necesarias:</label>
+                                    <div class="multi-select-container">
+                                        {% for fortaleza in fortalezas %}
+                                            <div class="multi-select-item">
+                                                <input type="checkbox" name="fortalezas" value="{{ fortaleza.id }}" 
+                                                       id="pad-fort-{{ fortaleza.id }}">
+                                                <label for="pad-fort-{{ fortaleza.id }}">
+                                                    {{ fortaleza.nombre }}
+                                                    {% if fortaleza.areas.all %}
+                                                        <small>({{ fortaleza.areas.all|join:", " }})</small>
+                                                    {% endif %}
+                                                </label>
+                                            </div>
+                                        {% endfor %}
+                                    </div>
+                                </div>
+                                
+                                <button type="submit" class="action-button success">Crear Padecimiento</button>
+                            </form>
+                        </div>
+                    </div>
+
+                    <!-- Lista de padecimientos existentes -->
+                    <div class="card">
+                        <div class="card-header">
+                            <h3 class="card-title">🏥 Padecimientos Existentes</h3>
+                        </div>
+                        <div class="card-body">
+                            <table>
+                                <thead>
+                                    <tr>
+                                        <th>Nombre</th>
+                                        <th>Áreas</th>
+                                        <th>Fortalezas</th>
+                                        <th>Estado</th>
+                                        <th>Acciones</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    {% for padecimiento in padecimientos %}
+                                    <tr>
+                                        <td>
+                                            <strong>{{ padecimiento.nombre }}</strong>
+                                            {% if padecimiento.descripcion %}
+                                                <br><small>{{ padecimiento.descripcion|truncatechars:50 }}</small>
+                                            {% endif %}
+                                        </td>
+                                        <td>
+                                            {% for area in padecimiento.areas.all %}
+                                                <span class="badge badge-info">{{ area.nombre }}</span>
+                                            {% empty %}
+                                                <span class="badge badge-secondary">Sin áreas</span>
+                                            {% endfor %}
+                                        </td>
+                                        <td>
+                                            {% for fortaleza in padecimiento.fortalezas.all %}
+                                                <span class="badge badge-success">{{ fortaleza.nombre }}</span>
+                                            {% empty %}
+                                                <em>Sin fortalezas</em>
+                                            {% endfor %}
+                                        </td>
+                                        <td>
+                                            {% if padecimiento.activo %}
+                                                <span class="badge badge-success">Activo</span>
+                                            {% else %}
+                                                <span class="badge badge-secondary">Inactivo</span>
+                                            {% endif %}
+                                        </td>
+                                        <td>
+                                            <button class="action-button warning" onclick="editarPadecimiento({{ padecimiento.id }})">
+                                                Editar
+                                            </button>
+                                            <button class="action-button danger" onclick="eliminarPadecimiento({{ padecimiento.id }})">
+                                                Eliminar
+                                            </button>
+                                        </td>
+                                    </tr>
+                                    {% empty %}
+                                    <tr>
+                                        <td colspan="5" class="text-center">No hay padecimientos registrados</td>
+                                    </tr>
+                                    {% endfor %}
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- TAB 4: RELACIONES -->
+            <div id="relaciones-tab" class="tab-content">
+                <div class="form-section">
+                    <h3>🔗 Mapa de Relaciones por Área</h3>
+                    <p><strong>ℹ️ Información:</strong> Este mapa muestra cómo se relacionan las fortalezas y padecimientos por área hospitalaria.</p>
+                    
+                    {% for area in areas %}
+                        <div style="border: 1px solid var(--border-color); border-radius: 8px; padding: 20px; margin-bottom: 20px; background: #fafafa;">
+                            <h4 style="color: var(--primary-color); margin-bottom: 15px;">
+                                🏢 {{ area.nombre }}
+                            </h4>
+                            {% if area.descripcion %}
+                                <p style="margin-bottom: 15px; color: #666;"><em>{{ area.descripcion }}</em></p>
+                            {% endif %}
+                            
+                            <div class="form-grid">
+                                <div>
+                                    <strong>Fortalezas disponibles:</strong><br>
+                                    {% for fortaleza in fortalezas %}
+                                        {% if area in fortaleza.areas.all %}
+                                            <span class="badge badge-success">{{ fortaleza.nombre }}</span>
+                                        {% endif %}
+                                    {% empty %}
+                                        <em>Sin fortalezas específicas</em>
+                                    {% endfor %}
+                                </div>
+                                
+                                <div>
+                                    <strong>Padecimientos tratados:</strong><br>
+                                    {% for padecimiento in padecimientos %}
+                                        {% if area in padecimiento.areas.all %}
+                                            <span class="badge badge-warning">{{ padecimiento.nombre }}</span>
+                                        {% endif %}
+                                    {% empty %}
+                                        <em>Sin padecimientos específicos</em>
+                                    {% endfor %}
+                                </div>
+                            </div>
+
+                            <!-- Compatibilidad Fortaleza-Padecimiento -->
+                            <div style="margin-top: 15px; padding: 10px; background: #e8f4f8; border-radius: 4px;">
+                                <strong>💡 Compatibilidades:</strong><br>
+                                {% for fortaleza in fortalezas %}
+                                    {% if area in fortaleza.areas.all %}
+                                        {% for padecimiento in fortaleza.padecimientos_asociados.all %}
+                                            {% if area in padecimiento.areas.all %}
+                                                <small>✓ {{ fortaleza.nombre }} → {{ padecimiento.nombre }}</small><br>
+                                            {% endif %}
+                                        {% endfor %}
+                                    {% endif %}
+                                {% empty %}
+                                    <small><em>No hay compatibilidades específicas configuradas</em></small>
+                                {% endfor %}
+                            </div>
+                        </div>
+                    {% empty %}
+                        <p class="text-center" style="color: #666; font-style: italic;">No hay áreas registradas en el sistema.</p>
+                    {% endfor %}
                 </div>
             </div>
         </div>
     </div>
 
+    <!-- MODALES -->
+    
+    <!-- Modal Editar Fortaleza -->
+    <div id="modal-editar-fortaleza" class="modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3>Editar Fortaleza</h3>
+                <button class="modal-close" onclick="cerrarModalFortaleza()">&times;</button>
+            </div>
+            <form id="form-editar-fortaleza" method="post">
+                {% csrf_token %}
+                <div class="form-group">
+                    <label class="form-label">Nombre:</label>
+                    <input type="text" name="nombre" id="edit-fortaleza-nombre" class="form-control" required>
+                </div>
+                <div class="form-group">
+                    <label class="form-label">Descripción:</label>
+                    <textarea name="descripcion" id="edit-fortaleza-descripcion" class="form-control"></textarea>
+                </div>
+                <div class="form-group">
+                    <label class="form-label">Áreas:</label>
+                    <div id="edit-areas-fortaleza" class="multi-select-container">
+                        {% for area in areas %}
+                            <div class="multi-select-item">
+                                <input type="checkbox" name="areas" value="{{ area.id }}" 
+                                       id="edit-area-for-{{ area.id }}">
+                                <label for="edit-area-for-{{ area.id }}">{{ area.nombre }}</label>
+                            </div>
+                        {% endfor %}
+                    </div>
+                </div>
+                <div class="form-group">
+                    <label class="form-label">Padecimientos:</label>
+                    <div id="edit-padecimientos-fortaleza" class="multi-select-container">
+                        {% for padecimiento in padecimientos %}
+                            <div class="multi-select-item">
+                                <input type="checkbox" name="padecimientos" value="{{ padecimiento.id }}" 
+                                       id="edit-pad-for-{{ padecimiento.id }}">
+                                <label for="edit-pad-for-{{ padecimiento.id }}">{{ padecimiento.nombre }}</label>
+                            </div>
+                        {% endfor %}
+                    </div>
+                </div>
+                <div style="text-align: right; margin-top: 20px;">
+                    <button type="button" class="action-button" onclick="cerrarModalFortaleza()">Cancelar</button>
+                    <button type="submit" class="action-button success">Guardar Cambios</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Modal Editar Padecimiento -->
+    <div id="modal-editar-padecimiento" class="modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3>Editar Padecimiento</h3>
+                <button class="modal-close" onclick="cerrarModalPadecimiento()">&times;</button>
+            </div>
+            <form id="form-editar-padecimiento" method="post">
+                {% csrf_token %}
+                <div class="form-group">
+                    <label class="form-label">Nombre:</label>
+                    <input type="text" name="nombre" id="edit-padecimiento-nombre" class="form-control" required>
+                </div>
+                <div class="form-group">
+                    <label class="form-label">Descripción:</label>
+                    <textarea name="descripcion" id="edit-padecimiento-descripcion" class="form-control"></textarea>
+                </div>
+                <div class="form-group">
+                    <label class="form-label">Áreas:</label>
+                    <div id="edit-areas-padecimiento" class="multi-select-container">
+                        {% for area in areas %}
+                            <div class="multi-select-item">
+                                <input type="checkbox" name="areas" value="{{ area.id }}" 
+                                       id="edit-area-pad-{{ area.id }}">
+                                <label for="edit-area-pad-{{ area.id }}">{{ area.nombre }}</label>
+                            </div>
+                        {% endfor %}
+                    </div>
+                </div>
+                <div class="form-group">
+                    <label class="form-label">Fortalezas Necesarias:</label>
+                    <div id="edit-fortalezas-padecimiento" class="multi-select-container">
+                        {% for fortaleza in fortalezas %}
+                            <div class="multi-select-item">
+                                <input type="checkbox" name="fortalezas" value="{{ fortaleza.id }}" 
+                                       id="edit-fort-pad-{{ fortaleza.id }}">
+                                <label for="edit-fort-pad-{{ fortaleza.id }}">{{ fortaleza.nombre }}</label>
+                            </div>
+                        {% endfor %}
+                    </div>
+                </div>
+                <div style="text-align: right; margin-top: 20px;">
+                    <button type="button" class="action-button" onclick="cerrarModalPadecimiento()">Cancelar</button>
+                    <button type="submit" class="action-button success">Guardar Cambios</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
     <script>
+        // Sistema de tabs
+        function showTab(tabName) {
+            // Ocultar todos los tabs
+            document.querySelectorAll('.tab-content').forEach(tab => {
+                tab.classList.remove('active');
+            });
+            
+            // Remover clase active de todos los botones
+            document.querySelectorAll('.tab-button').forEach(btn => {
+                btn.classList.remove('active');
+            });
+            
+            // Mostrar tab seleccionado
+            document.getElementById(tabName + '-tab').classList.add('active');
+            
+            // Activar botón correspondiente
+            event.target.classList.add('active');
+        }
+
+        // Validación de fortalezas en áreas (máximo 4)
+        document.addEventListener('DOMContentLoaded', function() {
+            const areaCheckboxes = document.querySelectorAll('.area-fortaleza-checkbox');
+            areaCheckboxes.forEach(function(checkbox) {
+                checkbox.addEventListener('change', function() {
+                    const checked = document.querySelectorAll('.area-fortaleza-checkbox:checked');
+                    if (checked.length > 4) {
+                        this.checked = false;
+                        alert('No se pueden seleccionar más de 4 fortalezas para un área');
+                    }
+                });
+            });
+        });
+
+        // Funciones para modales de edición
+        function editarFortaleza(fortalezaId) {
+            const modal = document.getElementById('modal-editar-fortaleza');
+            const form = document.getElementById('form-editar-fortaleza');
+            
+            form.action = `{% url 'jefa:editar_fortaleza_avanzada' 0 %}`.replace('0', fortalezaId);
+            
+            // Hacer petición AJAX para cargar los datos existentes
+            fetch(`/jefa/api/obtener-fortaleza/${fortalezaId}/`)
+                .then(response => response.json())
+                .then(data => {
+                    // Cargar datos básicos
+                    document.getElementById('edit-fortaleza-nombre').value = data.nombre || '';
+                    document.getElementById('edit-fortaleza-descripcion').value = data.descripcion || '';
+                    
+                    // Limpiar selecciones previas
+                    document.querySelectorAll('#edit-areas-fortaleza input[type="checkbox"]').forEach(cb => cb.checked = false);
+                    document.querySelectorAll('#edit-padecimientos-fortaleza input[type="checkbox"]').forEach(cb => cb.checked = false);
+                    
+                    // Marcar áreas asignadas
+                    if (data.areas) {
+                        data.areas.forEach(areaId => {
+                            const checkbox = document.querySelector(`#edit-area-for-${areaId}`);
+                            if (checkbox) checkbox.checked = true;
+                        });
+                    }
+                    
+                    // Marcar padecimientos asignados
+                    if (data.padecimientos) {
+                        data.padecimientos.forEach(padecimientoId => {
+                            const checkbox = document.querySelector(`#edit-pad-for-${padecimientoId}`);
+                            if (checkbox) checkbox.checked = true;
+                        });
+                    }
+                })
+                .catch(error => {
+                    console.error('Error cargando datos:', error);
+                    // Si falla la carga, mostrar modal vacío
+                });
+            
+            modal.style.display = 'block';
+        }
+
+        function editarPadecimiento(padecimientoId) {
+            const modal = document.getElementById('modal-editar-padecimiento');
+            const form = document.getElementById('form-editar-padecimiento');
+            
+            form.action = `{% url 'jefa:editar_padecimiento' 0 %}`.replace('0', padecimientoId);
+            
+            // Hacer petición AJAX para cargar los datos existentes
+            fetch(`/jefa/api/obtener-padecimiento/${padecimientoId}/`)
+                .then(response => response.json())
+                .then(data => {
+                    // Cargar datos básicos
+                    document.getElementById('edit-padecimiento-nombre').value = data.nombre || '';
+                    document.getElementById('edit-padecimiento-descripcion').value = data.descripcion || '';
+                    
+                    // Limpiar selecciones previas
+                    document.querySelectorAll('#edit-areas-padecimiento input[type="checkbox"]').forEach(cb => cb.checked = false);
+                    document.querySelectorAll('#edit-fortalezas-padecimiento input[type="checkbox"]').forEach(cb => cb.checked = false);
+                    
+                    // Marcar áreas asignadas
+                    if (data.areas) {
+                        data.areas.forEach(areaId => {
+                            const checkbox = document.querySelector(`#edit-area-pad-${areaId}`);
+                            if (checkbox) checkbox.checked = true;
+                        });
+                    }
+                    
+                    // Marcar fortalezas asignadas
+                    if (data.fortalezas) {
+                        data.fortalezas.forEach(fortalezaId => {
+                            const checkbox = document.querySelector(`#edit-fort-pad-${fortalezaId}`);
+                            if (checkbox) checkbox.checked = true;
+                        });
+                    }
+                })
+                .catch(error => {
+                    console.error('Error cargando datos:', error);
+                    // Si falla la carga, mostrar modal vacío
+                });
+            
+            modal.style.display = 'block';
+        }
+
+        function eliminarFortaleza(fortalezaId) {
+            if (confirm('¿Estás seguro de que deseas eliminar esta fortaleza? Esta acción no se puede deshacer.')) {
+                const form = document.createElement('form');
+                form.method = 'post';
+                form.action = `{% url 'jefa:eliminar_fortaleza' 0 %}`.replace('0', fortalezaId);
+                
+                const csrfToken = document.createElement('input');
+                csrfToken.type = 'hidden';
+                csrfToken.name = 'csrfmiddlewaretoken';
+                csrfToken.value = '{{ csrf_token }}';
+                
+                form.appendChild(csrfToken);
+                document.body.appendChild(form);
+                form.submit();
+            }
+        }
+
+        function eliminarPadecimiento(padecimientoId) {
+            if (confirm('¿Estás seguro de que deseas eliminar este padecimiento? Esta acción no se puede deshacer.')) {
+                const form = document.createElement('form');
+                form.method = 'post';
+                form.action = `{% url 'jefa:eliminar_padecimiento' 0 %}`.replace('0', padecimientoId);
+                
+                const csrfToken = document.createElement('input');
+                csrfToken.type = 'hidden';
+                csrfToken.name = 'csrfmiddlewaretoken';
+                csrfToken.value = '{{ csrf_token }}';
+                
+                form.appendChild(csrfToken);
+                document.body.appendChild(form);
+                form.submit();
+            }
+        }
+
+        function cerrarModalFortaleza() {
+            document.getElementById('modal-editar-fortaleza').style.display = 'none';
+        }
+
+        function cerrarModalPadecimiento() {
+            document.getElementById('modal-editar-padecimiento').style.display = 'none';
+        }
+
+        // Cerrar modales al hacer click fuera
+        window.onclick = function(event) {
+            const modalFortaleza = document.getElementById('modal-editar-fortaleza');
+            const modalPadecimiento = document.getElementById('modal-editar-padecimiento');
+            
+            if (event.target === modalFortaleza) {
+                modalFortaleza.style.display = 'none';
+            }
+            if (event.target === modalPadecimiento) {
+                modalPadecimiento.style.display = 'none';
+            }
+        }
+
         // Script para cerrar los mensajes de alerta
         document.addEventListener('DOMContentLoaded', function() {
             const closeButtons = document.querySelectorAll('.close-button');

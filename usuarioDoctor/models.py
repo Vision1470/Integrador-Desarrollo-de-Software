@@ -7,14 +7,42 @@ from decimal import Decimal
 class Padecimiento(models.Model):
     nombre = models.CharField(max_length=200)
     descripcion = models.TextField(null=True, blank=True)
-    activo = models.BooleanField(default=True)  # Para poder desactivar padecimientos sin eliminarlos
+    areas = models.ManyToManyField(
+        'login.AreaEspecialidad', 
+        blank=True,
+        related_name='padecimientos_relacionados',
+        help_text="Áreas hospitalarias donde se maneja este padecimiento"
+    )
+    fortalezas = models.ManyToManyField(
+        'login.Fortaleza',
+        blank=True,
+        related_name='padecimientos_asociados',
+        help_text="Fortalezas de enfermería necesarias para atender este padecimiento"
+    )
+    activo = models.BooleanField(default=True)
     
     class Meta:
-        ordering = ['nombre']  # Para que aparezcan ordenados alfabéticamente
+        ordering = ['nombre']
+        verbose_name = 'Padecimiento'
+        verbose_name_plural = 'Padecimientos'
     
     def __str__(self):
+        areas_nombres = ', '.join([area.nombre for area in self.areas.all()])
+        if areas_nombres:
+            return f"{self.nombre} ({areas_nombres})"
         return self.nombre
-
+    
+    def save(self, *args, **kwargs):
+        super().save(*args, **kwargs)
+        # Sincronizar relación bidireccional con fortalezas
+        self.sincronizar_fortalezas()
+    
+    def sincronizar_fortalezas(self):
+        """Sincroniza la relación bidireccional con fortalezas"""
+        for fortaleza in self.fortalezas.all():
+            if not fortaleza.padecimientos_asociados.filter(id=self.id).exists():
+                fortaleza.padecimientos_asociados.add(self)
+                
 class Cuidado(models.Model):
     nombre = models.CharField(max_length=200)
     

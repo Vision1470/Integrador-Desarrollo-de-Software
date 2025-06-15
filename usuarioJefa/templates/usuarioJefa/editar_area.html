@@ -1,3 +1,4 @@
+<!-- usuarioJefa/templates/usuarioJefa/editar_area.html -->
 <!DOCTYPE html>
 <html lang="es">
 <head>
@@ -174,6 +175,12 @@
             grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
             gap: 10px;
             margin-top: 10px;
+            max-height: 200px;
+            overflow-y: auto;
+            border: 1px solid var(--border-color);
+            border-radius: 4px;
+            padding: 10px;
+            background: #fafafa;
         }
 
         .checkbox-item {
@@ -230,7 +237,7 @@
         <a href="{% url 'jefa:almacen_' %}" class="menu-button">Almacen</a>
         <a href="{% url 'jefa:usuarios_' %}" class="menu-button">Usuarios</a>
         <a href="{% url 'jefa:areas_fortalezas' %}" class="menu-button">Areas</a>
-        <form action="{% url 'login:login' %}" method="POST">
+        <form action="{% url 'login:login' %}" method="POST" style="display: inline;">
             {% csrf_token %}
             <button type="submit" class="menu-button">Cerrar Sesión</button>
         </form>
@@ -238,9 +245,9 @@
     
     <div class="container">
         <div class="header">
-            <h1>Editar Área</h1>
+            <h1>Editar Área: {{ area.nombre }}</h1>
             <div class="menu-buttons">
-                <a href="{% url 'jefa:menu_jefa' %}" class="menu-button">Volver al Menú</a>
+                <a href="{% url 'jefa:areas_fortalezas' %}" class="menu-button">← Volver a Áreas</a>
             </div>
         </div>
 
@@ -252,20 +259,24 @@
                 <form method="post">
                     {% csrf_token %}
                     <div class="form-group">
-                        <label for="nombre" class="form-label">Nombre</label>
+                        <label for="nombre" class="form-label">Nombre del Área:</label>
                         <input type="text" class="form-control" id="nombre" name="nombre" value="{{ area.nombre }}" required>
                     </div>
+                    
                     <div class="form-group">
-                        <label for="descripcion" class="form-label">Descripción</label>
+                        <label for="descripcion" class="form-label">Descripción:</label>
                         <textarea class="form-control" id="descripcion" name="descripcion" rows="3">{{ area.descripcion }}</textarea>
                     </div>
+                    
                     <div class="form-group">
-                        <label class="form-label">Fortalezas (máximo 4)</label>
+                        <label class="form-label">Fortalezas del Área (máximo 4):</label>
                         <div class="checkbox-grid">
                             {% for fortaleza in fortalezas %}
                             <div class="checkbox-item">
                                 <input type="checkbox" name="fortalezas" value="{{ fortaleza.id }}" 
-                                    id="fortaleza_{{ fortaleza.id }}" {% if fortaleza in area.fortalezas.all %}checked{% endif %}>
+                                    id="fortaleza_{{ fortaleza.id }}" 
+                                    {% if fortaleza in area.fortalezas.all %}checked{% endif %}
+                                    class="area-fortaleza-checkbox">
                                 <label for="fortaleza_{{ fortaleza.id }}">
                                     {{ fortaleza.nombre }}
                                 </label>
@@ -273,8 +284,25 @@
                             {% endfor %}
                         </div>
                     </div>
+                    
+                    <div class="form-group">
+                        <label class="form-label">Padecimientos Tratados en el Área:</label>
+                        <div class="checkbox-grid">
+                            {% for padecimiento in padecimientos %}
+                            <div class="checkbox-item">
+                                <input type="checkbox" name="padecimientos" value="{{ padecimiento.id }}" 
+                                    id="padecimiento_{{ padecimiento.id }}" 
+                                    {% if area in padecimiento.areas.all %}checked{% endif %}>
+                                <label for="padecimiento_{{ padecimiento.id }}">
+                                    {{ padecimiento.nombre }}
+                                </label>
+                            </div>
+                            {% endfor %}
+                        </div>
+                    </div>
+                    
                     <div class="button-group">
-                        <a href="{% url 'jefa:areas_fortalezas' %}" class="action-button">Volver</a>
+                        <a href="{% url 'jefa:areas_fortalezas' %}" class="action-button">Cancelar</a>
                         <button type="submit" class="action-button success">Guardar Cambios</button>
                     </div>
                 </form>
@@ -284,10 +312,10 @@
 
     <script>
     document.addEventListener('DOMContentLoaded', function() {
-        const checkboxes = document.querySelectorAll('input[name="fortalezas"]');
+        const checkboxes = document.querySelectorAll('.area-fortaleza-checkbox');
         checkboxes.forEach(function(checkbox) {
             checkbox.addEventListener('change', function() {
-                const checked = document.querySelectorAll('input[name="fortalezas"]:checked');
+                const checked = document.querySelectorAll('.area-fortaleza-checkbox:checked');
                 if (checked.length > 4) {
                     this.checked = false;
                     alert('No se pueden seleccionar más de 4 fortalezas');

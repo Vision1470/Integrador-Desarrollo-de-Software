@@ -24,11 +24,21 @@ class AreaEspecialidad(models.Model):
 class Fortaleza(models.Model):
     nombre = models.CharField(max_length=100, unique=True)
     descripcion = models.TextField(blank=True, null=True)
+    areas = models.ManyToManyField(
+        'AreaEspecialidad',
+        blank=True,
+        related_name='fortalezas_relacionadas',
+        help_text="Áreas hospitalarias donde se aplica esta fortaleza"
+    )
 
     def __str__(self):
+        areas_nombres = ', '.join([area.nombre for area in self.areas.all()])
+        if areas_nombres:
+            return f"{self.nombre} ({areas_nombres})"
         return self.nombre
 
     class Meta:
+        ordering = ['nombre']
         verbose_name = 'Fortaleza'
         verbose_name_plural = 'Fortalezas'
 

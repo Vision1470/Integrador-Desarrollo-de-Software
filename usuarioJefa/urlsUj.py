@@ -79,4 +79,27 @@ urlpatterns = [
     path('simulador/padecimientos/<int:simulacion_id>/', views.simulador_padecimientos, name='simulador_padecimientos'),
     path('simulador/resultados/<int:simulacion_id>/', views.simulador_resultados, name='simulador_resultados'),
     path('simulador/lista/', views.lista_simulaciones, name='lista_simulaciones'),
+
+
+
+    
+# AGREGAR las nuevas URLs avanzadas:
+# URLs para fortalezas avanzadas (múltiples áreas y padecimientos)
+path('crear-fortaleza-avanzada/', views.crear_fortaleza_avanzada, name='crear_fortaleza_avanzada'),
+path('editar-fortaleza-avanzada/<int:fortaleza_id>/', views.editar_fortaleza_avanzada, name='editar_fortaleza_avanzada'),
+path('eliminar-fortaleza/<int:fortaleza_id>/', views.eliminar_fortaleza, name='eliminar_fortaleza'),
+
+# URLs para padecimientos (nuevas)
+path('crear-padecimiento/', views.crear_padecimiento, name='crear_padecimiento'),
+path('editar-padecimiento/<int:padecimiento_id>/', views.editar_padecimiento, name='editar_padecimiento'),
+path('eliminar-padecimiento/<int:padecimiento_id>/', views.eliminar_padecimiento, name='eliminar_padecimiento'),
+
+# APIs para filtrado dinámico y compatibilidad
+path('api/padecimientos-por-areas/', views.get_padecimientos_por_areas, name='padecimientos_por_areas'),
+path('api/fortalezas-por-areas/', views.get_fortalezas_por_areas, name='fortalezas_por_areas'),
+path('api/compatibilidad-area/', views.get_compatibilidad_area, name='compatibilidad_area'),
+
+# APIs para cargar datos en modales de edición
+path('api/obtener-fortaleza/<int:fortaleza_id>/', views.obtener_fortaleza, name='obtener_fortaleza'),
+path('api/obtener-padecimiento/<int:padecimiento_id>/', views.obtener_padecimiento, name='obtener_padecimiento'),
 ]
