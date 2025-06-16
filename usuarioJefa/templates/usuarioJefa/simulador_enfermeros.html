@@ -281,6 +281,71 @@
             input[type="number"] {
                 width: 100%;
             }
+            /* Estilos para validación de duplicados */
+.area-section {
+    position: relative;
+}
+
+.enfermero-card.error {
+    border-color: #dc3545 !important;
+    background-color: #f8d7da !important;
+}
+
+.enfermero-card.error .enfermero-name {
+    color: #dc3545 !important;
+}
+
+.error-tooltip {
+    position: absolute;
+    background: #dc3545;
+    color: white;
+    padding: 5px 8px;
+    border-radius: 4px;
+    font-size: 0.8rem;
+    margin-top: 5px;
+    z-index: 1000;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.2);
+    animation: fadeIn 0.3s ease-in-out;
+    max-width: 200px;
+}
+
+@keyframes fadeIn {
+    from { opacity: 0; transform: translateY(-5px); }
+    to { opacity: 1; transform: translateY(0); }
+}
+
+.submit-button:disabled {
+    background-color: #6c757d !important;
+    cursor: not-allowed !important;
+    opacity: 0.6;
+    transform: none !important;
+}
+
+.submit-button:disabled:hover {
+    background-color: #6c757d !important;
+}
+
+/* Alerta de duplicados */
+.duplicados-alert {
+    background-color: #f8d7da;
+    border: 1px solid #f5c6cb;
+    color: #721c24;
+    padding: 12px 15px;
+    border-radius: 4px;
+    margin-bottom: 20px;
+    display: none;
+}
+
+.duplicados-alert.show {
+    display: block;
+    animation: slideDown 0.3s ease-in-out;
+}
+
+@keyframes slideDown {
+    from { opacity: 0; transform: translateY(-10px); }
+    to { opacity: 1; transform: translateY(0); }
+}
+
         }
     </style>
 </head>
@@ -401,69 +466,222 @@
     </div>
 
     <script>
-        function toggleEnfermero(areaId, enfermeroId) {
-            const checkbox = document.getElementById(`enfermero_${areaId}_${enfermeroId}`);
-            checkbox.checked = !checkbox.checked;
-            
-            // Actualizar estilos de la card
-            const card = checkbox.closest('.enfermero-card');
-            if (checkbox.checked) {
-                card.classList.add('selected');
-            } else {
-                card.classList.remove('selected');
+    // Variables globales para el control de duplicados
+    let enfermerosDuplicados = new Set();
+    
+    function toggleEnfermero(areaId, enfermeroId) {
+        const checkbox = document.getElementById(`enfermero_${areaId}_${enfermeroId}`);
+        checkbox.checked = !checkbox.checked;
+        
+        // Actualizar estilos de la card
+        const card = checkbox.closest('.enfermero-card');
+        if (checkbox.checked) {
+            card.classList.add('selected');
+        } else {
+            card.classList.remove('selected');
+        }
+        
+        actualizarContador(areaId);
+        validarEnfermerosDuplicados(); // NUEVA línea
+    }
+
+    function actualizarContador(areaId) {
+        const cantidadInput = document.getElementById(`cantidad_enfermeros_${areaId}`);
+        const checkboxes = document.querySelectorAll(`input[name="enfermeros_${areaId}"]:checked`);
+        const contador = document.getElementById(`contador_${areaId}`);
+        
+        const cantidadRequerida = parseInt(cantidadInput.value) || 0;
+        const cantidadSeleccionada = checkboxes.length;
+        
+        contador.textContent = `Seleccionados: ${cantidadSeleccionada} de ${cantidadRequerida}`;
+        
+        // Cambiar color según el estado
+        if (cantidadSeleccionada === cantidadRequerida && cantidadRequerida > 0) {
+            contador.style.backgroundColor = 'var(--success-color)';
+            contador.style.color = 'white';
+        } else if (cantidadSeleccionada > cantidadRequerida) {
+            contador.style.backgroundColor = '#dc3545';
+            contador.style.color = 'white';
+        } else {
+            contador.style.backgroundColor = 'var(--warning-color)';
+            contador.style.color = '#000';
+        }
+    }
+
+    // NUEVA FUNCIÓN: Validar enfermeros duplicados
+    function validarEnfermerosDuplicados() {
+        console.log('🔍 Validando enfermeros duplicados...');
+        
+        // Limpiar estado anterior
+        enfermerosDuplicados.clear();
+        
+        // Obtener todos los enfermeros seleccionados por área
+        const seleccionesPorArea = {};
+        const todasLasSelecciones = [];
+        
+        {% for area_simulada in areas_simuladas %}
+        const checkboxesArea{{ area_simulada.id }} = document.querySelectorAll(`input[name="enfermeros_{{ area_simulada.id }}"]:checked`);
+        seleccionesPorArea[{{ area_simulada.id }}] = [];
+        
+        checkboxesArea{{ area_simulada.id }}.forEach(checkbox => {
+            const enfermeroId = checkbox.value;
+            seleccionesPorArea[{{ area_simulada.id }}].push(enfermeroId);
+            todasLasSelecciones.push({
+                areaId: {{ area_simulada.id }},
+                enfermeroId: enfermeroId,
+                checkbox: checkbox
+            });
+        });
+        {% endfor %}
+        
+        // Detectar duplicados
+        const conteoEnfermeros = {};
+        todasLasSelecciones.forEach(seleccion => {
+            if (!conteoEnfermeros[seleccion.enfermeroId]) {
+                conteoEnfermeros[seleccion.enfermeroId] = [];
+            }
+            conteoEnfermeros[seleccion.enfermeroId].push(seleccion);
+        });
+        
+        // Limpiar estilos de error previos
+        document.querySelectorAll('.enfermero-card').forEach(card => {
+            card.classList.remove('error');
+            const tooltip = card.querySelector('.error-tooltip');
+            if (tooltip) {
+                tooltip.remove();
+            }
+        });
+        
+        // Marcar duplicados
+        let hayDuplicados = false;
+        Object.keys(conteoEnfermeros).forEach(enfermeroId => {
+            const selecciones = conteoEnfermeros[enfermeroId];
+            if (selecciones.length > 1) {
+                hayDuplicados = true;
+                enfermerosDuplicados.add(enfermeroId);
+                
+                // Marcar todas las cards donde aparece este enfermero
+                selecciones.forEach(seleccion => {
+                    const card = seleccion.checkbox.closest('.enfermero-card');
+                    card.classList.add('error');
+                    
+                    // Agregar tooltip si no existe
+                    if (!card.querySelector('.error-tooltip')) {
+                        const tooltip = document.createElement('div');
+                        tooltip.className = 'error-tooltip';
+                        tooltip.innerHTML = `❌ Este enfermero está seleccionado en ${selecciones.length} áreas`;
+                        card.style.position = 'relative';
+                        card.appendChild(tooltip);
+                    }
+                });
+                
+                console.log(`❌ Enfermero ${enfermeroId} duplicado en ${selecciones.length} áreas`);
+            }
+        });
+        
+        // Actualizar alerta general y botón de envío
+        actualizarAlertaDuplicados(hayDuplicados);
+        actualizarBotonEnvio(hayDuplicados);
+        
+        return !hayDuplicados;
+    }
+    
+    // NUEVA FUNCIÓN: Actualizar alerta de duplicados
+    function actualizarAlertaDuplicados(hayDuplicados) {
+        let alertaDiv = document.getElementById('alerta-duplicados');
+        
+        if (hayDuplicados) {
+            if (!alertaDiv) {
+                // Crear alerta si no existe
+                alertaDiv = document.createElement('div');
+                alertaDiv.id = 'alerta-duplicados';
+                alertaDiv.className = 'duplicados-alert';
+                
+                // Insertar después de los mensajes
+                const messagesDiv = document.querySelector('.messages');
+                if (messagesDiv) {
+                    messagesDiv.parentNode.insertBefore(alertaDiv, messagesDiv.nextSibling);
+                } else {
+                    const infoBox = document.querySelector('.info-box');
+                    infoBox.parentNode.insertBefore(alertaDiv, infoBox.nextSibling);
+                }
             }
             
-            actualizarContador(areaId);
+            const cantidadDuplicados = enfermerosDuplicados.size;
+            alertaDiv.innerHTML = `
+                <strong>⚠️ Error de Duplicados:</strong> 
+                ${cantidadDuplicados} enfermero${cantidadDuplicados > 1 ? 's' : ''} 
+                ${cantidadDuplicados > 1 ? 'están' : 'está'} seleccionado${cantidadDuplicados > 1 ? 's' : ''} en múltiples áreas. 
+                Cada enfermero solo puede estar asignado a un área en la simulación.
+            `;
+            alertaDiv.classList.add('show');
+        } else if (alertaDiv) {
+            alertaDiv.classList.remove('show');
+            setTimeout(() => {
+                if (alertaDiv.parentNode) {
+                    alertaDiv.parentNode.removeChild(alertaDiv);
+                }
+            }, 300);
         }
-
-        function actualizarContador(areaId) {
-            const cantidadInput = document.getElementById(`cantidad_enfermeros_${areaId}`);
-            const checkboxes = document.querySelectorAll(`input[name="enfermeros_${areaId}"]:checked`);
-            const contador = document.getElementById(`contador_${areaId}`);
-            
-            const cantidadRequerida = parseInt(cantidadInput.value) || 0;
-            const cantidadSeleccionada = checkboxes.length;
-            
-            contador.textContent = `Seleccionados: ${cantidadSeleccionada} de ${cantidadRequerida}`;
-            
-            // Cambiar color según el estado
-            if (cantidadSeleccionada === cantidadRequerida && cantidadRequerida > 0) {
-                contador.style.backgroundColor = 'var(--success-color)';
-                contador.style.color = 'white';
-            } else if (cantidadSeleccionada > cantidadRequerida) {
-                contador.style.backgroundColor = '#dc3545';
-                contador.style.color = 'white';
-            } else {
-                contador.style.backgroundColor = 'var(--warning-color)';
-                contador.style.color = '#000';
-            }
+    }
+    
+    // NUEVA FUNCIÓN: Actualizar estado del botón de envío
+    function actualizarBotonEnvio(hayDuplicados) {
+        const submitButton = document.querySelector('.submit-button');
+        
+        if (hayDuplicados) {
+            submitButton.disabled = true;
+            submitButton.title = 'Corrige los enfermeros duplicados antes de continuar';
+        } else {
+            submitButton.disabled = false;
+            submitButton.title = '';
         }
+    }
 
-        // Inicializar contadores al cargar la página
-        document.addEventListener('DOMContentLoaded', function() {
-            {% for area_simulada in areas_simuladas %}
+    // Inicializar contadores al cargar la página
+    document.addEventListener('DOMContentLoaded', function() {
+        {% for area_simulada in areas_simuladas %}
+        actualizarContador({{ area_simulada.id }});
+        {% endfor %}
+        
+        // Validación inicial de duplicados
+        setTimeout(validarEnfermerosDuplicados, 100);
+        
+        // Agregar event listeners para cambios en cantidad
+        {% for area_simulada in areas_simuladas %}
+        document.getElementById('cantidad_enfermeros_{{ area_simulada.id }}').addEventListener('change', function() {
             actualizarContador({{ area_simulada.id }});
-            {% endfor %}
+            validarEnfermerosDuplicados();
         });
+        {% endfor %}
+    });
 
-        // Validación antes de enviar
-        document.getElementById('form-enfermeros').addEventListener('submit', function(e) {
-            let hayErrores = false;
-            
-            {% for area_simulada in areas_simuladas %}
-            const cantidadRequerida{{ area_simulada.id }} = parseInt(document.getElementById('cantidad_enfermeros_{{ area_simulada.id }}').value) || 0;
-            const cantidadSeleccionada{{ area_simulada.id }} = document.querySelectorAll('input[name="enfermeros_{{ area_simulada.id }}"]:checked').length;
-            
-            if (cantidadRequerida{{ area_simulada.id }} !== cantidadSeleccionada{{ area_simulada.id }}) {
-                alert(`Error en {{ area_simulada.area_real.nombre }}: Debes seleccionar exactamente ${cantidadRequerida{{ area_simulada.id }}} enfermeros (tienes ${cantidadSeleccionada{{ area_simulada.id }}} seleccionados)`);
-                hayErrores = true;
-            }
-            {% endfor %}
-            
-            if (hayErrores) {
-                e.preventDefault();
-            }
-        });
-    </script>
+    // VALIDACIÓN MEJORADA antes de enviar
+    document.getElementById('form-enfermeros').addEventListener('submit', function(e) {
+        let hayErrores = false;
+        
+        // Validar duplicados
+        if (!validarEnfermerosDuplicados()) {
+            alert('❌ Error: Hay enfermeros duplicados. Cada enfermero solo puede estar asignado a un área.');
+            e.preventDefault();
+            return;
+        }
+        
+        // Validar cantidades
+        {% for area_simulada in areas_simuladas %}
+        const cantidadRequerida{{ area_simulada.id }} = parseInt(document.getElementById('cantidad_enfermeros_{{ area_simulada.id }}').value) || 0;
+        const cantidadSeleccionada{{ area_simulada.id }} = document.querySelectorAll('input[name="enfermeros_{{ area_simulada.id }}"]:checked').length;
+        
+        if (cantidadRequerida{{ area_simulada.id }} !== cantidadSeleccionada{{ area_simulada.id }}) {
+            alert(`Error en {{ area_simulada.area_real.nombre }}: Debes seleccionar exactamente ${cantidadRequerida{{ area_simulada.id }}} enfermeros (tienes ${cantidadSeleccionada{{ area_simulada.id }}} seleccionados)`);
+            hayErrores = true;
+        }
+        {% endfor %}
+        
+        if (hayErrores) {
+            e.preventDefault();
+        }
+    });
+</script>
 </body>
 </html>

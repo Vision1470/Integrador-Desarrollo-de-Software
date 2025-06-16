@@ -421,7 +421,377 @@
             .action-button {
                 text-align: center;
             }
-        }
+
+            .fortalezas-list, .padecimientos-list {
+    max-width: 250px;
+}
+
+.fortaleza-tag, .padecimiento-tag {
+    display: inline-block;
+    padding: 3px 8px;
+    border-radius: 4px;
+    font-size: 0.75rem;
+    margin: 2px;
+    font-weight: 500;
+    transition: all 0.3s ease;
+    border: 1px solid transparent;
+}
+
+.fortaleza-tag {
+    background-color: #e7f3ff;
+    color: var(--primary-color);
+    border-color: var(--primary-color);
+}
+
+.padecimiento-tag {
+    background-color: #fff3cd;
+    color: #856404;
+    border-color: #ffc107;
+}
+
+/* Estilos para compatibilidades resaltadas */
+.fortaleza-tag.compatible,
+.padecimiento-tag.compatible {
+    background-color: #28a745 !important;
+    color: white !important;
+    border-color: #28a745 !important;
+    box-shadow: 0 2px 4px rgba(40, 167, 69, 0.3);
+    font-weight: 600;
+}
+
+.fortaleza-tag.semi-compatible,
+.padecimiento-tag.semi-compatible {
+    background-color: #ffc107 !important;
+    color: #000 !important;
+    border-color: #ffc107 !important;
+    box-shadow: 0 2px 4px rgba(255, 193, 7, 0.3);
+}
+
+/* Estilos para la celda de compatibilidad */
+.compatibilidad-cell {
+    text-align: left;
+    min-width: 250px;
+    max-width: 300px;
+    padding: 12px !important;
+    vertical-align: top;
+}
+
+.compatibilidad-header {
+    margin-bottom: 10px;
+    padding-bottom: 5px;
+    border-bottom: 1px solid #e9ecef;
+}
+
+.coincidencias-detalle {
+    margin-bottom: 8px;
+}
+
+.coincidencia-item {
+    display: flex;
+    align-items: center;
+    margin: 6px 0;
+    padding: 6px 8px;
+    background-color: #f8f9fa;
+    border-radius: 4px;
+    border-left: 3px solid var(--success-color);
+    font-size: 0.85em;
+    transition: background-color 0.2s ease;
+}
+
+.coincidencia-item:hover {
+    background-color: #e9ecef;
+    transform: translateX(2px);
+}
+
+.fortaleza-nombre {
+    color: var(--primary-color);
+    font-weight: 600;
+    background-color: #e7f3ff;
+    padding: 2px 6px;
+    border-radius: 3px;
+    margin-right: 8px;
+    font-size: 0.8em;
+    border: 1px solid var(--primary-color);
+}
+
+.flecha {
+    color: var(--success-color);
+    font-weight: bold;
+    font-size: 1.1em;
+    margin: 0 6px;
+    flex-shrink: 0;
+}
+
+.padecimiento-nombre {
+    color: #856404;
+    font-weight: 600;
+    background-color: #fff3cd;
+    padding: 2px 6px;
+    border-radius: 3px;
+    font-size: 0.8em;
+    border: 1px solid #ffc107;
+    flex-grow: 1;
+}
+
+.sin-coincidencias {
+    text-align: center;
+    padding: 10px;
+    background-color: #f8d7da;
+    border-radius: 4px;
+    border: 1px solid #f5c6cb;
+}
+
+.motivo-principal {
+    margin-top: 8px;
+    padding-top: 6px;
+    border-top: 1px dashed #dee2e6;
+    text-align: center;
+    font-style: italic;
+}
+
+/* Responsivo para la nueva columna */
+@media (max-width: 768px) {
+    .compatibilidad-cell {
+        min-width: 200px;
+        font-size: 0.8rem;
+    }
+    
+    .coincidencia-item {
+        flex-direction: column;
+        align-items: flex-start;
+        gap: 4px;
+    }
+    
+    .flecha {
+        transform: rotate(90deg);
+        align-self: center;
+        margin: 2px 0;
+    }
+    
+    .fortaleza-nombre,
+    .padecimiento-nombre {
+        align-self: stretch;
+        text-align: center;
+    }
+}
+
+/* Mantener estilos existentes para fortalezas y padecimientos */
+.fortalezas-list, .padecimientos-list {
+    max-width: 250px;
+}
+
+.fortaleza-tag, .padecimiento-tag {
+    display: inline-block;
+    padding: 3px 8px;
+    border-radius: 4px;
+    font-size: 0.75rem;
+    margin: 2px;
+    font-weight: 500;
+    transition: all 0.3s ease;
+    border: 1px solid transparent;
+}
+
+.fortaleza-tag {
+    background-color: #e7f3ff;
+    color: var(--primary-color);
+    border-color: var(--primary-color);
+}
+
+.padecimiento-tag {
+    background-color: #fff3cd;
+    color: #856404;
+    border-color: #ffc107;
+}
+/* Hover effect para tags compatibles */
+.fortaleza-tag.compatible:hover,
+.padecimiento-tag.compatible:hover {
+    transform: translateY(-1px) scale(1.02);
+    box-shadow: 0 4px 8px rgba(0,0,0,0.2) !important;
+}
+
+@media print {
+    /* Ocultar completamente la sección de acciones */
+    .actions-section {
+        display: none !important;
+    }
+    
+    /* Ocultar botones del header */
+    .header > div {
+        display: none !important;
+    }
+    
+    /* Ocultar scripts y elementos interactivos */
+    script {
+        display: none !important;
+    }
+    
+    /* Opcional: Ocultar mensajes de Django también */
+    .messages {
+        display: none !important;
+    }
+    
+    /* Mejorar espaciado para impresión */
+    .summary-cards {
+        margin-bottom: 20px !important;
+    }
+    
+    .section {
+        margin-bottom: 25px !important;
+    }
+    
+    /* Asegurar que las tablas no se corten */
+    table {
+        page-break-inside: auto;
+    }
+    
+    tr {
+        page-break-inside: avoid;
+        page-break-after: auto;
+    }
+    
+    th {
+        page-break-after: avoid;
+    }
+}
+
+  .actions-section {
+        display: none !important;
+    }
+    
+    /* NUEVAS reglas para tablas */
+    
+    /* Hacer que las tablas sean más compactas */
+    .detalle-table {
+        font-size: 0.7rem !important;
+        width: 100% !important;
+    }
+    
+    .detalle-table th,
+    .detalle-table td {
+        padding: 4px 2px !important;
+        word-wrap: break-word !important;
+        overflow-wrap: break-word !important;
+    }
+    
+    /* Ajustar columnas específicas */
+    .detalle-table th:nth-child(1), /* Paciente */
+    .detalle-table td:nth-child(1) {
+        width: 8% !important;
+    }
+    
+    .detalle-table th:nth-child(2), /* Área */
+    .detalle-table td:nth-child(2) {
+        width: 10% !important;
+    }
+    
+    .detalle-table th:nth-child(3), /* Enfermero */
+    .detalle-table td:nth-child(3) {
+        width: 15% !important;
+    }
+    
+    .detalle-table th:nth-child(4), /* Fortalezas */
+    .detalle-table td:nth-child(4) {
+        width: 20% !important;
+    }
+    
+    .detalle-table th:nth-child(5), /* Gravedad */
+    .detalle-table td:nth-child(5) {
+        width: 8% !important;
+    }
+    
+    .detalle-table th:nth-child(6), /* Padecimientos */
+    .detalle-table td:nth-child(6) {
+        width: 15% !important;
+    }
+    
+    .detalle-table th:nth-child(7), /* Compatibilidad */
+    .detalle-table td:nth-child(7) {
+        width: 24% !important;
+    }
+    
+    /* Hacer tags más pequeños */
+    .fortaleza-tag,
+    .padecimiento-tag {
+        font-size: 0.6rem !important;
+        padding: 1px 3px !important;
+        margin: 1px !important;
+        display: inline-block !important;
+    }
+    
+    /* Compatibilidad más compacta */
+    .compatibilidad-cell {
+        font-size: 0.65rem !important;
+        min-width: auto !important;
+        max-width: none !important;
+    }
+    
+    .coincidencia-item {
+        margin: 2px 0 !important;
+        padding: 2px 4px !important;
+        font-size: 0.6rem !important;
+    }
+    
+    .fortaleza-nombre,
+    .padecimiento-nombre {
+        font-size: 0.55rem !important;
+        padding: 1px 3px !important;
+    }
+    
+    .flecha {
+        font-size: 0.8rem !important;
+        margin: 0 2px !important;
+    }
+    
+    .compatibilidad-header strong {
+        font-size: 0.7rem !important;
+    }
+    
+    .motivo-principal {
+        font-size: 0.6rem !important;
+        margin-top: 3px !important;
+        padding-top: 2px !important;
+    }
+    
+    /* Orientación landscape para tablas anchas */
+    .section:has(.detalle-table) {
+        page-break-before: always;
+        page-break-after: always;
+    }
+    
+    /* Reducir altura de headers para ahorrar espacio */
+    .section-title {
+        padding: 8px 15px !important;
+        font-size: 1rem !important;
+    }
+    
+    /* Opcional: Rotar la página para esta tabla específicamente */
+    @page detalle-pacientes {
+        size: landscape;
+    }
+    
+    .section:has(.detalle-table) {
+        page: detalle-pacientes;
+    }
+
+    .detalle-table td {
+        line-height: 1.2 !important;
+    }
+    
+    /* Stack información verticalmente en celdas específicas */
+    .detalle-table td:nth-child(3) { /* Enfermero */
+        white-space: pre-line !important;
+    }
+    
+    .detalle-table td:nth-child(4) { /* Fortalezas */
+        white-space: pre-line !important;
+    }
+    
+    .detalle-table td:nth-child(7) { /* Compatibilidad */
+        white-space: pre-line !important;
+    }
+}
+
+
     </style>
 </head>
 <body>
@@ -606,55 +976,117 @@
 
         <!-- Detalle de Pacientes -->
         <div class="section">
-            <div class="section-title">Detalle de Pacientes</div>
-            <div class="section-content">
-                <table class="detalle-table">
-                    <thead>
-                        <tr>
-                            <th>Paciente</th>
-                            <th>Área</th>
-                            <th>Enfermero Asignado</th>
-                            <th>Gravedad</th>
-                            <th>Padecimientos</th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                        {% for paciente_data in detalle_pacientes %}
-                        <tr>
-                            <td><strong>{{ paciente_data.paciente.nombre_simulado }}</strong></td>
-                            <td>{{ paciente_data.area }}</td>
-                            <td>
-                                {% if paciente_data.paciente.enfermero_asignado %}
-                                    <strong>{{ paciente_data.paciente.enfermero_asignado.enfermero_real.first_name }} {{ paciente_data.paciente.enfermero_asignado.enfermero_real.apellidos }}</strong>
-                                    <br>
-                                    <small style="color: #666;">{{ paciente_data.paciente.enfermero_asignado.enfermero_real.username }}</small>
-                                {% else %}
-                                    <span style="color: #dc3545; font-style: italic;">Sin asignar</span>
-                                {% endif %}
-                            </td>
-                            <td>
-                                <span class="gravedad-badge gravedad-{{ paciente_data.paciente.nivel_gravedad }}">
-                                    {% if paciente_data.paciente.nivel_gravedad == 1 %}Leve
-                                    {% elif paciente_data.paciente.nivel_gravedad == 2 %}Moderado
-                                    {% else %}Grave{% endif %}
+    <div class="section-title">Detalle de Pacientes y Compatibilidades</div>
+    <div class="section-content">
+        <table class="detalle-table">
+            <thead>
+                <tr>
+                    <th>Paciente</th>
+                    <th>Área</th>
+                    <th>Enfermero Asignado</th>
+                    <th>Fortalezas del Enfermero</th>
+                    <th>Gravedad</th>
+                    <th>Padecimientos</th>
+                    <th>Compatibilidad</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for paciente_data in detalle_pacientes %}
+                <tr>
+                    <td><strong>{{ paciente_data.paciente.nombre_simulado }}</strong></td>
+                    <td>{{ paciente_data.area }}</td>
+                    <td>
+                        {% if paciente_data.paciente.enfermero_asignado %}
+                            <strong>{{ paciente_data.paciente.enfermero_asignado.enfermero_real.first_name }} {{ paciente_data.paciente.enfermero_asignado.enfermero_real.apellidos }}</strong>
+                            <br>
+                            <small style="color: #666;">{{ paciente_data.paciente.enfermero_asignado.enfermero_real.username }}</small>
+                        {% else %}
+                            <span style="color: #dc3545; font-style: italic;">Sin asignar</span>
+                        {% endif %}
+                    </td>
+                    <td class="fortalezas-list">
+                        {% if paciente_data.paciente.enfermero_asignado %}
+                            {% for fortaleza in paciente_data.paciente.enfermero_asignado.enfermero_real.fortalezas.all %}
+                                <span class="fortaleza-tag" data-fortaleza-id="{{ fortaleza.id }}" data-paciente-id="{{ paciente_data.paciente.id }}">
+                                    {{ fortaleza.nombre }}
                                 </span>
-                            </td>
-                            <td class="padecimientos-list">
-                                {% if paciente_data.padecimientos %}
-                                    {% for padecimiento in paciente_data.padecimientos %}
-                                        <span class="padecimiento-tag">{{ padecimiento }}</span>
-                                    {% endfor %}
-                                {% else %}
-                                    <span style="color: #666; font-style: italic;">Sin padecimientos</span>
-                                {% endif %}
-                            </td>
-                        </tr>
-                        {% endfor %}
-                    </tbody>
-                </table>
-            </div>
+                            {% empty %}
+                                <span style="color: #666; font-style: italic;">Sin fortalezas</span>
+                            {% endfor %}
+                        {% else %}
+                            <span style="color: #666; font-style: italic;">-</span>
+                        {% endif %}
+                    </td>
+                    <td>
+                        <span class="gravedad-badge gravedad-{{ paciente_data.paciente.nivel_gravedad }}">
+                            {% if paciente_data.paciente.nivel_gravedad == 1 %}Leve
+                            {% elif paciente_data.paciente.nivel_gravedad == 2 %}Moderado
+                            {% else %}Grave{% endif %}
+                        </span>
+                    </td>
+                    <td class="padecimientos-list">
+                        {% if paciente_data.padecimientos %}
+                            {% for padecimiento in paciente_data.paciente.padecimientos.all %}
+                                <span class="padecimiento-tag" data-padecimiento-id="{{ padecimiento.padecimiento.id }}" data-paciente-id="{{ paciente_data.paciente.id }}">
+                                    {{ padecimiento.padecimiento.nombre }}
+                                </span>
+                            {% endfor %}
+                        {% else %}
+                            <span style="color: #666; font-style: italic;">Sin padecimientos</span>
+                        {% endif %}
+                    </td>
+                    <td class="compatibilidad-cell">
+    {% if paciente_data.compatibilidad %}
+        <!-- Score de coincidencias -->
+        <div class="compatibilidad-header">
+            <strong style="color: var(--success-color); font-size: 1.1em;">
+                {{ paciente_data.compatibilidad.total_coincidencias }} 
+                coincidencia{% if paciente_data.compatibilidad.total_coincidencias != 1 %}s{% endif %}
+            </strong>
         </div>
-
+        
+        <!-- Detalles de coincidencias específicas -->
+        {% if paciente_data.compatibilidad.compatibilidades %}
+            <div class="coincidencias-detalle">
+                {% for compatibilidad in paciente_data.compatibilidad.compatibilidades %}
+                    {% if compatibilidad.tipo == 'coincidencia' %}
+                        <div class="coincidencia-item">
+                            <span class="fortaleza-nombre">{{ compatibilidad.fortaleza }}</span>
+                            <span class="flecha">→</span>
+                            <span class="padecimiento-nombre">{{ compatibilidad.padecimiento }}</span>
+                        </div>
+                    {% endif %}
+                {% endfor %}
+                
+                <!-- Si no hay coincidencias específicas, mostrar motivo -->
+                {% if paciente_data.compatibilidad.total_coincidencias == 0 %}
+                    <div class="sin-coincidencias">
+                        <span style="color: #666; font-style: italic;">Sin coincidencias específicas</span>
+                        <br>
+                        <small style="color: var(--warning-color); font-weight: 600;">
+                            Asignado por: {{ paciente_data.compatibilidad.motivo_principal }}
+                        </small>
+                    </div>
+                {% endif %}
+            </div>
+        {% endif %}
+        
+        <!-- Motivo principal al final -->
+        <div class="motivo-principal">
+            <small style="color: var(--info-color); font-weight: 500;">
+                {{ paciente_data.compatibilidad.motivo_principal }}
+            </small>
+        </div>
+    {% else %}
+        <span style="color: #666; font-style: italic;">Sin datos de compatibilidad</span>
+    {% endif %}
+</td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>
         <!-- Acciones -->
         <div class="actions-section">
             <div class="actions-title">Acciones Disponibles</div>
@@ -668,47 +1100,128 @@
     </div>
 
     <script>
-        function exportarDatos() {
-            // Función simple para exportar datos como texto
-            let datos = `RESULTADOS DE SIMULACIÓN\n`;
-            datos += `========================\n\n`;
-            datos += `Nombre: {{ simulacion.nombre }}\n`;
-            datos += `Fecha: {{ simulacion.fecha_creacion|date:"d/m/Y H:i" }}\n`;
-            datos += `Creada por: {{ simulacion.creada_por.first_name }} {{ simulacion.creada_por.apellidos }}\n\n`;
+        
+        
+        let colorIndex = 0;
+        const compatibilidadColors = new Map();
+        
+        // Procesar cada área
+        Object.keys(compatibilidades).forEach(areaNombre => {
+            console.log(`🏥 Procesando área: ${areaNombre}`);
+            const compatibilidadesArea = compatibilidades[areaNombre];
             
-            datos += `RESUMEN GENERAL:\n`;
-            datos += `- Áreas: {{ simulacion.total_areas }}\n`;
-            datos += `- Enfermeros: {{ simulacion.total_enfermeros }}\n`;
-            datos += `- Pacientes: {{ simulacion.total_pacientes }}\n`;
-            datos += `- Carga Promedio: {{ carga_promedio|floatformat:1 }}\n\n`;
-            
-            datos += `DETALLE POR ÁREAS:\n`;
-            {% for area_data in resumen_areas %}
-            datos += `- {{ area_data.area.area_real.nombre }}: {{ area_data.enfermeros_count }} enfermeros, {{ area_data.pacientes_count }} pacientes ({{ area_data.carga_trabajo|floatformat:1 }}% carga)\n`;
-            {% endfor %}
-            
-            // Crear blob y descargar
-            const blob = new Blob([datos], { type: 'text/plain' });
-            const url = window.URL.createObjectURL(blob);
-            const a = document.createElement('a');
-            a.href = url;
-            a.download = 'simulacion_{{ simulacion.id }}_resultados.txt';
-            a.click();
-            window.URL.revokeObjectURL(url);
-        }
-
-        // Agregar efectos visuales
-        document.addEventListener('DOMContentLoaded', function() {
-            // Animar barras de carga
-            const barras = document.querySelectorAll('.carga-fill');
-            barras.forEach(barra => {
-                const width = barra.style.width;
-                barra.style.width = '0%';
-                setTimeout(() => {
-                    barra.style.width = width;
-                }, 100);
+            compatibilidadesArea.forEach(comp => {
+                const pacienteId = comp.paciente.id;
+                console.log(`👤 Procesando paciente ID: ${pacienteId}`);
+                
+                // Procesar cada compatibilidad específica
+                comp.compatibilidades.forEach(compatibilidad => {
+                    if (compatibilidad.tipo === 'coincidencia') {
+                        console.log(`✅ Coincidencia encontrada: ${compatibilidad.fortaleza} → ${compatibilidad.padecimiento}`);
+                        
+                        // Crear clave única para esta compatibilidad
+                        const claveCompatibilidad = `${compatibilidad.fortaleza}-${compatibilidad.padecimiento}`;
+                        
+                        // Asignar color si no existe
+                        if (!compatibilidadColors.has(claveCompatibilidad)) {
+                            compatibilidadColors.set(claveCompatibilidad, colores[colorIndex % colores.length]);
+                            colorIndex++;
+                        }
+                        
+                        const color = compatibilidadColors.get(claveCompatibilidad);
+                        console.log(`🎨 Color asignado: ${color} para ${claveCompatibilidad}`);
+                        
+                        // CORREGIDO: Buscar fortalezas por fila específica del paciente
+                        const filasPaciente = document.querySelectorAll(`tr`);
+                        filasPaciente.forEach(fila => {
+                            const nombrePaciente = fila.querySelector('td:first-child strong');
+                            if (nombrePaciente && nombrePaciente.textContent.includes(comp.paciente.nombre_simulado)) {
+                                console.log(`🔍 Encontrada fila del paciente: ${comp.paciente.nombre_simulado}`);
+                                
+                                // Buscar y resaltar fortalezas en esta fila específica
+                                const fortalezasEnFila = fila.querySelectorAll('.fortaleza-tag');
+                                fortalezasEnFila.forEach(tag => {
+                                    const textoTag = tag.textContent.trim();
+                                    console.log(`🔧 Verificando fortaleza: "${textoTag}" vs "${compatibilidad.fortaleza}"`);
+                                    
+                                    if (textoTag === compatibilidad.fortaleza) {
+                                        console.log(`✨ Resaltando fortaleza: ${textoTag}`);
+                                        tag.style.backgroundColor = color + ' !important';
+                                        tag.style.color = 'white !important';
+                                        tag.style.borderColor = color + ' !important';
+                                        tag.style.fontWeight = '700 !important';
+                                        tag.style.boxShadow = `0 2px 4px ${color}40`;
+                                        tag.classList.add('compatible');
+                                        
+                                        // Agregar indicador visual
+                                        if (!tag.querySelector('.match-indicator')) {
+                                            const indicator = document.createElement('span');
+                                            indicator.className = 'match-indicator';
+                                            indicator.innerHTML = ' ✓';
+                                            indicator.style.fontSize = '0.8em';
+                                            indicator.style.fontWeight = 'bold';
+                                            tag.appendChild(indicator);
+                                        }
+                                    }
+                                });
+                                
+                                // Buscar y resaltar padecimientos en esta fila específica
+                                const padecimientosEnFila = fila.querySelectorAll('.padecimiento-tag');
+                                padecimientosEnFila.forEach(tag => {
+                                    const textoTag = tag.textContent.trim();
+                                    console.log(`🦠 Verificando padecimiento: "${textoTag}" vs "${compatibilidad.padecimiento}"`);
+                                    
+                                    if (textoTag === compatibilidad.padecimiento) {
+                                        console.log(`✨ Resaltando padecimiento: ${textoTag}`);
+                                        tag.style.backgroundColor = color + ' !important';
+                                        tag.style.color = 'white !important';
+                                        tag.style.borderColor = color + ' !important';
+                                        tag.style.fontWeight = '700 !important';
+                                        tag.style.boxShadow = `0 2px 4px ${color}40`;
+                                        tag.classList.add('compatible');
+                                        
+                                        // Agregar indicador visual
+                                        if (!tag.querySelector('.match-indicator')) {
+                                            const indicator = document.createElement('span');
+                                            indicator.className = 'match-indicator';
+                                            indicator.innerHTML = ' ✓';
+                                            indicator.style.fontSize = '0.8em';
+                                            indicator.style.fontWeight = 'bold';
+                                            tag.appendChild(indicator);
+                                        }
+                                    }
+                                });
+                            }
+                        });
+                    }
+                });
             });
         });
+        
+        console.log('🎯 Resaltado de compatibilidades completado');
+    }
+
+    // Ejecutar cuando el DOM esté listo
+    document.addEventListener('DOMContentLoaded', function() {
+        console.log('📋 DOM cargado, iniciando funciones...');
+        
+        // Animar barras de carga
+        const barras = document.querySelectorAll('.carga-fill');
+        barras.forEach(barra => {
+            const width = barra.style.width;
+            barra.style.width = '0%';
+            setTimeout(() => {
+                barra.style.width = width;
+            }, 100);
+        });
+        
+        // NUEVO: Resaltar compatibilidades con delay para asegurar que todo esté renderizado
+        setTimeout(() => {
+            console.log('⏰ Ejecutando resaltado con delay...');
+            resaltarCompatibilidades();
+        }, 500);
+    });
+
     </script>
 </body>
 </html>
