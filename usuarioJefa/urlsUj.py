@@ -103,4 +103,7 @@ path('api/obtener-area/<int:area_id>/', views.obtener_area, name='obtener_area')
 # APIs para cargar datos en modales de edición
 path('api/obtener-fortaleza/<int:fortaleza_id>/', views.obtener_fortaleza, name='obtener_fortaleza'),
 path('api/obtener-padecimiento/<int:padecimiento_id>/', views.obtener_padecimiento, name='obtener_padecimiento'),
+
+#Usuarios temporales
+ path('crear-usuario-temporal/', views.crear_usuario_temporal, name='crear_usuario_temporal'),
 ]

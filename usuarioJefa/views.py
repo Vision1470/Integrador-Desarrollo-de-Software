@@ -23,6 +23,7 @@ from .forms import *
 from django.db import transaction
 from functools import wraps
 import calendar
+from login.models import *
 
 
 def menu_jefa(request):
@@ -2671,7 +2672,7 @@ def generar_sugerencias_anuales(request, año=None):
                     'modo': 'mostrar'  # Indicador de que estamos mostrando
                 }
                 
-                return render(request, 'usuarioJefa/sugerencias_anuales.html', context)
+                return render(request, 'usuarioJefa/generar_sugerencias_anuales.html', context)
                 
             except Exception as e:
                 print(f"🔍 DEBUG - Error en generar sugerencias: {str(e)}")
@@ -2781,15 +2782,25 @@ def generar_primera_rotacion_mejorada(enfermeros, areas, historial_asignaciones)
                 break
         
         if asignacion_existente:
-            # Incluir asignación existente
+            # Obtener la asignación real para recuperar fechas
+            asignacion = AsignacionCalendario.objects.filter(
+                enfermero=enfermero,
+                area=asignacion_existente['area'],
+                bimestre=1,
+                year=datetime.now().year,
+                activo=True
+            ).order_by('-id').first()
+
             sugerencias.append({
                 'enfermero': enfermero,
-                'area_sugerida': asignacion_existente['area'],
+                'area_sugerida': asignacion.area,
                 'motivo': 'Asignación existente (reactivar)',
                 'puntuacion': 0,
                 'bimestre': 1,
                 'existente': True,
-                'categoria': 'existente'
+                'categoria': 'existente',
+                'fecha_inicio': asignacion.fecha_inicio,
+                'fecha_fin': asignacion.fecha_fin
             })
         else:
             # Generar nueva sugerencia según parámetros
@@ -2851,17 +2862,27 @@ def generar_rotacion_subsecuente_mejorada(enfermeros, areas, bimestre, historial
                 if asig['bimestre'] == bimestre and asig.get('existente', False):
                     asignacion_existente = asig
                     break  # Tomar solo la primera que encuentre
-            
-            if asignacion_existente:
+                            
+                asignacion = AsignacionCalendario.objects.filter(
+                    enfermero=enfermero,
+                    area=asignacion_existente['area'],
+                    bimestre=bimestre,
+                    year=datetime.now().year,
+                    activo=True
+                ).order_by('-id').first()
+
                 sugerencias.append({
                     'enfermero': enfermero,
-                    'area_sugerida': asignacion_existente['area'],
+                    'area_sugerida': asignacion.area,
                     'motivo': 'Asignación existente',
                     'puntuacion': 0,
                     'bimestre': bimestre,
                     'existente': True,
-                    'categoria': 'existente'
+                    'categoria': 'existente',
+                    'fecha_inicio': asignacion.fecha_inicio,
+                    'fecha_fin': asignacion.fecha_fin
                 })
+
             continue
         
         # Obtener áreas de las últimas 2 rotaciones para no repetir
@@ -6215,3 +6236,35 @@ def obtener_algoritmos_disponibles():
         }
     ]
 
+
+#//////////////// Usuarios temporales
+
+
+def crear_usuario_temporal(request):
+    if request.method == 'POST':
+        nombre_temporal = request.POST.get('nombre_temporal')
+        area_id = request.POST.get('area')
+
+        if not nombre_temporal or not area_id:
+            messages.error(request, "Por favor completa todos los campos.")
+            return redirect('jefa:calendario_area')
+
+        try:
+            area = Area.objects.get(id=area_id)
+        except Area.DoesNotExist:
+            messages.error(request, "Área seleccionada no válida.")
+            return redirect('jefa:calendario_area')
+
+        # Crear el usuario temporal
+        nuevo_temporal = Usuarios(
+            username=nombre_temporal,
+            tipoUsuario='TE',  # suponiendo que 'TE' es el tipo para temporales
+            estaActivo=True,
+            area=area,
+        )
+        nuevo_temporal.save()
+        messages.success(request, f"Usuario temporal '{nombre_temporal}' creado exitosamente.")
+        return redirect('jefa:calendario_area')
+
+    # Si no es POST, redirigir o mostrar formulario si lo quieres
+    return redirect('jefa:calendario_area')
