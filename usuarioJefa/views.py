@@ -2804,18 +2804,17 @@ def generar_primera_rotacion_mejorada(enfermeros, areas, historial_asignaciones)
                     'existente': False,
                     'categoria': 'especialidad'
                 })
-            elif enfermero.fortalezas.exists():
+            #elif enfermero.fortalezas.exists():
                 # PRIORIDAD 2: Fortalezas
-                area_sugerida, coincidencias = encontrar_area_por_fortalezas_segura(enfermero, areas)
-                sugerencias.append({
-                    'enfermero': enfermero,
-                    'area_sugerida': area_sugerida,
-                    'motivo': f"Fortalezas coincidentes ({coincidencias}): {area_sugerida.nombre}",
-                    'puntuacion': coincidencias,
-                    'bimestre': 1,
-                    'existente': False,
-                    'categoria': 'fortalezas'
-                })
+             #   area_sugerida, coincidencias = encontrar_area_por_fortalezas_segura(enfermero, areas)
+              #  sugerencias.append({
+               #     'enfermero': enfermero,
+                ##   'motivo': f"Fortalezas coincidentes ({coincidencias}): {area_sugerida.nombre}",
+                  #  'puntuacion': coincidencias,
+                   # 'bimestre': 1,
+                    #'existente': False,
+                    #'categoria': 'fortalezas'
+                #})
             else:
                 # PRIORIDAD 3: Asignación aleatoria equitativa
                 area_sugerida = asignacion_aleatoria_segura(enfermero, areas)
@@ -4857,8 +4856,8 @@ def simulador_padecimientos(request, simulacion_id):
 @login_required
 def simulador_resultados(request, simulacion_id):
     """
-    Paso 5: Mostrar resultados de la simulación en tablas con distribución automática
-    MEJORADO con compatibilidades para el template
+    Paso 5: Mostrar resultados de la simulación con selección de algoritmo
+    CORREGIDO: Vista limpia y bien estructurada
     """
     if request.user.tipoUsuario != 'JP':
         messages.error(request, 'No tienes permisos para acceder al simulador')
@@ -4866,14 +4865,35 @@ def simulador_resultados(request, simulacion_id):
     
     simulacion = get_object_or_404(SimulacionEvento, id=simulacion_id, creada_por=request.user)
     
+    # Obtener algoritmo seleccionado (por defecto: fortalezas)
+    algoritmo_seleccionado = request.GET.get('algoritmo', 'fortalezas')
+    
+    # Validar algoritmo
+    if algoritmo_seleccionado not in ['fortalezas', 'equidad']:
+        algoritmo_seleccionado = 'fortalezas'
+    
+    # Verificar si hay asignaciones previas
+    hay_asignaciones = PacienteSimulado.objects.filter(
+        area_simulada__simulacion_id=simulacion_id,
+        enfermero_asignado__isnull=False
+    ).exists()
+    
+    # Regenerar solo si se cambia de algoritmo o es primera vez
+    algoritmo_anterior = request.session.get(f'algoritmo_simulacion_{simulacion_id}', None)
+    
+    if not hay_asignaciones or algoritmo_anterior != algoritmo_seleccionado:
+        print(f"🔄 Ejecutando distribución con algoritmo: {algoritmo_seleccionado}")
+        
+        # Ejecutar algoritmo seleccionado
+        distribuir_pacientes_con_algoritmo_seleccionado(simulacion, algoritmo_seleccionado)
+        
+        # Guardar algoritmo usado en sesión
+        request.session[f'algoritmo_simulacion_{simulacion_id}'] = algoritmo_seleccionado
+    else:
+        print(f"📋 Usando resultados existentes del algoritmo: {algoritmo_seleccionado}")
+    
     # Obtener datos de la simulación
     areas_simuladas = AreaSimulada.objects.filter(simulacion=simulacion).select_related('area_real')
-    
-    # Distribuir pacientes automáticamente antes de mostrar resultados
-    distribuir_pacientes_automaticamente(simulacion)
-    
-    # NUEVO: Calcular compatibilidades
-    compatibilidades = calcular_compatibilidades_simulador(simulacion)
     
     # Preparar datos para las tablas
     resumen_areas = []
@@ -4890,15 +4910,24 @@ def simulador_resultados(request, simulacion_id):
         # Pacientes del área
         pacientes = PacienteSimulado.objects.filter(area_simulada=area_simulada).prefetch_related('padecimientos__padecimiento')
         
-        # Calcular métricas del área
+        # Calcular métricas del área usando sistema unificado
         if area_simulada.cantidad_enfermeros > 0:
-            carga_area = (area_simulada.cantidad_pacientes / area_simulada.cantidad_enfermeros) * 10
+            # Usar el mismo sistema de gravedad ponderada que el resto del sistema
+            ratio_pacientes_enfermero = area_simulada.cantidad_pacientes / area_simulada.cantidad_enfermeros
+            
+            # Calcular carga basándose en capacidad máxima por enfermero (6 pacientes)
+            capacidad_maxima_area = area_simulada.cantidad_enfermeros * 6  # 6 pacientes por enfermero
+            carga_area = (area_simulada.cantidad_pacientes / capacidad_maxima_area) * 100
+            
             total_carga += carga_area
             areas_con_datos += 1
         else:
+            ratio_pacientes_enfermero = 0
             carga_area = 0
         
+        # Actualizar campo en el modelo
         area_simulada.carga_trabajo_area = carga_area
+        area_simulada.ratio_pacientes_enfermero = ratio_pacientes_enfermero
         area_simulada.save()
         
         # Agregar al resumen
@@ -4906,7 +4935,8 @@ def simulador_resultados(request, simulacion_id):
             'area': area_simulada,
             'enfermeros_count': enfermeros.count(),
             'pacientes_count': pacientes.count(),
-            'carga_trabajo': carga_area
+            'carga_trabajo': carga_area,
+            'ratio_pacientes_enfermero': ratio_pacientes_enfermero
         })
         
         # Agregar enfermeros al detalle con pacientes asignados
@@ -4915,7 +4945,7 @@ def simulador_resultados(request, simulacion_id):
             pacientes_asignados = PacienteSimulado.objects.filter(enfermero_asignado=enfermero).count()
             
             # Calcular carga individual
-            carga_individual = (pacientes_asignados / 6) * 100 if pacientes_asignados > 0 else 0
+            carga_individual = (pacientes_asignados / 6) * 100 if pacientes_asignados > 0 else 0  # Máximo 6 pacientes = 100%
             
             # Actualizar enfermero simulado
             enfermero.pacientes_asignados = pacientes_asignados
@@ -4924,55 +4954,151 @@ def simulador_resultados(request, simulacion_id):
             
             detalle_enfermeros.append(enfermero)
         
-        # MODIFICADO: Agregar pacientes al detalle con información de compatibilidad
+        # Agregar pacientes al detalle
         for paciente in pacientes:
-            # Obtener compatibilidad específica para este paciente
-            compatibilidad_paciente = None
-            if area_simulada.area_real.nombre in compatibilidades:
-                for comp in compatibilidades[area_simulada.area_real.nombre]:
-                    if comp['paciente'].id == paciente.id:
-                        compatibilidad_paciente = comp
-                        break
+            padecimientos_nombres = [p.padecimiento.nombre for p in paciente.padecimientos.all()]
+            
+            # Calcular compatibilidad con enfermero asignado
+            compatibilidad_info = "Sin datos de compatibilidad"
+            if paciente.enfermero_asignado:
+                compatibilidad_info = calcular_compatibilidad_paciente_enfermero(
+                    paciente, paciente.enfermero_asignado.enfermero_real
+                )
             
             detalle_pacientes.append({
                 'paciente': paciente,
-                'padecimientos': [p.padecimiento.nombre for p in paciente.padecimientos.all()],
+                'padecimientos': padecimientos_nombres,
                 'area': area_simulada.area_real.nombre,
-                'compatibilidad': compatibilidad_paciente  # NUEVO
+                'compatibilidad': compatibilidad_info
             })
     
-    # Calcular carga promedio general
+    # Calcular carga promedio general consistente
     carga_promedio = total_carga / areas_con_datos if areas_con_datos > 0 else 0
     simulacion.carga_trabajo_promedio = carga_promedio
     simulacion.save()
     
-    # NUEVO: Serializar compatibilidades para JavaScript
-    import json
-    compatibilidades_json = json.dumps(compatibilidades, default=str)
+    # Calcular estadísticas de equidad
+    estadisticas_equidad = calcular_estadisticas_equidad(detalle_enfermeros)
     
+    # Preparar contexto completo
     context = {
         'simulacion': simulacion,
         'resumen_areas': resumen_areas,
         'detalle_enfermeros': detalle_enfermeros,
         'detalle_pacientes': detalle_pacientes,
-        'compatibilidades': compatibilidades,  # Para el template
-        'compatibilidades_json': compatibilidades_json,  # Para JavaScript
-        'carga_promedio': carga_promedio
+        'carga_promedio': carga_promedio,
+        'algoritmo_actual': algoritmo_seleccionado,
+        'algoritmos_disponibles': obtener_algoritmos_disponibles(),
+        'estadisticas_equidad': estadisticas_equidad
     }
     
     return render(request, 'usuarioJefa/simulador_resultados.html', context)
 
+def calcular_estadisticas_equidad(detalle_enfermeros):
+    """
+    Calcula estadísticas de equidad en la distribución de cargas
+    """
+    if not detalle_enfermeros:
+        return {
+            'diferencia_maxima': 0,
+            'diferencia_promedio': 0,
+            'coeficiente_variacion': 0,
+            'enfermeros_sobrecargados': 0,
+            'enfermeros_subcargados': 0,
+            'es_equitativo': True
+        }
+    
+    cargas = [enfermero.carga_trabajo_individual for enfermero in detalle_enfermeros]
+    
+    # Calcular estadísticas básicas
+    max_carga = max(cargas)
+    min_carga = min(cargas)
+    diferencia_maxima = max_carga - min_carga
+    promedio_carga = sum(cargas) / len(cargas)
+    
+    # Calcular coeficiente de variación (desviación estándar / media)
+    if promedio_carga > 0:
+        varianza = sum((c - promedio_carga) ** 2 for c in cargas) / len(cargas)
+        desviacion_estandar = varianza ** 0.5
+        coeficiente_variacion = (desviacion_estandar / promedio_carga) * 100
+    else:
+        coeficiente_variacion = 0
+    
+    # Contar enfermeros sobrecargados (>80%) y subcargados (<20%)
+    enfermeros_sobrecargados = len([c for c in cargas if c > 80])
+    enfermeros_subcargados = len([c for c in cargas if c < 20])
+    
+    # Determinar si es equitativo (diferencia máxima <= 15%)
+    es_equitativo = diferencia_maxima <= 15.0
+    
+    return {
+        'diferencia_maxima': diferencia_maxima,
+        'diferencia_promedio': promedio_carga,
+        'coeficiente_variacion': coeficiente_variacion,
+        'enfermeros_sobrecargados': enfermeros_sobrecargados,
+        'enfermeros_subcargados': enfermeros_subcargados,
+        'es_equitativo': es_equitativo,
+        'max_carga': max_carga,
+        'min_carga': min_carga
+    }
+
+def calcular_compatibilidad_paciente_enfermero(paciente_simulado, enfermero_real):
+    """
+    Calcula información de compatibilidad entre un paciente simulado y un enfermero real
+    Retorna string descriptivo de las coincidencias encontradas
+    """
+    compatibilidades = []
+    
+    # 1. Verificar especialidad
+    if hasattr(paciente_simulado, 'area_simulada') and enfermero_real.areaEspecialidad:
+        if paciente_simulado.area_simulada.area_real.id == enfermero_real.areaEspecialidad.id:
+            compatibilidades.append(f"Especialista en {enfermero_real.areaEspecialidad.nombre}")
+    
+    # 2. Verificar fortalezas
+    padecimientos_paciente = list(paciente_simulado.padecimientos.all())
+    if padecimientos_paciente:
+        fortalezas_enfermero = set(enfermero_real.fortalezas.all())
+        coincidencias_fortalezas = 0
+        
+        for padecimiento_sim in padecimientos_paciente:
+            fortalezas_padecimiento = set(padecimiento_sim.padecimiento.fortalezas.all())
+            coincidencias_fortalezas += len(fortalezas_enfermero.intersection(fortalezas_padecimiento))
+        
+        if coincidencias_fortalezas > 0:
+            compatibilidades.append(f"{coincidencias_fortalezas} fortaleza(s) coincidente(s)")
+    
+    # 3. Verificar nivel de gravedad apropiado
+    if paciente_simulado.nivel_gravedad == 3:
+        compatibilidades.append("Paciente grave - Requiere experiencia")
+    elif paciente_simulado.nivel_gravedad == 2:
+        compatibilidades.append("Paciente moderado")
+    else:
+        compatibilidades.append("Paciente estable")
+    
+    # Combinar información
+    if len(compatibilidades) > 1:
+        return " | ".join(compatibilidades)
+    elif compatibilidades:
+        return compatibilidades[0]
+    else:
+        return "Sin coincidencias específicas"
+
+
+
 def distribuir_pacientes_automaticamente(simulacion):
     """
     Distribuye automáticamente los pacientes simulados entre los enfermeros disponibles
-    implementando TODOS los criterios de los requerimientos RQNF55-64 con manejo correcto de coincidencias
+    GARANTIZA que NINGÚN paciente se quede sin asignar, respetando límites cuando sea posible
+    pero priorizando coincidencias cuando sea necesario excederlos
     """
     areas_simuladas = AreaSimulada.objects.filter(simulacion=simulacion)
     
     for area_simulada in areas_simuladas:
+        print(f"🏥 SIMULADOR - Distribuyendo {area_simulada.cantidad_pacientes} pacientes entre {area_simulada.cantidad_enfermeros} enfermeros en {area_simulada.area_real.nombre}")
+        
         # Obtener enfermeros y pacientes del área
-        enfermeros = list(EnfermeroSimulado.objects.filter(area_simulada=area_simulada).select_related('enfermero_real'))
-        pacientes = list(PacienteSimulado.objects.filter(area_simulada=area_simulada).prefetch_related('padecimientos__padecimiento'))
+        enfermeros = list(EnfermeroSimulado.objects.filter(area_simulada=area_simulada))
+        pacientes = list(PacienteSimulado.objects.filter(area_simulada=area_simulada))
         
         if not enfermeros or not pacientes:
             continue
@@ -4980,65 +5106,450 @@ def distribuir_pacientes_automaticamente(simulacion):
         # Limpiar asignaciones anteriores
         PacienteSimulado.objects.filter(area_simulada=area_simulada).update(enfermero_asignado=None)
         
-        print(f"🏥 SIMULADOR - Distribuyendo {len(pacientes)} pacientes entre {len(enfermeros)} enfermeros en {area_simulada.area_real.nombre}")
-        
-        # Inicializar estructura de carga para cada enfermero
+        # Inicializar contadores para cada enfermero
         enfermeros_carga = {}
         for enfermero in enfermeros:
             enfermeros_carga[enfermero.id] = {
                 'enfermero': enfermero,
-                'enfermero_real': enfermero.enfermero_real,
-                'gravedad_1': 0,  # Máximo 3
-                'gravedad_2': 0,  # Máximo 2  
-                'gravedad_3': 0,  # Máximo 1
-                'total_pacientes': 0,
-                'carga_trabajo_actual': 0
+                'gravedad_1': 0,  # Máximo 3 (pero puede excederse)
+                'gravedad_2': 0,  # Máximo 2 (pero puede excederse)
+                'gravedad_3': 0,  # Máximo 1 (pero puede excederse)
+                'total': 0
             }
         
         # Ordenar pacientes por gravedad (graves primero)
         pacientes_ordenados = sorted(pacientes, key=lambda p: p.nivel_gravedad, reverse=True)
         
-        # ALGORITMO PRINCIPAL con manejo correcto de coincidencias
+        # ALGORITMO GARANTIZADO: Cada paciente SERÁ asignado
         for paciente in pacientes_ordenados:
             print(f"\n👤 Asignando paciente {paciente.nombre_simulado} (Gravedad: {paciente.nivel_gravedad})")
             
-            # Obtener padecimientos del paciente
-            padecimientos_paciente = [p.padecimiento for p in paciente.padecimientos.all()]
-            
-            # Filtrar enfermeros que pueden tomar el paciente (límites de gravedad)
-            enfermeros_disponibles = [
-                (enfermero_id, carga_info) 
-                for enfermero_id, carga_info in enfermeros_carga.items()
-                if verificar_limites_gravedad(paciente, carga_info)
-            ]
-            
-            if not enfermeros_disponibles:
-                print(f"❌ No se pudo asignar {paciente.nombre_simulado} - Sin enfermeros disponibles")
-                continue
-            
-            # APLICAR ALGORITMO DE COINCIDENCIAS SEGÚN MÓDULOS
-            mejor_enfermero_id = aplicar_algoritmo_coincidencias(
-                enfermeros_disponibles, 
-                area_simulada.area_real, 
-                padecimientos_paciente
+            # PASO 1: Intentar asignación respetando límites
+            mejor_enfermero = seleccionar_mejor_enfermero_respetando_limites(
+                paciente, enfermeros_carga, area_simulada
             )
             
-            if mejor_enfermero_id:
-                mejor_enfermero = enfermeros_carga[mejor_enfermero_id]['enfermero']
-                
-                # Realizar asignación
-                paciente.enfermero_asignado = mejor_enfermero
+            # PASO 2: Si no se puede respetar límites, FORZAR asignación por coincidencias
+            if not mejor_enfermero:
+                print("⚠️ Límites excedidos, aplicando asignación forzada por coincidencias...")
+                mejor_enfermero = seleccionar_mejor_enfermero_forzado(
+                    paciente, enfermeros_carga, area_simulada
+                )
+            
+            # PASO 3: GARANTÍA FINAL - si todo falla, asignar al menos cargado
+            if not mejor_enfermero:
+                print("🚨 Aplicando asignación de emergencia al menos cargado...")
+                mejor_enfermero = seleccionar_enfermero_menos_cargado(enfermeros_carga)
+            
+            # ASIGNACIÓN GARANTIZADA
+            if mejor_enfermero:
+                # Asignar paciente
+                paciente.enfermero_asignado = mejor_enfermero['enfermero']
                 paciente.save()
                 
                 # Actualizar contadores
-                enfermeros_carga[mejor_enfermero_id][f'gravedad_{paciente.nivel_gravedad}'] += 1
-                enfermeros_carga[mejor_enfermero_id]['total_pacientes'] += 1
-                enfermeros_carga[mejor_enfermero_id]['carga_trabajo_actual'] = calcular_carga_trabajo_actual(enfermeros_carga[mejor_enfermero_id])
+                mejor_enfermero[f'gravedad_{paciente.nivel_gravedad}'] += 1
+                mejor_enfermero['total'] += 1
                 
-                enfermero_real = enfermeros_carga[mejor_enfermero_id]['enfermero_real']
-                print(f"✅ Asignado a {enfermero_real.username}")
+                # Calcular nueva carga
+                carga_actual = (
+                    (mejor_enfermero['gravedad_3'] * 3) + 
+                    (mejor_enfermero['gravedad_2'] * 2) + 
+                    (mejor_enfermero['gravedad_1'] * 1)
+                )
+                carga_porcentaje = (carga_actual / 10) * 100
+                
+                print(f"✅ ASIGNADO a {mejor_enfermero['enfermero'].enfermero_real.username}")
+                print(f"📊 Nueva carga: G3={mejor_enfermero['gravedad_3']}, G2={mejor_enfermero['gravedad_2']}, G1={mejor_enfermero['gravedad_1']} ({carga_porcentaje:.1f}%)")
+                
+                # Mostrar advertencias si excede límites
+                if mejor_enfermero['gravedad_3'] > 1:
+                    print(f"⚠️ EXCEDE límite G3: {mejor_enfermero['gravedad_3']}/1")
+                if mejor_enfermero['gravedad_2'] > 2:
+                    print(f"⚠️ EXCEDE límite G2: {mejor_enfermero['gravedad_2']}/2")
+                if mejor_enfermero['gravedad_1'] > 3:
+                    print(f"⚠️ EXCEDE límite G1: {mejor_enfermero['gravedad_1']}/3")
             else:
-                print(f"❌ Error en algoritmo de coincidencias para {paciente.nombre_simulado}")
+                print(f"❌ ERROR CRÍTICO: No se pudo asignar {paciente.nombre_simulado}")
+        
+        # NUEVA FASE: Redistribución para enfermeros sin pacientes
+        print(f"\n🔄 REDISTRIBUCIÓN: Verificando enfermeros sin pacientes...")
+        print(f"📋 Estado actual de enfermeros:")
+        for carga in enfermeros_carga.values():
+            print(f"   - {carga['enfermero'].enfermero_real.username}: {carga['total']} pacientes")
+        
+        redistribuir_enfermeros_vacios(enfermeros_carga)
+def seleccionar_mejor_enfermero_respetando_limites(paciente, enfermeros_carga, area_simulada):
+    """
+    Intenta seleccionar el mejor enfermero RESPETANDO los límites de gravedad
+    """
+    print("🔍 Fase 1: Buscando enfermeros que respeten límites...")
+    
+    # Filtrar enfermeros que pueden tomar este paciente SIN exceder límites
+    candidatos_disponibles = []
+    
+    for enfermero_id, carga in enfermeros_carga.items():
+        puede_tomar = False
+        
+        if paciente.nivel_gravedad == 3 and carga['gravedad_3'] < 1:
+            puede_tomar = True
+        elif paciente.nivel_gravedad == 2 and carga['gravedad_2'] < 2:
+            puede_tomar = True
+        elif paciente.nivel_gravedad == 1 and carga['gravedad_1'] < 3:
+            puede_tomar = True
+        
+        if puede_tomar:
+            candidatos_disponibles.append(carga)
+    
+    if not candidatos_disponibles:
+        print("❌ Ningún enfermero puede tomar este paciente respetando límites")
+        return None
+    
+    print(f"✅ {len(candidatos_disponibles)} enfermeros disponibles respetando límites")
+    
+    # Aplicar algoritmo de selección
+    return aplicar_algoritmo_seleccion(candidatos_disponibles, paciente, area_simulada)
+
+def seleccionar_mejor_enfermero_forzado(paciente, enfermeros_carga, area_simulada):
+    """
+    Selecciona el mejor enfermero IGNORANDO límites, priorizando coincidencias
+    """
+    print("🔍 Fase 2: Asignación forzada priorizando coincidencias...")
+    
+    # TODOS los enfermeros son candidatos
+    candidatos_forzados = list(enfermeros_carga.values())
+    
+    print(f"📋 {len(candidatos_forzados)} enfermeros disponibles para asignación forzada")
+    
+    # Aplicar algoritmo de selección (sin restricciones de límites)
+    return aplicar_algoritmo_seleccion(candidatos_forzados, paciente, area_simulada)
+
+def seleccionar_enfermero_menos_cargado(enfermeros_carga):
+    """
+    Selecciona el enfermero con menor carga total como último recurso
+    """
+    print("🔍 Fase 3: Seleccionando enfermero menos cargado...")
+    
+    menor_carga = float('inf')
+    enfermero_menos_cargado = None
+    
+    for carga in enfermeros_carga.values():
+        if carga['total'] < menor_carga:
+            menor_carga = carga['total']
+            enfermero_menos_cargado = carga
+    
+    if enfermero_menos_cargado:
+        print(f"✅ Enfermero menos cargado: {enfermero_menos_cargado['enfermero'].enfermero_real.username} ({menor_carga} pacientes)")
+    
+    return enfermero_menos_cargado
+
+def aplicar_algoritmo_seleccion(candidatos, paciente, area_simulada):
+    """
+    Aplica el algoritmo de selección: especialidad → fortalezas → menor carga → desempate
+    """
+    if not candidatos:
+        return None
+    
+    # PASO 1: Evaluar especialidad
+    especialistas = []
+    for candidato in candidatos:
+        enfermero_real = candidato['enfermero'].enfermero_real
+        if (enfermero_real.areaEspecialidad and 
+            enfermero_real.areaEspecialidad.id == area_simulada.area_real.id):
+            especialistas.append(candidato)
+    
+    if len(especialistas) == 1:
+        print(f"   🎯 {especialistas[0]['enfermero'].enfermero_real.username}: Especialista en {area_simulada.area_real.nombre}")
+        print(f"✅ SELECCIONADO por especialidad única: {especialistas[0]['enfermero'].enfermero_real.username}")
+        return especialistas[0]
+    elif len(especialistas) > 1:
+        print(f"   🎯 {len(especialistas)} especialistas encontrados, evaluando por fortalezas...")
+        candidatos_finales = especialistas
+    else:
+        print("➡️ Sin especialistas, evaluando por fortalezas...")
+        candidatos_finales = candidatos
+    
+    # PASO 2: Evaluar fortalezas
+    padecimientos_paciente = list(paciente.padecimientos.all())
+    
+    if padecimientos_paciente:
+        mejores_fortalezas = []
+        max_coincidencias = 0
+        
+        for candidato in candidatos_finales:
+            enfermero_real = candidato['enfermero'].enfermero_real
+            fortalezas_enfermero = set(enfermero_real.fortalezas.all())
+            
+            # Contar coincidencias de fortalezas con padecimientos
+            coincidencias = 0
+            for padecimiento_sim in padecimientos_paciente:
+                fortalezas_padecimiento = set(padecimiento_sim.padecimiento.fortalezas.all())
+                coincidencias += len(fortalezas_enfermero.intersection(fortalezas_padecimiento))
+            
+            if coincidencias > max_coincidencias:
+                max_coincidencias = coincidencias
+                mejores_fortalezas = [candidato]
+            elif coincidencias == max_coincidencias and coincidencias > 0:
+                mejores_fortalezas.append(candidato)
+        
+        if len(mejores_fortalezas) == 1 and max_coincidencias > 0:
+            print(f"✅ SELECCIONADO por fortalezas: {mejores_fortalezas[0]['enfermero'].enfermero_real.username} ({max_coincidencias} coincidencias)")
+            return mejores_fortalezas[0]
+        elif len(mejores_fortalezas) > 1 and max_coincidencias > 0:
+            print(f"🔄 {len(mejores_fortalezas)} candidatos empatados en fortalezas, desempatando con carga...")
+            candidatos_finales = mejores_fortalezas
+        else:
+            print("➡️ Sin coincidencias en fortalezas, evaluando por carga...")
+    
+    # PASO 3: Evaluar por menor carga
+    menor_carga = float('inf')
+    candidatos_menor_carga = []
+    
+    for candidato in candidatos_finales:
+        carga_total = candidato['total']
+        
+        if carga_total < menor_carga:
+            menor_carga = carga_total
+            candidatos_menor_carga = [candidato]
+        elif carga_total == menor_carga:
+            candidatos_menor_carga.append(candidato)
+    
+    if len(candidatos_menor_carga) == 1:
+        print(f"✅ SELECCIONADO por menor carga: {candidatos_menor_carga[0]['enfermero'].enfermero_real.username} ({menor_carga} pacientes)")
+        return candidatos_menor_carga[0]
+    elif len(candidatos_menor_carga) > 1:
+        print(f"🔄 {len(candidatos_menor_carga)} candidatos empatados en carga, desempate final...")
+    
+    # PASO 4: Desempate final
+    candidato_final = candidatos_menor_carga[0]
+    print(f"✅ SELECCIONADO por desempate final: {candidato_final['enfermero'].enfermero_real.username}")
+    return candidato_final
+
+def redistribuir_enfermeros_vacios(enfermeros_carga):
+    """
+    Redistribuye pacientes para que ningún enfermero quede sin asignaciones
+    Quita pacientes de gravedad menor del enfermero más cargado y los asigna al vacío
+    """
+    print("🔍 Iniciando análisis de redistribución...")
+    
+    # Encontrar enfermeros sin pacientes
+    enfermeros_vacios = []
+    enfermero_mas_cargado = None
+    max_carga = 0
+    
+    for carga in enfermeros_carga.values():
+        print(f"   📊 {carga['enfermero'].enfermero_real.username}: {carga['total']} pacientes")
+        
+        if carga['total'] == 0:
+            enfermeros_vacios.append(carga)
+            print(f"      ❌ SIN PACIENTES - Candidato para redistribución")
+        elif carga['total'] > max_carga:
+            max_carga = carga['total']
+            enfermero_mas_cargado = carga
+            print(f"      ✅ {carga['total']} pacientes - Nuevo máximo")
+    
+    print(f"\n📋 RESUMEN:")
+    print(f"   - Enfermeros vacíos: {len(enfermeros_vacios)}")
+    print(f"   - Enfermero más cargado: {enfermero_mas_cargado['enfermero'].enfermero_real.username if enfermero_mas_cargado else 'Ninguno'} ({max_carga} pacientes)")
+    
+    if not enfermeros_vacios:
+        print("✅ Todos los enfermeros tienen al menos un paciente asignado")
+        return
+    
+    if not enfermero_mas_cargado:
+        print("❌ No hay enfermero sobrecargado para redistribuir")
+        return
+    
+    if max_carga <= 1:
+        print(f"⚠️ No se puede redistribuir, enfermero más cargado solo tiene {max_carga} paciente(s)")
+        return
+    
+    print(f"\n🔄 INICIANDO REDISTRIBUCIÓN...")
+    
+    # Redistribuir para cada enfermero vacío
+    for i, enfermero_vacio in enumerate(enfermeros_vacios):
+        print(f"\n🎯 Redistribución #{i+1}: {enfermero_vacio['enfermero'].enfermero_real.username}")
+        
+        if enfermero_mas_cargado['total'] <= 1:
+            print(f"⚠️ DETENIENDO: enfermero más cargado solo tiene {enfermero_mas_cargado['total']} paciente(s)")
+            break
+        
+        # Buscar paciente de menor gravedad del enfermero más cargado
+        print(f"🔍 Buscando paciente de menor gravedad en {enfermero_mas_cargado['enfermero'].enfermero_real.username}...")
+        paciente_a_reasignar = encontrar_paciente_menor_gravedad(enfermero_mas_cargado['enfermero'])
+        
+        if paciente_a_reasignar:
+            # Reasignar paciente
+            nivel_gravedad = paciente_a_reasignar.nivel_gravedad
+            
+            print(f"✅ ENCONTRADO: {paciente_a_reasignar.nombre_simulado} (Gravedad {nivel_gravedad})")
+            print(f"🔄 Reasignando:")
+            print(f"   📤 DE: {enfermero_mas_cargado['enfermero'].enfermero_real.username}")
+            print(f"   📥 A: {enfermero_vacio['enfermero'].enfermero_real.username}")
+            
+            # Actualizar asignación en la base de datos
+            paciente_a_reasignar.enfermero_asignado = enfermero_vacio['enfermero']
+            paciente_a_reasignar.save()
+            
+            # Actualizar contadores
+            enfermero_mas_cargado[f'gravedad_{nivel_gravedad}'] -= 1
+            enfermero_mas_cargado['total'] -= 1
+            
+            enfermero_vacio[f'gravedad_{nivel_gravedad}'] += 1
+            enfermero_vacio['total'] += 1
+            
+            print(f"✅ REDISTRIBUCIÓN COMPLETADA")
+            print(f"   📊 {enfermero_mas_cargado['enfermero'].enfermero_real.username}: {enfermero_mas_cargado['total']} pacientes")
+            print(f"   📊 {enfermero_vacio['enfermero'].enfermero_real.username}: {enfermero_vacio['total']} pacientes")
+            
+            # Actualizar enfermero más cargado si cambió
+            if enfermero_mas_cargado['total'] < max_carga:
+                # Buscar nuevo enfermero más cargado
+                nuevo_max = 0
+                nuevo_mas_cargado = None
+                for carga in enfermeros_carga.values():
+                    if carga['total'] > nuevo_max:
+                        nuevo_max = carga['total']
+                        nuevo_mas_cargado = carga
+                
+                enfermero_mas_cargado = nuevo_mas_cargado
+                max_carga = nuevo_max
+                print(f"🔄 Nuevo enfermero más cargado: {enfermero_mas_cargado['enfermero'].enfermero_real.username if enfermero_mas_cargado else 'Ninguno'} ({max_carga} pacientes)")
+        else:
+            print(f"❌ No se encontró paciente para reasignar desde {enfermero_mas_cargado['enfermero'].enfermero_real.username}")
+    
+    print(f"\n🏁 REDISTRIBUCIÓN FINALIZADA")
+
+def encontrar_paciente_menor_gravedad(enfermero_simulado):
+    """
+    Encuentra el paciente de menor gravedad asignado a un enfermero específico
+    Prioridad: Gravedad 1 > Gravedad 2 > Gravedad 3
+    """
+    print(f"   🔍 Buscando pacientes de {enfermero_simulado.enfermero_real.username}...")
+    
+    # Buscar en orden de prioridad: 1 → 2 → 3
+    for nivel in [1, 2, 3]:
+        pacientes_nivel = PacienteSimulado.objects.filter(
+            enfermero_asignado=enfermero_simulado,
+            nivel_gravedad=nivel
+        )
+        
+        print(f"      - Gravedad {nivel}: {pacientes_nivel.count()} pacientes")
+        
+        if pacientes_nivel.exists():
+            paciente = pacientes_nivel.first()
+            print(f"      ✅ SELECCIONADO: {paciente.nombre_simulado} (Gravedad {nivel})")
+            return paciente
+    
+    print(f"      ❌ No se encontraron pacientes")
+    return None
+
+def seleccionar_mejor_enfermero_simulacion(paciente, enfermeros_carga, area_simulada):
+    """
+    Selecciona el mejor enfermero para un paciente usando algoritmo inteligente
+    basado en especialidad, fortalezas, carga actual y prioridad de área
+    """
+    print("🔍 Aplicando algoritmo de coincidencias...")
+    
+    # PASO 1: Filtrar enfermeros que pueden tomar este paciente (límites de gravedad)
+    candidatos_disponibles = []
+    
+    for enfermero_id, carga in enfermeros_carga.items():
+        puede_tomar = False
+        
+        if paciente.nivel_gravedad == 3 and carga['gravedad_3'] < 1:
+            puede_tomar = True
+        elif paciente.nivel_gravedad == 2 and carga['gravedad_2'] < 2:
+            puede_tomar = True
+        elif paciente.nivel_gravedad == 1 and carga['gravedad_1'] < 3:
+            puede_tomar = True
+        
+        if puede_tomar:
+            candidatos_disponibles.append(carga)
+    
+    if not candidatos_disponibles:
+        return None
+    
+    # PASO 2: Evaluar especialidad (área de especialidad coincide)
+    especialistas = []
+    for candidato in candidatos_disponibles:
+        enfermero_real = candidato['enfermero'].enfermero_real
+        if (enfermero_real.areaEspecialidad and 
+            enfermero_real.areaEspecialidad.id == area_simulada.area_real.id):
+            especialistas.append(candidato)
+    
+    if len(especialistas) == 1:
+        print(f"   🎯 {especialistas[0]['enfermero'].enfermero_real.username}: Especialista en {area_simulada.area_real.nombre}")
+        print(f"✅ SELECCIONADO por especialidad única: {especialistas[0]['enfermero'].enfermero_real.username}")
+        return especialistas[0]
+    elif len(especialistas) > 1:
+        print(f"   🎯 {len(especialistas)} especialistas encontrados, evaluando por fortalezas...")
+        candidatos_finales = especialistas
+    else:
+        print("➡️ Sin especialistas, evaluando por fortalezas...")
+        candidatos_finales = candidatos_disponibles
+    
+    # PASO 3: Evaluar fortalezas (obtener padecimientos del paciente)
+    padecimientos_paciente = list(paciente.padecimientos.all())
+    
+    if padecimientos_paciente:
+        mejores_fortalezas = []
+        max_coincidencias = 0
+        
+        for candidato in candidatos_finales:
+            enfermero_real = candidato['enfermero'].enfermero_real
+            fortalezas_enfermero = set(enfermero_real.fortalezas.all())
+            
+            # Contar coincidencias de fortalezas con padecimientos
+            coincidencias = 0
+            for padecimiento_sim in padecimientos_paciente:
+                fortalezas_padecimiento = set(padecimiento_sim.padecimiento.fortalezas.all())
+                coincidencias += len(fortalezas_enfermero.intersection(fortalezas_padecimiento))
+            
+            if coincidencias > max_coincidencias:
+                max_coincidencias = coincidencias
+                mejores_fortalezas = [candidato]
+            elif coincidencias == max_coincidencias and coincidencias > 0:
+                mejores_fortalezas.append(candidato)
+        
+        if len(mejores_fortalezas) == 1 and max_coincidencias > 0:
+            print(f"✅ SELECCIONADO por fortalezas: {mejores_fortalezas[0]['enfermero'].enfermero_real.username} ({max_coincidencias} coincidencias)")
+            return mejores_fortalezas[0]
+        elif len(mejores_fortalezas) > 1 and max_coincidencias > 0:
+            print(f"🔄 {len(mejores_fortalezas)} candidatos empatados en fortalezas, desempatando con carga...")
+            candidatos_finales = mejores_fortalezas
+        else:
+            print("➡️ Sin coincidencias en fortalezas, evaluando por carga...")
+    
+    # PASO 4: Evaluar por menor carga de trabajo
+    menor_carga = float('inf')
+    candidatos_menor_carga = []
+    
+    for candidato in candidatos_finales:
+        carga_actual = (
+            (candidato['gravedad_3'] * 3) + 
+            (candidato['gravedad_2'] * 2) + 
+            (candidato['gravedad_1'] * 1)
+        )
+        carga_porcentaje = (carga_actual / 10) * 100
+        
+        if carga_actual < menor_carga:
+            menor_carga = carga_actual
+            candidatos_menor_carga = [candidato]
+        elif carga_actual == menor_carga:
+            candidatos_menor_carga.append(candidato)
+    
+    if len(candidatos_menor_carga) == 1:
+        carga_porcentaje = (menor_carga / 10) * 100
+        print(f"✅ SELECCIONADO por menor carga: {candidatos_menor_carga[0]['enfermero'].enfermero_real.username} ({carga_porcentaje:.1f}% carga)")
+        return candidatos_menor_carga[0]
+    elif len(candidatos_menor_carga) > 1:
+        print(f"🔄 {len(candidatos_menor_carga)} candidatos empatados en carga, desempate final con prioridad de área...")
+    
+    # PASO 5: Desempate final (seleccionar el primero por orden de prioridad)
+    candidato_final = candidatos_menor_carga[0]
+    print(f"✅ SELECCIONADO por desempate final: {candidato_final['enfermero'].enfermero_real.username}")
+    return candidato_final
 
 def aplicar_algoritmo_coincidencias(enfermeros_disponibles, area, padecimientos_paciente):
     """
@@ -5365,3 +5876,342 @@ def determinar_motivo_asignacion(enfermero_real, area, padecimientos_paciente):
         motivos.append("Distribución por carga de trabajo")
     
     return " | ".join(motivos)
+
+
+
+def distribuir_pacientes_equitativamente(simulacion):
+    """
+    Distribuye pacientes priorizando EQUIDAD DE CARGA con margen máximo del 15%
+    Mantiene fortalezas como factor secundario
+    """
+    areas_simuladas = AreaSimulada.objects.filter(simulacion=simulacion)
+    
+    for area_simulada in areas_simuladas:
+        print(f"🏥 SIMULADOR EQUITATIVO - Distribuyendo {area_simulada.cantidad_pacientes} pacientes entre {area_simulada.cantidad_enfermeros} enfermeros en {area_simulada.area_real.nombre}")
+        
+        # Obtener enfermeros y pacientes del área
+        enfermeros = list(EnfermeroSimulado.objects.filter(area_simulada=area_simulada))
+        pacientes = list(PacienteSimulado.objects.filter(area_simulada=area_simulada))
+        
+        if not enfermeros or not pacientes:
+            continue
+        
+        # Limpiar asignaciones anteriores
+        PacienteSimulado.objects.filter(area_simulada=area_simulada).update(enfermero_asignado=None)
+        
+        # Inicializar contadores para cada enfermero
+        enfermeros_carga = {}
+        for enfermero in enfermeros:
+            enfermeros_carga[enfermero.id] = {
+                'enfermero': enfermero,
+                'gravedad_1': 0,
+                'gravedad_2': 0,
+                'gravedad_3': 0,
+                'total': 0,
+                'carga_porcentaje': 0.0
+            }
+        
+        # Ordenar pacientes por gravedad (graves primero)
+        pacientes_ordenados = sorted(pacientes, key=lambda p: p.nivel_gravedad, reverse=True)
+        
+        # ALGORITMO EQUITATIVO: Mantener margen del 15%
+        for paciente in pacientes_ordenados:
+            print(f"\n👤 Asignando paciente {paciente.nombre_simulado} (Gravedad: {paciente.nivel_gravedad})")
+            
+            # PASO 1: Intentar asignación equitativa respetando límites
+            mejor_enfermero = seleccionar_enfermero_equitativo_respetando_limites(
+                paciente, enfermeros_carga, area_simulada
+            )
+            
+            # PASO 2: Si no se puede respetar límites, forzar asignación equitativa
+            if not mejor_enfermero:
+                print("⚠️ Límites excedidos, aplicando asignación equitativa forzada...")
+                mejor_enfermero = seleccionar_enfermero_equitativo_forzado(
+                    paciente, enfermeros_carga, area_simulada
+                )
+            
+            # PASO 3: GARANTÍA FINAL - enfermero menos cargado
+            if not mejor_enfermero:
+                print("🚨 Aplicando asignación de emergencia al menos cargado...")
+                mejor_enfermero = seleccionar_enfermero_menos_cargado(enfermeros_carga)
+            
+            # ASIGNACIÓN GARANTIZADA
+            if mejor_enfermero:
+                # Asignar paciente
+                paciente.enfermero_asignado = mejor_enfermero['enfermero']
+                paciente.save()
+                
+                # Actualizar contadores
+                mejor_enfermero[f'gravedad_{paciente.nivel_gravedad}'] += 1
+                mejor_enfermero['total'] += 1
+                
+                # Recalcular carga porcentaje
+                carga_actual = (
+                    (mejor_enfermero['gravedad_3'] * 3) + 
+                    (mejor_enfermero['gravedad_2'] * 2) + 
+                    (mejor_enfermero['gravedad_1'] * 1)
+                )
+                mejor_enfermero['carga_porcentaje'] = (carga_actual / 10) * 100
+                
+                print(f"✅ ASIGNADO a {mejor_enfermero['enfermero'].enfermero_real.username}")
+                print(f"📊 Nueva carga: G3={mejor_enfermero['gravedad_3']}, G2={mejor_enfermero['gravedad_2']}, G1={mejor_enfermero['gravedad_1']} ({mejor_enfermero['carga_porcentaje']:.1f}%)")
+                
+                # Mostrar diferencias de carga
+                mostrar_diferencias_carga(enfermeros_carga)
+                
+                # Mostrar advertencias si excede límites
+                if mejor_enfermero['gravedad_3'] > 1:
+                    print(f"⚠️ EXCEDE límite G3: {mejor_enfermero['gravedad_3']}/1")
+                if mejor_enfermero['gravedad_2'] > 2:
+                    print(f"⚠️ EXCEDE límite G2: {mejor_enfermero['gravedad_2']}/2")
+                if mejor_enfermero['gravedad_1'] > 3:
+                    print(f"⚠️ EXCEDE límite G1: {mejor_enfermero['gravedad_1']}/3")
+            else:
+                print(f"❌ ERROR CRÍTICO: No se pudo asignar {paciente.nombre_simulado}")
+        
+        # Redistribución para enfermeros vacíos
+        print(f"\n🔄 REDISTRIBUCIÓN EQUITATIVA: Verificando enfermeros sin pacientes...")
+        print(f"📋 Estado actual de enfermeros:")
+        for carga in enfermeros_carga.values():
+            print(f"   - {carga['enfermero'].enfermero_real.username}: {carga['total']} pacientes ({carga['carga_porcentaje']:.1f}%)")
+        
+        redistribuir_enfermeros_vacios(enfermeros_carga)
+
+def seleccionar_enfermero_equitativo_respetando_limites(paciente, enfermeros_carga, area_simulada):
+    """
+    Selecciona enfermero priorizando EQUIDAD pero respetando límites de gravedad
+    """
+    print("🔍 Fase 1 EQUITATIVA: Buscando enfermeros que respeten límites...")
+    
+    # Filtrar enfermeros que pueden tomar este paciente SIN exceder límites
+    candidatos_disponibles = []
+    
+    for enfermero_id, carga in enfermeros_carga.items():
+        puede_tomar = False
+        
+        if paciente.nivel_gravedad == 3 and carga['gravedad_3'] < 1:
+            puede_tomar = True
+        elif paciente.nivel_gravedad == 2 and carga['gravedad_2'] < 2:
+            puede_tomar = True
+        elif paciente.nivel_gravedad == 1 and carga['gravedad_1'] < 3:
+            puede_tomar = True
+        
+        if puede_tomar:
+            candidatos_disponibles.append(carga)
+    
+    if not candidatos_disponibles:
+        print("❌ Ningún enfermero puede tomar este paciente respetando límites")
+        return None
+    
+    print(f"✅ {len(candidatos_disponibles)} enfermeros disponibles respetando límites")
+    
+    # Aplicar algoritmo EQUITATIVO
+    return aplicar_algoritmo_equitativo(candidatos_disponibles, paciente, area_simulada)
+
+def seleccionar_enfermero_equitativo_forzado(paciente, enfermeros_carga, area_simulada):
+    """
+    Selecciona enfermero priorizando EQUIDAD ignorando límites
+    """
+    print("🔍 Fase 2 EQUITATIVA: Asignación forzada priorizando equidad...")
+    
+    # TODOS los enfermeros son candidatos
+    candidatos_forzados = list(enfermeros_carga.values())
+    
+    print(f"📋 {len(candidatos_forzados)} enfermeros disponibles para asignación equitativa forzada")
+    
+    # Aplicar algoritmo equitativo (sin restricciones de límites)
+    return aplicar_algoritmo_equitativo(candidatos_forzados, paciente, area_simulada)
+
+def aplicar_algoritmo_equitativo(candidatos, paciente, area_simulada):
+    """
+    Aplica algoritmo EQUITATIVO: equidad → especialidad → fortalezas → desempate
+    MARGEN MÁXIMO: 15% de diferencia entre enfermeros
+    """
+    if not candidatos:
+        return None
+    
+    # PASO 1: Filtrar por EQUIDAD (margen máximo 15%)
+    candidatos_equitativos = filtrar_por_equidad(candidatos, margen_maximo=15.0)
+    
+    if len(candidatos_equitativos) == 1:
+        print(f"✅ SELECCIONADO por equidad única: {candidatos_equitativos[0]['enfermero'].enfermero_real.username} ({candidatos_equitativos[0]['carga_porcentaje']:.1f}%)")
+        return candidatos_equitativos[0]
+    elif len(candidatos_equitativos) > 1:
+        print(f"🔄 {len(candidatos_equitativos)} candidatos dentro del margen equitativo, evaluando especialidad...")
+        candidatos_finales = candidatos_equitativos
+    else:
+        # Si ninguno está en el margen, usar el menos cargado
+        menos_cargado = min(candidatos, key=lambda c: c['carga_porcentaje'])
+        print(f"⚠️ Margen de equidad excedido, seleccionando menos cargado: {menos_cargado['enfermero'].enfermero_real.username} ({menos_cargado['carga_porcentaje']:.1f}%)")
+        return menos_cargado
+    
+    # PASO 2: Evaluar especialidad (SECUNDARIO en algoritmo equitativo)
+    especialistas = []
+    for candidato in candidatos_finales:
+        enfermero_real = candidato['enfermero'].enfermero_real
+        if (enfermero_real.areaEspecialidad and 
+            enfermero_real.areaEspecialidad.id == area_simulada.area_real.id):
+            especialistas.append(candidato)
+    
+    if len(especialistas) == 1:
+        print(f"   🎯 {especialistas[0]['enfermero'].enfermero_real.username}: Especialista en {area_simulada.area_real.nombre}")
+        print(f"✅ SELECCIONADO por especialidad (dentro de equidad): {especialistas[0]['enfermero'].enfermero_real.username}")
+        return especialistas[0]
+    elif len(especialistas) > 1:
+        print(f"   🎯 {len(especialistas)} especialistas equitativos, evaluando fortalezas...")
+        candidatos_finales = especialistas
+    else:
+        print("➡️ Sin especialistas equitativos, evaluando fortalezas...")
+    
+    # PASO 3: Evaluar fortalezas (TERCIARIO)
+    padecimientos_paciente = list(paciente.padecimientos.all())
+    
+    if padecimientos_paciente:
+        mejores_fortalezas = []
+        max_coincidencias = 0
+        
+        for candidato in candidatos_finales:
+            enfermero_real = candidato['enfermero'].enfermero_real
+            fortalezas_enfermero = set(enfermero_real.fortalezas.all())
+            
+            # Contar coincidencias de fortalezas con padecimientos
+            coincidencias = 0
+            for padecimiento_sim in padecimientos_paciente:
+                fortalezas_padecimiento = set(padecimiento_sim.padecimiento.fortalezas.all())
+                coincidencias += len(fortalezas_enfermero.intersection(fortalezas_padecimiento))
+            
+            if coincidencias > max_coincidencias:
+                max_coincidencias = coincidencias
+                mejores_fortalezas = [candidato]
+            elif coincidencias == max_coincidencias and coincidencias > 0:
+                mejores_fortalezas.append(candidato)
+        
+        if len(mejores_fortalezas) == 1 and max_coincidencias > 0:
+            print(f"✅ SELECCIONADO por fortalezas (dentro de equidad): {mejores_fortalezas[0]['enfermero'].enfermero_real.username} ({max_coincidencias} coincidencias)")
+            return mejores_fortalezas[0]
+        elif len(mejores_fortalezas) > 1 and max_coincidencias > 0:
+            print(f"🔄 {len(mejores_fortalezas)} candidatos empatados en fortalezas, desempate final...")
+            candidatos_finales = mejores_fortalezas
+        else:
+            print("➡️ Sin coincidencias en fortalezas, desempate final...")
+    
+    # PASO 4: Desempate final (menor carga absoluta)
+    candidato_final = min(candidatos_finales, key=lambda c: c['carga_porcentaje'])
+    print(f"✅ SELECCIONADO por desempate final (menor carga): {candidato_final['enfermero'].enfermero_real.username} ({candidato_final['carga_porcentaje']:.1f}%)")
+    return candidato_final
+
+def filtrar_por_equidad(candidatos, margen_maximo=15.0):
+    """
+    Filtra candidatos que estén dentro del margen de equidad permitido
+    """
+    if not candidatos:
+        return []
+    
+    # Encontrar enfermero con menor carga
+    menor_carga = min(candidatos, key=lambda c: c['carga_porcentaje'])['carga_porcentaje']
+    
+    # Calcular límite superior (menor_carga + margen)
+    limite_superior = menor_carga + margen_maximo
+    
+    # Filtrar candidatos dentro del margen
+    candidatos_equitativos = [
+        candidato for candidato in candidatos 
+        if candidato['carga_porcentaje'] <= limite_superior
+    ]
+    
+    print(f"📊 ANÁLISIS DE EQUIDAD:")
+    print(f"   - Menor carga actual: {menor_carga:.1f}%")
+    print(f"   - Límite superior (margen {margen_maximo}%): {limite_superior:.1f}%")
+    print(f"   - Candidatos dentro del margen: {len(candidatos_equitativos)}/{len(candidatos)}")
+    
+    for candidato in candidatos_equitativos:
+        print(f"      ✅ {candidato['enfermero'].enfermero_real.username}: {candidato['carga_porcentaje']:.1f}% (dentro del margen)")
+    
+    return candidatos_equitativos
+
+def mostrar_diferencias_carga(enfermeros_carga):
+    """
+    Muestra las diferencias de carga entre enfermeros para debug
+    """
+    cargas = [carga['carga_porcentaje'] for carga in enfermeros_carga.values()]
+    
+    if len(cargas) > 1:
+        max_carga = max(cargas)
+        min_carga = min(cargas)
+        diferencia = max_carga - min_carga
+        
+        print(f"📊 DIFERENCIAS DE CARGA: Max: {max_carga:.1f}% - Min: {min_carga:.1f}% = {diferencia:.1f}% diferencia")
+        
+        if diferencia > 15.0:
+            print(f"⚠️ ALERTA: Diferencia de carga ({diferencia:.1f}%) excede el margen recomendado (15%)")
+        else:
+            print(f"✅ Diferencia de carga ({diferencia:.1f}%) dentro del margen recomendado")
+
+def calcular_carga_porcentaje_simulacion(carga):
+    """
+    Calcula el porcentaje de carga de un enfermero simulado
+    """
+    carga_actual = (
+        (carga['gravedad_3'] * 3) + 
+        (carga['gravedad_2'] * 2) + 
+        (carga['gravedad_1'] * 1)
+    )
+    return (carga_actual / 10) * 100
+
+def distribuir_pacientes_con_algoritmo_seleccionado(simulacion, algoritmo_tipo="fortalezas"):
+    """
+    Controlador principal que ejecuta el algoritmo seleccionado
+    
+    Args:
+        simulacion: Instancia de SimulacionEvento
+        algoritmo_tipo: "fortalezas" o "equidad"
+    """
+    print(f"🎯 INICIANDO DISTRIBUCIÓN CON ALGORITMO: {algoritmo_tipo.upper()}")
+    
+    if algoritmo_tipo == "equidad":
+        print("📊 Algoritmo seleccionado: EQUIDAD DE CARGA (margen máximo 15%)")
+        distribuir_pacientes_equitativamente(simulacion)
+    else:
+        print("🎯 Algoritmo seleccionado: FORTALEZAS Y ESPECIALIDADES")
+        distribuir_pacientes_automaticamente(simulacion)
+    
+    print(f"🏁 DISTRIBUCIÓN COMPLETADA CON ALGORITMO: {algoritmo_tipo.upper()}")
+
+# Función auxiliar para la vista
+def obtener_algoritmos_disponibles():
+    """
+    Retorna lista de algoritmos disponibles para el template
+    """
+    return [
+        {
+            'id': 'fortalezas',
+            'nombre': 'Priorizar Fortalezas',
+            'descripcion': 'Asigna pacientes basándose en especialidades y fortalezas del personal. Maximiza la efectividad del tratamiento.',
+            'icono': '🎯',
+            'ventajas': [
+                'Máximo aprovechamiento de habilidades',
+                'Mayor efectividad en tratamientos',
+                'Especialistas atienden casos de su área'
+            ],
+            'desventajas': [
+                'Posible desigualdad en carga de trabajo',
+                'Algunos enfermeros pueden sobrecargarse'
+            ]
+        },
+        {
+            'id': 'equidad',
+            'nombre': 'Priorizar Equidad',
+            'descripcion': 'Distribuye la carga de trabajo equitativamente manteniendo máximo 15% de diferencia entre enfermeros.',
+            'icono': '⚖️',
+            'ventajas': [
+                'Carga de trabajo equilibrada',
+                'Previene agotamiento del personal',
+                'Distribución más justa'
+            ],
+            'desventajas': [
+                'Posible subutilización de especialistas',
+                'Menor optimización por habilidades'
+            ]
+        }
+    ]
+
