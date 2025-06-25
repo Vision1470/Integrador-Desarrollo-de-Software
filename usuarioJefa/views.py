@@ -24,6 +24,8 @@ from django.db import transaction
 from functools import wraps
 import calendar
 from login.models import *
+from django.utils import timezone
+from .models import PersonalTemporal, HistorialPersonalTemporal
 
 
 def menu_jefa(request):
@@ -158,7 +160,11 @@ def historiales_(request):
         enfermeros = Usuarios.objects.filter(tipoUsuario='EN')
         doctores = Usuarios.objects.filter(tipoUsuario='DR')
         jefas = Usuarios.objects.filter(tipoUsuario='JP')
-        cocina = Usuarios.objects.filter(tipoUsuario='CO')
+        
+        # NUEVO: Personal temporal
+        personal_temporal_historial = PersonalTemporal.objects.all().select_related(
+            'area', 'creado_por'
+        ).order_by('-fecha_creacion')
 
         if busqueda:
             enfermeros = enfermeros.filter(
@@ -173,16 +179,17 @@ def historiales_(request):
                 Q(first_name__icontains=busqueda) |
                 Q(apellidos__icontains=busqueda)
             )
-            cocina = cocina.filter(
-                Q(first_name__icontains=busqueda) |
-                Q(apellidos__icontains=busqueda)
+            # Filtrar personal temporal también
+            personal_temporal_historial = personal_temporal_historial.filter(
+                Q(nombre__icontains=busqueda) |
+                Q(area__nombre__icontains=busqueda)
             )
 
         context = {
             'enfermeros': enfermeros.select_related('areaEspecialidad').prefetch_related('fortalezas'),
             'doctores': doctores.select_related('areaEspecialidad').prefetch_related('fortalezas'),
             'jefas': jefas.select_related('areaEspecialidad'),
-            'cocina': cocina.select_related('areaEspecialidad'),
+            'personal_temporal_historial': personal_temporal_historial,  # NUEVO
             'tipo_historial': tipo_historial,
             'busqueda': busqueda
         }
@@ -1402,322 +1409,313 @@ def obtener_padecimientos_por_area_y_fortalezas(area, fortalezas_enfermero):
 # =========== FUNCIÓN AUXILIAR PARA ALGORITMOS FUTUROS ===========
 
 
-# views.py
 def calendario_area(request):
     """
     Vista principal del calendario híbrido con vista bimestral y mensual
     """
-    areas = AreaEspecialidad.objects.all()
-    enfermeros = Usuarios.objects.filter(tipoUsuario='EN', estaActivo=True)
-    bimestres = range(1, 7)
-    
-    # Obtener parámetros de la URL
-    area_seleccionada_id = request.GET.get('area')
-    vista_tipo = request.GET.get('vista', 'bimestral')
-    mes_param = request.GET.get('mes')
-    año_param = request.GET.get('año')
-    
-    # Fechas actuales
-    año_actual = int(año_param) if año_param else datetime.now().year
-    mes_actual = int(mes_param) if mes_param else datetime.now().month
-    
-    context = {
-        'areas': areas,
-        'all_areas': areas,
-        'enfermeros': enfermeros,
-        'bimestres': bimestres,
-        'año_actual': año_actual,
-        'mes_actual': mes_actual,
-        'vista_tipo': vista_tipo,
-    }
-    
-    # Si hay área seleccionada, obtener datos específicos
-    if area_seleccionada_id:
+    try:
+         # AGREGAR ESTA LÍNEA AL INICIO
+        # Ejecutar desactivación automática cada vez que se carga el calendario
+        desactivaciones_automaticas = ejecutar_desactivacion_automatica()
+        if desactivaciones_automaticas > 0:
+            messages.info(request, f"🕒 Se desactivaron automáticamente {desactivaciones_automaticas} personas temporales por tiempo vencido.")
+        
+        # Obtener datos básicos
+        areas = AreaEspecialidad.objects.all()
+        enfermeros = Usuarios.objects.filter(tipoUsuario='EN', estaActivo=True)
+        bimestres = range(1, 7)
+
+        # Obtener datos básicos
+        areas = AreaEspecialidad.objects.all()
+        enfermeros = Usuarios.objects.filter(tipoUsuario='EN', estaActivo=True)
+        bimestres = range(1, 7)
+        
+        # Obtener parámetros de la URL
+        area_seleccionada_id = request.GET.get('area')
+        vista_tipo = request.GET.get('vista', 'bimestral')
+        mes_param = request.GET.get('mes')
+        año_param = request.GET.get('año')
+        
+        # Fechas actuales
+        año_actual = int(año_param) if año_param else datetime.now().year
+        mes_actual = int(mes_param) if mes_param else datetime.now().month
+        
+        # Personal temporal - AHORA FUNCIONAL
         try:
-            area_seleccionada = AreaEspecialidad.objects.get(id=area_seleccionada_id)
-            context['area_seleccionada'] = area_seleccionada
-            
-            # Datos para vista bimestral
-            bimestres_data = obtener_datos_bimestres(area_seleccionada, año_actual)
-            context['bimestres_data'] = bimestres_data
-            
-            # Datos para vista mensual
-            if vista_tipo == 'mensual':
-                datos_mensual = obtener_datos_mensual(area_seleccionada, mes_actual, año_actual)
-                context.update(datos_mensual)
-            
-            # Historial de asignaciones
-            historial_asignaciones = AsignacionCalendario.objects.filter(
-                area=area_seleccionada
-            ).select_related('enfermero').order_by('-fecha_inicio')[:10]
-            context['historial_asignaciones'] = historial_asignaciones
-            
-            # Historial de cambios
-            historial = HistorialCambios.objects.filter(
-                models.Q(area_anterior=area_seleccionada) | 
-                models.Q(area_nueva=area_seleccionada)
-            ).select_related(
-                'asignacion__enfermero',
-                'area_anterior',
-                'area_nueva'
-            ).order_by('-fecha_cambio')[:10]
-            context['historial'] = historial
-            
-            # Emergencias activas
-            emergencias_activas = AsignacionEmergencia.objects.filter(
-                models.Q(area_origen=area_seleccionada) | 
-                models.Q(area_destino=area_seleccionada),
-                activa=True
-            ).select_related('enfermero', 'area_origen', 'area_destino', 'creada_por')
-            context['emergencias_activas'] = emergencias_activas
-            
-        except AreaEspecialidad.DoesNotExist:
-            messages.error(request, 'Área no encontrada')
-    
-    return render(request, 'usuarioJefa/calendario.html', context)
+            personal_temporal = PersonalTemporal.objects.filter(activo=True).select_related('area', 'creado_por')
+        except Exception as e:
+            print(f"Warning: Error obteniendo personal temporal: {e}")
+            personal_temporal = []
+        
+        # Construir contexto base
+        context = {
+            'areas': areas,
+            'all_areas': areas,  # Importante: ambas variables para compatibilidad
+            'enfermeros': enfermeros,
+            'bimestres': bimestres,
+            'año_actual': año_actual,
+            'mes_actual': mes_actual,
+            'vista_tipo': vista_tipo,
+            'personal_temporal': personal_temporal,  # Variable corregida
+            'usuarios_temporales': personal_temporal,  # Alias para compatibilidad
+        }
+        
+        # Si hay área seleccionada, obtener datos específicos
+        if area_seleccionada_id:
+            try:
+                area_seleccionada = AreaEspecialidad.objects.get(id=area_seleccionada_id)
+                context['area_seleccionada'] = area_seleccionada
+                
+                # Datos para vista bimestral
+                try:
+                    bimestres_data = obtener_datos_bimestres(area_seleccionada, año_actual)
+                    context['bimestres_data'] = bimestres_data
+                except Exception as e:
+                    print(f"Warning: Error obteniendo datos bimestres: {e}")
+                    context['bimestres_data'] = []
+                
+                # Datos para vista mensual
+                if vista_tipo == 'mensual':
+                    try:
+                        datos_mensual = obtener_datos_mensual(area_seleccionada, mes_actual, año_actual)
+                        context.update(datos_mensual)
+                    except Exception as e:
+                        print(f"Warning: Error obteniendo datos mensual: {e}")
+                
+                # Historial de asignaciones
+                try:
+                    historial_asignaciones = AsignacionCalendario.objects.filter(
+                        area=area_seleccionada
+                    ).select_related('enfermero').order_by('-fecha_inicio')[:10]
+                    context['historial_asignaciones'] = historial_asignaciones
+                except Exception as e:
+                    print(f"Warning: Error obteniendo historial asignaciones: {e}")
+                    context['historial_asignaciones'] = []
+                
+                # Historial de cambios
+                try:
+                    historial_cambios = HistorialCambios.objects.filter(
+                        Q(area_anterior=area_seleccionada) | Q(area_nueva=area_seleccionada)
+                    ).select_related('asignacion__enfermero', 'area_anterior', 'area_nueva').order_by('-fecha_cambio')[:10]
+                    context['historial'] = historial_cambios
+                except Exception as e:
+                    print(f"Warning: Error obteniendo historial cambios: {e}")
+                    context['historial'] = []
+                
+                # Emergencias activas
+                try:
+                    emergencias_activas = AsignacionEmergencia.objects.filter(
+                        Q(area_destino=area_seleccionada) | Q(area_origen=area_seleccionada),
+                        activa=True
+                    ).select_related('enfermero', 'area_origen', 'area_destino', 'creada_por').order_by('-fecha_creacion')
+                    context['emergencias_activas'] = emergencias_activas
+                except Exception as e:
+                    print(f"Warning: Error obteniendo emergencias: {e}")
+                    context['emergencias_activas'] = []
+                    
+            except AreaEspecialidad.DoesNotExist:
+                messages.error(request, "El área seleccionada no existe")
+                return redirect('jefa:calendario_area')
+            except Exception as e:
+                print(f"Error general en área seleccionada: {e}")
+                messages.error(request, f"Error al cargar datos del área: {str(e)}")
+        
+        # Debug para verificar datos
+        print(f"DEBUG: Total áreas en contexto: {areas.count()}")
+        print(f"DEBUG: Personal temporal activo: {len(personal_temporal)}")
+        print(f"DEBUG: Área seleccionada ID: {area_seleccionada_id}")
+        
+        return render(request, 'usuarioJefa/calendario.html', context)
+        
+    except Exception as e:
+        print(f"Error general en calendario_area: {e}")
+        import traceback
+        traceback.print_exc()
+        messages.error(request, f"Error al cargar el calendario: {str(e)}")
+        return redirect('jefa:menu_jefa')
 
 def obtener_datos_bimestres(area, año):
     """
-    Obtiene datos de asignaciones para todos los bimestres del año con indicadores de emergencia CORREGIDOS
+    Obtiene datos completos para la vista bimestral
     """
-    bimestres_data = []
-    
-    for bimestre in range(1, 7):
-        # Obtener asignaciones normales del bimestre
-        asignaciones_normales = AsignacionCalendario.objects.filter(
-            area=area,
-            bimestre=bimestre,
-            year=año,
-            activo=True
-        ).select_related('enfermero')
+    try:
+        bimestres_data = []
         
-        # Obtener fechas del bimestre
-        mes_inicio = (bimestre - 1) * 2 + 1
-        mes_fin = mes_inicio + 1 if mes_inicio < 12 else 12
-        
-        fecha_inicio = datetime(año, mes_inicio, 1).date()
-        if mes_fin == 12:
-            fecha_fin = datetime(año, 12, 31).date()
-        else:
-            ultimo_dia = calendar.monthrange(año, mes_fin)[1]
-            fecha_fin = datetime(año, mes_fin, ultimo_dia).date()
-        
-        # Convertir a timezone-aware para emergencias
-        fecha_inicio_tz = timezone.make_aware(datetime.combine(fecha_inicio, datetime.min.time()))
-        fecha_fin_tz = timezone.make_aware(datetime.combine(fecha_fin, datetime.max.time()))
-        
-        # Emergencias que LLEGAN a esta área
-        emergencias_llegada = AsignacionEmergencia.objects.filter(
-            area_destino=area,
-            activa=True,
-            fecha_inicio__lte=fecha_fin_tz,
-            fecha_fin__gte=fecha_inicio_tz
-        ).select_related('enfermero', 'area_origen')
-        
-        # Emergencias que SALEN de esta área
-        emergencias_salida = AsignacionEmergencia.objects.filter(
-            area_origen=area,
-            activa=True,
-            fecha_inicio__lte=fecha_fin_tz,
-            fecha_fin__gte=fecha_inicio_tz
-        ).select_related('enfermero', 'area_destino')
-        
-        print(f"DEBUG Bimestre {bimestre}: {asignaciones_normales.count()} normales, "
-              f"{emergencias_llegada.count()} llegadas, {emergencias_salida.count()} salidas")
-        
-        # Combinar asignaciones
-        asignaciones_combinadas = []
-        
-        # Agregar asignaciones normales
-        for asignacion in asignaciones_normales:
-            # Verificar si este enfermero tiene emergencias de salida en este bimestre
-            emergencia_salida = emergencias_salida.filter(
-                enfermero=asignacion.enfermero
-            ).first()
+        for bimestre in range(1, 7):
+            # Calcular fechas del bimestre
+            mes_inicio = ((bimestre - 1) * 2) + 1
+            fecha_inicio_bimestre = datetime(año, mes_inicio, 1).date()
             
-            if emergencia_salida:
-                # El enfermero tiene una emergencia que lo saca temporalmente
-                # Formatear fechas para mostrar en el tooltip
-                fecha_inicio_emergencia = emergencia_salida.fecha_inicio.strftime("%d/%m")
-                fecha_fin_emergencia = emergencia_salida.fecha_fin.strftime("%d/%m")
-                
-                asignaciones_combinadas.append({
-                    'enfermero': asignacion.enfermero,
-                    'es_emergencia': False,
-                    'tipo': 'normal_con_ausencia_temporal',
-                    'area_temporal': emergencia_salida.area_destino.nombre,
-                    'fecha_inicio_emergencia': fecha_inicio_emergencia,
-                    'fecha_fin_emergencia': fecha_fin_emergencia,
-                    'motivo': emergencia_salida.motivo,
-                    'tooltip': f"Temporalmente en {emergencia_salida.area_destino.nombre} ({fecha_inicio_emergencia} - {fecha_fin_emergencia}): {emergencia_salida.motivo}"
-                })
+            if mes_inicio + 1 <= 12:
+                ultimo_dia_mes2 = calendar.monthrange(año, mes_inicio + 1)[1]
+                fecha_fin_bimestre = datetime(año, mes_inicio + 1, ultimo_dia_mes2).date()
             else:
-                # El enfermero está normalmente en esta área
-                asignaciones_combinadas.append({
-                    'enfermero': asignacion.enfermero,
-                    'es_emergencia': False,
-                    'tipo': 'normal'
-                })
-        
-        # Agregar emergencias de llegada
-        for emergencia in emergencias_llegada:
-            fecha_inicio_emergencia = emergencia.fecha_inicio.strftime("%d/%m")
-            fecha_fin_emergencia = emergencia.fecha_fin.strftime("%d/%m")
+                fecha_fin_bimestre = datetime(año, 12, 31).date()
             
-            asignaciones_combinadas.append({
-                'enfermero': emergencia.enfermero,
-                'es_emergencia': True,
-                'tipo': 'emergencia_llegada',
-                'area_origen': emergencia.area_origen.nombre,
-                'motivo': emergencia.motivo,
-                'fecha_inicio': fecha_inicio_emergencia,
-                'fecha_fin': fecha_fin_emergencia,
-                'tooltip': f"Emergencia desde {emergencia.area_origen.nombre} ({fecha_inicio_emergencia} - {fecha_fin_emergencia}): {emergencia.motivo}"
+            # Obtener asignaciones normales para este bimestre
+            asignaciones_normales = AsignacionCalendario.objects.filter(
+                area=area,
+                bimestre=bimestre,
+                year=año,
+                activo=True
+            ).select_related('enfermero')
+            
+            # Obtener emergencias que afecten este bimestre
+            emergencias = AsignacionEmergencia.objects.filter(
+                Q(area_destino=area) | Q(area_origen=area),
+                activa=True,
+                fecha_inicio__date__lte=fecha_fin_bimestre,
+                fecha_fin__date__gte=fecha_inicio_bimestre
+            ).select_related('enfermero', 'area_origen', 'area_destino')
+            
+            # Obtener personal temporal QUE APLIQUE ESPECÍFICAMENTE A ESTE BIMESTRE
+            personal_temporal = PersonalTemporal.objects.filter(
+                area=area,
+                activo=True,
+                fecha_inicio__date__lte=fecha_fin_bimestre
+            ).filter(
+                Q(fecha_fin__date__gte=fecha_inicio_bimestre) | Q(fecha_fin__isnull=True)
+            ).select_related('area', 'creado_por')
+            
+            # Procesar asignaciones para el template
+            asignaciones_procesadas = []
+            
+            # Asignaciones normales
+            for asignacion in asignaciones_normales:
+                asignaciones_procesadas.append({
+                    'tipo': 'normal',
+                    'enfermero': asignacion.enfermero,
+                    'tooltip': f"{asignacion.enfermero.username} - Asignación normal"
+                })
+            
+            # Emergencias
+            for emergencia in emergencias:
+                if emergencia.area_destino == area:
+                    asignaciones_procesadas.append({
+                        'tipo': 'emergencia_llegada',
+                        'enfermero': emergencia.enfermero,
+                        'tooltip': f"{emergencia.enfermero.username} - Emergencia desde {emergencia.area_origen.nombre}: {emergencia.motivo}"
+                    })
+            
+            # Personal temporal - SOLO SI REALMENTE APLICA A ESTE BIMESTRE
+            for temp in personal_temporal:
+                # Verificar que el personal temporal realmente coincida con las fechas del bimestre
+                temp_inicio = temp.fecha_inicio.date()
+                temp_fin = temp.fecha_fin.date() if temp.fecha_fin else None
+                
+                # Solo agregar si hay superposición real con el bimestre
+                if temp_inicio <= fecha_fin_bimestre and (temp_fin is None or temp_fin >= fecha_inicio_bimestre):
+                    asignaciones_procesadas.append({
+                        'tipo': 'temporal',
+                        'enfermero': temp,  # Usar el objeto PersonalTemporal
+                        'tooltip': f"{temp.nombre} - Personal temporal: {temp.motivo_asignacion}"
+                    })
+            
+            bimestres_data.append({
+                'numero': bimestre,
+                'asignaciones': asignaciones_procesadas
             })
         
-        bimestres_data.append({
-            'numero': bimestre,
-            'mes_inicio': mes_inicio,
-            'mes_fin': mes_fin,
-            'asignaciones': asignaciones_combinadas
-        })
-    
-    return bimestres_data
+        return bimestres_data
+    except Exception as e:
+        print(f"Error en obtener_datos_bimestres: {e}")
+        return []
 
 def obtener_datos_mensual(area, mes, año):
     """
-    Obtiene datos detallados para la vista mensual con indicadores de emergencia CORREGIDOS
+    Obtiene datos completos para la vista mensual
     """
-    # Generar calendario del mes
-    cal = calendar.monthcalendar(año, mes)
-    
-    # Obtener asignaciones del mes
-    primer_dia = datetime(año, mes, 1).date()
-    ultimo_dia = datetime(año, mes, calendar.monthrange(año, mes)[1]).date()
-    
-    print(f"DEBUG: Obteniendo datos para {area.nombre} - {mes}/{año}")
-    print(f"DEBUG: Rango de fechas: {primer_dia} a {ultimo_dia}")
-    
-    # Asignaciones normales activas en el mes
-    asignaciones_normales = AsignacionCalendario.objects.filter(
-        area=area,
-        fecha_inicio__lte=ultimo_dia,
-        fecha_fin__gte=primer_dia,
-        activo=True
-    ).select_related('enfermero')
-    
-    print(f"DEBUG: Asignaciones normales encontradas: {asignaciones_normales.count()}")
-    
-    # Convertir fechas a timezone-aware para comparar con emergencias
-    primer_dia_tz = timezone.make_aware(datetime.combine(primer_dia, datetime.min.time()))
-    ultimo_dia_tz = timezone.make_aware(datetime.combine(ultimo_dia, datetime.max.time()))
-    
-    # Emergencias que LLEGAN a esta área
-    emergencias_llegada = AsignacionEmergencia.objects.filter(
-        area_destino=area,
-        activa=True,
-        fecha_inicio__lte=ultimo_dia_tz,
-        fecha_fin__gte=primer_dia_tz
-    ).select_related('enfermero', 'area_origen')
-    
-    # Emergencias que SALEN de esta área
-    emergencias_salida = AsignacionEmergencia.objects.filter(
-        area_origen=area,
-        activa=True,
-        fecha_inicio__lte=ultimo_dia_tz,
-        fecha_fin__gte=primer_dia_tz
-    ).select_related('enfermero', 'area_destino')
-    
-    print(f"DEBUG: Emergencias de llegada: {emergencias_llegada.count()}")
-    print(f"DEBUG: Emergencias de salida: {emergencias_salida.count()}")
-    
-    # Procesar asignaciones por día
-    asignaciones_dia = []
-    dias_mes = calendar.monthrange(año, mes)[1]
-    
-    for dia in range(1, dias_mes + 1):
-        fecha_dia = datetime(año, mes, dia).date()
+    try:
+        # Generar calendario del mes
+        import calendar
+        cal = calendar.monthcalendar(año, mes)
         
-        # CORRECCIÓN: Crear rangos de tiempo específicos para el día
-        inicio_dia_tz = timezone.make_aware(datetime.combine(fecha_dia, datetime.min.time()))
-        fin_dia_tz = timezone.make_aware(datetime.combine(fecha_dia, datetime.max.time()))
+        # Obtener asignaciones del mes
+        primer_dia = datetime(año, mes, 1).date()
+        ultimo_dia = datetime(año, mes, calendar.monthrange(año, mes)[1]).date()
         
-        print(f"DEBUG: Procesando día {dia} - Rango: {inicio_dia_tz} a {fin_dia_tz}")
+        # Asignaciones normales
+        asignaciones = AsignacionCalendario.objects.filter(
+            area=area,
+            fecha_inicio__lte=ultimo_dia,
+            fecha_fin__gte=primer_dia,
+            activo=True
+        ).select_related('enfermero')
         
-        # Asignaciones normales para este día
-        for asignacion in asignaciones_normales:
-            if asignacion.fecha_inicio <= fecha_dia <= asignacion.fecha_fin:
-                # CORRECCIÓN: Verificar si hay emergencia que cubra EXACTAMENTE este día
-                emergencia_salida = emergencias_salida.filter(
-                    enfermero=asignacion.enfermero,
-                    fecha_inicio__lte=fin_dia_tz,      # La emergencia debe haber empezado antes del fin del día
-                    fecha_fin__gte=inicio_dia_tz       # La emergencia debe terminar después del inicio del día
-                ).first()
-                
-                if emergencia_salida:
-                    # Verificación adicional: ¿La emergencia realmente cubre este día específico?
-                    emergencia_inicio_date = emergencia_salida.fecha_inicio.date()
-                    emergencia_fin_date = emergencia_salida.fecha_fin.date()
+        # Emergencias activas en el mes
+        emergencias = AsignacionEmergencia.objects.filter(
+            Q(area_destino=area) | Q(area_origen=area),
+            activa=True,
+            fecha_inicio__lte=ultimo_dia,
+            fecha_fin__gte=primer_dia
+        ).select_related('enfermero', 'area_origen', 'area_destino')
+        
+        # Personal temporal activo en el mes
+        personal_temporal = PersonalTemporal.objects.filter(
+            area=area,
+            activo=True,
+            fecha_inicio__lte=ultimo_dia,
+            ).filter(
+            Q(fecha_fin__gte=primer_dia) | Q(fecha_fin__isnull=True)
+        ).select_related('area', 'creado_por')
+        
+        # Procesar asignaciones por día
+        asignaciones_dia = []
+        
+        # Procesar cada día del mes
+        for semana in cal:
+            for dia in semana:
+                if dia > 0:  # Día válido
+                    fecha_dia = datetime(año, mes, dia).date()
                     
-                    print(f"DEBUG: Emergencia encontrada para {asignacion.enfermero.username}")
-                    print(f"DEBUG: Emergencia del {emergencia_inicio_date} al {emergencia_fin_date}")
-                    print(f"DEBUG: Día actual: {fecha_dia}")
+                    # Asignaciones normales para este día
+                    for asignacion in asignaciones:
+                        if asignacion.fecha_inicio <= fecha_dia <= asignacion.fecha_fin:
+                            asignaciones_dia.append({
+                                'aplica_dia': dia,
+                                'tipo': 'normal',
+                                'enfermero': asignacion.enfermero,
+                                'tooltip': f"{asignacion.enfermero.username} - Asignación normal"
+                            })
                     
-                    # VERIFICACIÓN FINAL: Solo mostrar ausencia si la fecha del día está EN el rango de emergencia
-                    if emergencia_inicio_date <= fecha_dia <= emergencia_fin_date:
-                        print(f"DEBUG: ✅ Día {dia} - {asignacion.enfermero.username} está EN emergencia")
-                        asignaciones_dia.append({
-                            'aplica_dia': dia,
-                            'enfermero': asignacion.enfermero,
-                            'es_emergencia': False,
-                            'tipo': 'temporal_ausente',
-                            'area_temporal': emergencia_salida.area_destino.nombre,
-                            'motivo_emergencia': emergencia_salida.motivo,
-                            'tooltip': f"Temporalmente en {emergencia_salida.area_destino.nombre}: {emergencia_salida.motivo}"
-                        })
-                    else:
-                        print(f"DEBUG: ❌ Día {dia} - {asignacion.enfermero.username} NO está en emergencia este día")
-                        # El enfermero está normalmente en su área este día
-                        asignaciones_dia.append({
-                            'aplica_dia': dia,
-                            'enfermero': asignacion.enfermero,
-                            'es_emergencia': False,
-                            'tipo': 'normal'
-                        })
-                else:
-                    print(f"DEBUG: ➡️ Día {dia} - {asignacion.enfermero.username} asignación normal")
-                    # El enfermero está normalmente en su área este día
-                    asignaciones_dia.append({
-                        'aplica_dia': dia,
-                        'enfermero': asignacion.enfermero,
-                        'es_emergencia': False,
-                        'tipo': 'normal'
-                    })
+                    # Emergencias para este día
+                    for emergencia in emergencias:
+                        if emergencia.fecha_inicio.date() <= fecha_dia <= emergencia.fecha_fin.date():
+                            if emergencia.area_destino == area:
+                                asignaciones_dia.append({
+                                    'aplica_dia': dia,
+                                    'tipo': 'emergencia_llegada',
+                                    'enfermero': emergencia.enfermero,
+                                    'tooltip': f"{emergencia.enfermero.username} - Emergencia desde {emergencia.area_origen.nombre}: {emergencia.motivo}"
+                                })
+                    
+                    # Personal temporal para este día
+                    for temp in personal_temporal:
+                        if temp.fecha_inicio.date() <= fecha_dia:
+                            if temp.fecha_fin is None or temp.fecha_fin.date() >= fecha_dia:
+                                asignaciones_dia.append({
+                                    'aplica_dia': dia,
+                                    'tipo': 'temporal',
+                                    'enfermero': temp,  # Objeto PersonalTemporal
+                                    'tooltip': f"{temp.nombre} - Personal temporal: {temp.motivo_asignacion}"
+                                })
         
-        # Emergencias de LLEGADA para este día específico
-        for emergencia in emergencias_llegada:
-            emergencia_inicio_date = emergencia.fecha_inicio.date()
-            emergencia_fin_date = emergencia.fecha_fin.date()
-            
-            # VERIFICACIÓN: Solo mostrar llegada si la fecha del día está EN el rango de emergencia
-            if emergencia_inicio_date <= fecha_dia <= emergencia_fin_date:
-                print(f"DEBUG: ✅ Día {dia} - Llegada de emergencia: {emergencia.enfermero.username}")
-                asignaciones_dia.append({
-                    'aplica_dia': dia,
-                    'enfermero': emergencia.enfermero,
-                    'es_emergencia': True,
-                    'tipo': 'emergencia_llegada',
-                    'area_origen': emergencia.area_origen.nombre,
-                    'motivo': emergencia.motivo,
-                    'tooltip': f"Emergencia desde {emergencia.area_origen.nombre}: {emergencia.motivo}"
-                })
-    
-    print(f"DEBUG: Total asignaciones por día procesadas: {len(asignaciones_dia)}")
-    
-    return {
-        'calendario': cal,
-        'asignaciones_dia': asignaciones_dia,
-    }
+        return {
+            'calendario': cal,
+            'asignaciones_dia': asignaciones_dia,
+            'asignaciones_mes': asignaciones,
+            'primer_dia': primer_dia,
+            'ultimo_dia': ultimo_dia
+        }
+    except Exception as e:
+        print(f"Error en obtener_datos_mensual: {e}")
+        return {
+            'calendario': [],
+            'asignaciones_dia': [],
+            'asignaciones_mes': [],
+            'primer_dia': None,
+            'ultimo_dia': None
+        }
 
 def limpiar_todas_asignaciones(request):
     """
@@ -2706,7 +2704,7 @@ def generar_sugerencias_anuales(request, año=None):
 def algoritmo_sugerencias_anuales_requerimientos(enfermeros, areas, año):
     """
     Algoritmo que sigue EXACTAMENTE los requerimientos RQNF77-85
-    MODIFICADO para ignorar duplicados y trabajar con datos limpios
+    MODIFICADO para incluir fechas correctas
     """
     print(f"🔄 Generando sugerencias anuales según requerimientos para {len(enfermeros)} enfermeros")
     
@@ -2714,57 +2712,107 @@ def algoritmo_sugerencias_anuales_requerimientos(enfermeros, areas, año):
     sugerencias_por_bimestre = {}
     historial_asignaciones = {enfermero.id: [] for enfermero in enfermeros}
     
-    # CAMBIO: Obtener solo UNA asignación por enfermero/bimestre (la más reciente)
-    asignaciones_existentes = []
+    # Función para calcular fechas de bimestre
+def calcular_fechas_bimestre(año, bimestre):
+    """
+    Calcula las fechas de inicio y fin de un bimestre específico
+    """
+    meses_por_bimestre = {
+        1: (1, 2),   # Enero-Febrero
+        2: (3, 4),   # Marzo-Abril  
+        3: (5, 6),   # Mayo-Junio
+        4: (7, 8),   # Julio-Agosto
+        5: (9, 10),  # Septiembre-Octubre
+        6: (11, 12)  # Noviembre-Diciembre
+    }
+    
+    mes_inicio, mes_fin = meses_por_bimestre[bimestre]
+    fecha_inicio = datetime(año, mes_inicio, 1).date()
+    
+    # Último día del segundo mes
+    if mes_fin == 12:
+        fecha_fin = datetime(año, 12, 31).date()
+    else:
+        siguiente_mes = datetime(año, mes_fin + 1, 1).date()
+        fecha_fin = siguiente_mes - timedelta(days=1)
+        
+    return fecha_inicio, fecha_fin
+
+def generar_sugerencias_base_mejoradas(enfermeros, areas):
+    """
+    Generar sugerencias para el primer bimestre del año
+    """
+    sugerencias = []
+    
     for enfermero in enfermeros:
-        for bimestre in range(1, 7):
-            # Buscar la asignación más reciente para este enfermero/bimestre
-            asignacion = AsignacionCalendario.objects.filter(
-                enfermero=enfermero,
-                bimestre=bimestre,
-                year=año,
-                activo=True
-            ).order_by('-id').first()  # Tomar la más reciente
-            
-            if asignacion:
-                asignaciones_existentes.append(asignacion)
-    
-    print(f"🔍 Asignaciones existentes encontradas: {len(asignaciones_existentes)}")
-    
-    # Mapear asignaciones existentes por enfermero (sin duplicados)
-    for asignacion in asignaciones_existentes:
-        historial_asignaciones[asignacion.enfermero.id].append({
-            'bimestre': asignacion.bimestre,
-            'area': asignacion.area,
-            'existente': True
-        })
-    
-    # RQNF76: 5 rotaciones bimestrales (6 bimestres)
-    for bimestre in range(1, 7):
-        print(f"📅 Procesando bimestre {bimestre}")
+        # Verificar si ya tiene asignación existente para bimestre 1
+        asignacion_existente = AsignacionCalendario.objects.filter(
+            enfermero=enfermero,
+            bimestre=1,
+            activo=True
+        ).first()
         
-        if bimestre == 1:
-            # RQNF77: Primera rotación - solo área y actividades de mayor desempeño
-            sugerencias_bimestre = generar_primera_rotacion_mejorada(enfermeros, areas, historial_asignaciones)
+        if asignacion_existente:
+            # Incluir asignación existente
+            sugerencias.append({
+                'enfermero': enfermero,
+                'area_sugerida': asignacion_existente.area,
+                'motivo': 'Asignación existente (reactivar)',
+                'puntuacion': 0,
+                'existente': True,
+                'categoria': 'existente'
+            })
         else:
-            # RQNF85: Rotaciones subsecuentes - mismos parámetros + no repetir área anterior
-            sugerencias_bimestre = generar_rotacion_subsecuente_mejorada(
-                enfermeros, areas, bimestre, historial_asignaciones
-            )
-        
-        sugerencias_por_bimestre[bimestre] = sugerencias_bimestre
-        
-        # Actualizar historial para siguiente bimestre
-        for sugerencia in sugerencias_bimestre:
-            if not sugerencia.get('existente', False):
-                historial_asignaciones[sugerencia['enfermero'].id].append({
-                    'bimestre': bimestre,
-                    'area': sugerencia['area_sugerida'],
+            # Generar nueva sugerencia según parámetros
+            if enfermero.areaEspecialidad:
+                # PRIORIDAD 1: Área de especialidad
+                sugerencias.append({
+                    'enfermero': enfermero,
+                    'area_sugerida': enfermero.areaEspecialidad,
+                    'motivo': f"Área de especialidad: {enfermero.areaEspecialidad.nombre}",
+                    'puntuacion': 10,
                     'existente': False,
-                    'es_sugerencia': True
+                    'categoria': 'especialidad'
+                })
+            elif enfermero.fortalezas.exists():
+                # PRIORIDAD 2: Fortalezas
+                area_sugerida = encontrar_area_por_fortalezas_simple(enfermero, areas)
+                sugerencias.append({
+                    'enfermero': enfermero,
+                    'area_sugerida': area_sugerida,
+                    'motivo': f"Por fortalezas: {area_sugerida.nombre}",
+                    'puntuacion': 5,
+                    'existente': False,
+                    'categoria': 'fortalezas'
+                })
+            else:
+                # PRIORIDAD 3: Asignación aleatoria equitativa
+                import random
+                area_sugerida = random.choice(areas)
+                sugerencias.append({
+                    'enfermero': enfermero,
+                    'area_sugerida': area_sugerida,
+                    'motivo': 'Asignación aleatoria equitativa',
+                    'puntuacion': 1,
+                    'existente': False,
+                    'categoria': 'aleatoria'
                 })
     
-    return sugerencias_por_bimestre
+    return sugerencias
+
+def encontrar_area_por_fortalezas_simple(enfermero, areas):
+    """
+    Encuentra un área compatible con las fortalezas del enfermero
+    """
+    # Buscar área que tenga fortalezas coincidentes
+    for area in areas:
+        # Aquí podrías implementar lógica más sofisticada
+        # Por ahora, devolvemos la primera área disponible
+        return area
+    
+    # Si no hay coincidencias, devolver área aleatoria
+    import random
+    return random.choice(areas) if areas else None
 
 def generar_primera_rotacion_mejorada(enfermeros, areas, historial_asignaciones):
     """
@@ -2842,71 +2890,61 @@ def generar_primera_rotacion_mejorada(enfermeros, areas, historial_asignaciones)
     return sugerencias
 
 def generar_rotacion_subsecuente_mejorada(enfermeros, areas, bimestre, historial_asignaciones):
-    print(f"  🔄 Generando rotación {bimestre} (RQNF85)")
-    sugerencias = []
-    
-    print(f"  🔄 Generando rotación {bimestre} (RQNF85)")
+    """
+    Generar rotación para bimestres subsecuentes evitando repetir áreas consecutivas
+    """
+    print(f"  🔄 Generando rotación bimestre {bimestre}")
     sugerencias = []
     
     for enfermero in enfermeros:
         # Verificar si ya tiene asignación en este bimestre
-        tiene_asignacion = any(
-            asig['bimestre'] == bimestre and asig.get('existente', False)
-            for asig in historial_asignaciones[enfermero.id]
-        )
+        asignacion_existente = AsignacionCalendario.objects.filter(
+            enfermero=enfermero,
+            bimestre=bimestre,
+            activo=True
+        ).first()
         
-        if tiene_asignacion:
-            # Incluir asignación existente - CORREGIR AQUÍ
-            asignacion_existente = None
-            for asig in historial_asignaciones[enfermero.id]:
-                if asig['bimestre'] == bimestre and asig.get('existente', False):
-                    asignacion_existente = asig
-                    break  # Tomar solo la primera que encuentre
-                            
-                asignacion = AsignacionCalendario.objects.filter(
-                    enfermero=enfermero,
-                    area=asignacion_existente['area'],
-                    bimestre=bimestre,
-                    year=datetime.now().year,
-                    activo=True
-                ).order_by('-id').first()
-
-                sugerencias.append({
-                    'enfermero': enfermero,
-                    'area_sugerida': asignacion.area,
-                    'motivo': 'Asignación existente',
-                    'puntuacion': 0,
-                    'bimestre': bimestre,
-                    'existente': True,
-                    'categoria': 'existente',
-                    'fecha_inicio': asignacion.fecha_inicio,
-                    'fecha_fin': asignacion.fecha_fin
-                })
-
-            continue
-        
-        # Obtener áreas de las últimas 2 rotaciones para no repetir
-        areas_prohibidas = obtener_areas_ultimas_rotaciones(enfermero.id, bimestre, historial_asignaciones, 2)
-        areas_disponibles = [area for area in areas if area not in areas_prohibidas]
-        
-        if not areas_disponibles:
-            # Si no hay áreas disponibles, usar todas (casos extremos)
-            areas_disponibles = list(areas)
-        
-        # Aplicar misma lógica que primera rotación pero con áreas restringidas
-        area_sugerida, motivo, puntuacion, categoria = calcular_mejor_area_rotacion_subsecuente(
-            enfermero, areas_disponibles, bimestre, areas_prohibidas
-        )
-        
-        sugerencias.append({
-            'enfermero': enfermero,
-            'area_sugerida': area_sugerida,
-            'motivo': motivo,
-            'puntuacion': puntuacion,
-            'bimestre': bimestre,
-            'existente': False,
-            'categoria': categoria
-        })
+        if asignacion_existente:
+            # Incluir asignación existente
+            sugerencias.append({
+                'enfermero': enfermero,
+                'area_sugerida': asignacion_existente.area,
+                'motivo': 'Asignación existente',
+                'puntuacion': 0,
+                'existente': True,
+                'categoria': 'existente'
+            })
+        else:
+            # Obtener área anterior del historial
+            historial_enfermero = historial_asignaciones.get(enfermero.id, [])
+            area_anterior = None
+            
+            if historial_enfermero:
+                ultima_asignacion = historial_enfermero[-1]
+                area_anterior = ultima_asignacion['area']
+            
+            # Filtrar áreas disponibles (evitar repetir la anterior)
+            areas_disponibles = [a for a in areas if a != area_anterior]
+            if not areas_disponibles:
+                areas_disponibles = areas  # Si no hay opciones, usar todas
+            
+            # Seleccionar nueva área
+            if enfermero.areaEspecialidad and enfermero.areaEspecialidad in areas_disponibles:
+                area_sugerida = enfermero.areaEspecialidad
+                motivo = f"Área de especialidad (evita {area_anterior.nombre if area_anterior else 'ninguna'})"
+            else:
+                import random
+                area_sugerida = random.choice(areas_disponibles)
+                motivo = f"Rotación automática (evita {area_anterior.nombre if area_anterior else 'ninguna'})"
+            
+            sugerencias.append({
+                'enfermero': enfermero,
+                'area_sugerida': area_sugerida,
+                'motivo': motivo,
+                'puntuacion': 3,
+                'existente': False,
+                'categoria': 'rotacion'
+            })
     
     return sugerencias
 
@@ -3037,24 +3075,23 @@ def calcular_estadisticas_sugerencias(sugerencias_por_bimestre):
     """
     Calcula estadísticas útiles de las sugerencias generadas
     """
-    estadisticas = {
-        'total_sugerencias': 0,
-        'por_categoria': {},
-        'cobertura_por_area': {},
-        'rotaciones_balanceadas': 0
-    }
+    total_sugerencias = 0
+    nuevas_asignaciones = 0
+    asignaciones_existentes = 0
     
     for bimestre, sugerencias in sugerencias_por_bimestre.items():
-        estadisticas['total_sugerencias'] += len([s for s in sugerencias if not s.get('existente', False)])
-        
-        # Contar por categoría
+        total_sugerencias += len(sugerencias)
         for sugerencia in sugerencias:
-            categoria = sugerencia.get('categoria', 'desconocida')
-            if categoria not in estadisticas['por_categoria']:
-                estadisticas['por_categoria'][categoria] = 0
-            estadisticas['por_categoria'][categoria] += 1
+            if sugerencia.get('existente', False):
+                asignaciones_existentes += 1
+            else:
+                nuevas_asignaciones += 1
     
-    return estadisticas
+    return {
+        'total_sugerencias': total_sugerencias,
+        'nuevas_asignaciones': nuevas_asignaciones,
+        'asignaciones_existentes': asignaciones_existentes
+    }
 
 def aplicar_sugerencias_automaticas(sugerencias_por_bimestre, año):
     """
@@ -6239,32 +6276,324 @@ def obtener_algoritmos_disponibles():
 
 #//////////////// Usuarios temporales
 
-
-def crear_usuario_temporal(request):
+def gestionar_personal_temporal(request):
+    """
+    Vista para manejar POST de personal temporal desde el calendario
+    """
     if request.method == 'POST':
-        nombre_temporal = request.POST.get('nombre_temporal')
-        area_id = request.POST.get('area')
-
-        if not nombre_temporal or not area_id:
-            messages.error(request, "Por favor completa todos los campos.")
-            return redirect('jefa:calendario_area')
-
-        try:
-            area = Area.objects.get(id=area_id)
-        except Area.DoesNotExist:
-            messages.error(request, "Área seleccionada no válida.")
-            return redirect('jefa:calendario_area')
-
-        # Crear el usuario temporal
-        nuevo_temporal = Usuarios(
-            username=nombre_temporal,
-            tipoUsuario='TE',  # suponiendo que 'TE' es el tipo para temporales
-            estaActivo=True,
-            area=area,
-        )
-        nuevo_temporal.save()
-        messages.success(request, f"Usuario temporal '{nombre_temporal}' creado exitosamente.")
+        accion = request.POST.get('accion')
+        area_param = request.GET.get('area')  # Preservar área seleccionada
+        
+        if accion == 'crear_nuevo':
+            try:
+                # Validar datos
+                nombre = request.POST.get('nombre_temporal', '').strip()
+                area_id = request.POST.get('area')
+                fecha_inicio = request.POST.get('fecha_inicio')
+                fecha_fin = request.POST.get('fecha_fin', '')
+                tiempo_indefinido = request.POST.get('tiempo_indefinido') == 'on'
+                motivo = request.POST.get('motivo', '').strip()
+                
+                if not all([nombre, area_id, fecha_inicio, motivo]):
+                    messages.error(request, "❌ Por favor completa todos los campos obligatorios.")
+                    return redirect(f'jefa:calendario_area?area={area_param}' if area_param else 'jefa:calendario_area')
+                
+                # Validar área
+                area = get_object_or_404(AreaEspecialidad, id=area_id)
+                
+                # Procesar fechas
+                fecha_inicio_dt = datetime.strptime(fecha_inicio, '%Y-%m-%dT%H:%M')
+                fecha_fin_dt = None
+                
+                if not tiempo_indefinido and fecha_fin:
+                    fecha_fin_dt = datetime.strptime(fecha_fin, '%Y-%m-%dT%H:%M')
+                    if fecha_fin_dt <= fecha_inicio_dt:
+                        messages.error(request, "❌ La fecha de fin debe ser posterior a la fecha de inicio.")
+                        return redirect(f'jefa:calendario_area?area={area_param}' if area_param else 'jefa:calendario_area')
+                
+                # Crear personal temporal
+                with transaction.atomic():
+                    personal = PersonalTemporal.objects.create(
+                        nombre=nombre,
+                        area=area,
+                        fecha_inicio=fecha_inicio_dt,
+                        fecha_fin=fecha_fin_dt,
+                        tiempo_indefinido=tiempo_indefinido,
+                        motivo_asignacion=motivo,
+                        creado_por=request.user,
+                        activo=True
+                    )
+                    
+                    # Crear entrada en historial
+                    HistorialPersonalTemporal.objects.create(
+                        personal_temporal=personal,
+                        accion='creacion',
+                        motivo=f"Creación inicial: {motivo}",
+                        usuario_accion=request.user
+                    )
+                
+                tiempo_texto = "indefinido" if tiempo_indefinido else f"hasta {fecha_fin_dt.strftime('%d/%m/%Y %H:%M')}"
+                messages.success(request, f"✅ Personal temporal '{nombre}' agregado exitosamente en {area.nombre} por tiempo {tiempo_texto}.")
+                
+            except Exception as e:
+                messages.error(request, f"❌ Error al crear personal temporal: {str(e)}")
+                
+        elif accion == 'finalizar':
+            try:
+                personal_id = request.POST.get('personal_id')
+                personal = get_object_or_404(PersonalTemporal, id=personal_id, activo=True)
+                personal._usuario_accion = request.user
+                personal.desactivar(motivo="Finalización manual desde calendario", automatico=False)
+                
+                messages.success(request, f"✅ Personal temporal '{personal.nombre}' desactivado correctamente.")
+                
+            except Exception as e:
+                messages.error(request, f"❌ Error al finalizar personal temporal: {str(e)}")
+    
+    # Redirigir de vuelta al calendario preservando el área seleccionada
+    area_param = request.GET.get('area')
+    if area_param:
+        return redirect(f'jefa:calendario_area?area={area_param}')
+    else:
         return redirect('jefa:calendario_area')
 
-    # Si no es POST, redirigir o mostrar formulario si lo quieres
-    return redirect('jefa:calendario_area')
+
+def crear_personal_temporal_nuevo(request):
+    """
+    Crear nuevo personal temporal - CUMPLE RQF4
+    """
+    try:
+        # Validar datos
+        nombre = request.POST.get('nombre_temporal', '').strip()
+        area_id = request.POST.get('area')
+        fecha_inicio = request.POST.get('fecha_inicio')
+        fecha_fin = request.POST.get('fecha_fin', '')
+        tiempo_indefinido = request.POST.get('tiempo_indefinido') == 'on'
+        motivo = request.POST.get('motivo', '').strip()
+        
+        if not all([nombre, area_id, fecha_inicio, motivo]):
+            messages.error(request, "❌ Por favor completa todos los campos obligatorios.")
+            return redirect('jefa:gestionar_personal_temporal')
+        
+        # Validar área
+        area = get_object_or_404(AreaEspecialidad, id=area_id)
+        
+        # Procesar fechas
+        fecha_inicio_dt = datetime.strptime(fecha_inicio, '%Y-%m-%dT%H:%M')
+        fecha_fin_dt = None
+        
+        if not tiempo_indefinido and fecha_fin:
+            fecha_fin_dt = datetime.strptime(fecha_fin, '%Y-%m-%dT%H:%M')
+            if fecha_fin_dt <= fecha_inicio_dt:
+                messages.error(request, "❌ La fecha de fin debe ser posterior a la fecha de inicio.")
+                return redirect('jefa:gestionar_personal_temporal')
+        
+        # Crear personal temporal
+        with transaction.atomic():
+            personal = PersonalTemporal.objects.create(
+                nombre=nombre,
+                area=area,
+                fecha_inicio=fecha_inicio_dt,
+                fecha_fin=fecha_fin_dt,
+                tiempo_indefinido=tiempo_indefinido,
+                motivo_asignacion=motivo,
+                creado_por=request.user,
+                activo=True
+            )
+            
+            # Crear entrada en historial
+            HistorialPersonalTemporal.objects.create(
+                personal_temporal=personal,
+                accion='creacion',
+                motivo=f"Creación inicial: {motivo}",
+                usuario_accion=request.user
+            )
+        
+        tiempo_texto = "indefinido" if tiempo_indefinido else f"hasta {fecha_fin_dt.strftime('%d/%m/%Y %H:%M')}"
+        messages.success(request, f"✅ Personal temporal '{nombre}' agregado exitosamente en {area.nombre} por tiempo {tiempo_texto}.")
+        
+    except Exception as e:
+        messages.error(request, f"❌ Error al crear personal temporal: {str(e)}")
+    
+    return redirect('jefa:gestionar_personal_temporal')
+
+
+def reactivar_personal_historico(request):
+    """
+    Reactivar personal del historial - CUMPLE RQF5, RQNF8
+    """
+    try:
+        nombre = request.POST.get('nombre_historico')
+        area_id = request.POST.get('area_historico')
+        fecha_inicio = request.POST.get('fecha_inicio_reactivacion')
+        fecha_fin = request.POST.get('fecha_fin_reactivacion', '')
+        tiempo_indefinido = request.POST.get('tiempo_indefinido_reactivacion') == 'on'
+        motivo = request.POST.get('motivo_reactivacion', '').strip()
+        
+        if not all([nombre, area_id, fecha_inicio]):
+            messages.error(request, "❌ Datos incompletos para reactivación.")
+            return redirect('jefa:gestionar_personal_temporal')
+        
+        area = get_object_or_404(AreaEspecialidad, id=area_id)
+        
+        # Buscar en historial
+        personal_historico = PersonalTemporal.objects.filter(
+            nombre=nombre,
+            area=area,
+            activo=False
+        ).first()
+        
+        # Procesar fechas
+        fecha_inicio_dt = datetime.strptime(fecha_inicio, '%Y-%m-%dT%H:%M')
+        fecha_fin_dt = None
+        
+        if not tiempo_indefinido and fecha_fin:
+            fecha_fin_dt = datetime.strptime(fecha_fin, '%Y-%m-%dT%H:%M')
+        
+        with transaction.atomic():
+            # Crear nueva instancia basada en historial
+            personal_reactivado = PersonalTemporal.objects.create(
+                nombre=nombre,
+                area=area,
+                fecha_inicio=fecha_inicio_dt,
+                fecha_fin=fecha_fin_dt,
+                tiempo_indefinido=tiempo_indefinido,
+                motivo_asignacion=motivo or "Reactivación desde historial",
+                creado_por=request.user,
+                activo=True,
+                fue_reactivado=True,
+                reactivado_desde=personal_historico
+            )
+            
+            # Registrar en historial
+            HistorialPersonalTemporal.objects.create(
+                personal_temporal=personal_reactivado,
+                accion='reactivacion',
+                motivo=f"Reactivado desde historial: {motivo}",
+                usuario_accion=request.user
+            )
+        
+        messages.success(request, f"✅ Personal '{nombre}' reactivado exitosamente en {area.nombre}.")
+        
+    except Exception as e:
+        messages.error(request, f"❌ Error al reactivar personal: {str(e)}")
+    
+    return redirect('jefa:gestionar_personal_temporal')
+
+
+def desactivar_personal_temporal(request, personal_id):
+    """
+    Desactivar personal temporal específico
+    """
+    if request.method == 'POST':
+        try:
+            personal = get_object_or_404(PersonalTemporal, id=personal_id, activo=True)
+            personal._usuario_accion = request.user
+            personal.desactivar(motivo="Finalización manual", automatico=False)
+            
+            messages.success(request, f"✅ Personal temporal '{personal.nombre}' finalizado correctamente.")
+            
+        except Exception as e:
+            messages.error(request, f"❌ Error al finalizar personal temporal: {str(e)}")
+    
+    # Redirigir de vuelta al calendario
+    area_param = request.GET.get('area')
+    if area_param:
+        return redirect(f'jefa:calendario_area?area={area_param}')
+    else:
+        return redirect('jefa:calendario_area')
+
+
+def ejecutar_desactivacion_automatica():
+    """
+    Ejecuta desactivación automática - CUMPLE RQNF5
+    """
+    try:
+        # Buscar personal temporal que debe ser desactivado
+        personal_a_desactivar = PersonalTemporal.objects.filter(
+            activo=True,
+            tiempo_indefinido=False,
+            fecha_fin__lt=timezone.now()
+        )
+        
+        count = 0
+        for personal in personal_a_desactivar:
+            try:
+                # Desactivar manualmente si no existe el método
+                personal.activo = False
+                personal.save()
+                
+                # Crear entrada en historial
+                HistorialPersonalTemporal.objects.create(
+                    personal_temporal=personal,
+                    accion='desactivacion',
+                    motivo="Desactivación automática por tiempo vencido",
+                    usuario_accion=None  # Es automático
+                )
+                
+                count += 1
+                print(f"🕒 Desactivado automáticamente: {personal.nombre} - {personal.area.nombre}")
+                
+            except Exception as e:
+                print(f"Error al desactivar {personal.nombre}: {e}")
+                continue
+        
+        return count
+        
+    except Exception as e:
+        print(f"Error en desactivación automática: {e}")
+        return 0
+
+
+# Task periódica para ejecutar automáticamente (si usas Celery)
+def task_desactivacion_automatica():
+    """
+    Task que se puede ejecutar periódicamente para desactivar personal temporal
+    """
+    desactivaciones = ejecutar_desactivacion_automatica()
+    if desactivaciones > 0:
+        # Aquí puedes agregar notificaciones adicionales
+        print(f"🕒 Desactivadas {desactivaciones} personas temporales automáticamente")
+    return desactivaciones
+
+def historial_personal_temporal_ajax(request, personal_id):
+    """
+    Vista AJAX para obtener el historial de un personal temporal específico
+    """
+    try:
+        personal = get_object_or_404(PersonalTemporal, id=personal_id)
+        
+        # Obtener historial ordenado
+        historial = HistorialPersonalTemporal.objects.filter(
+            personal_temporal=personal
+        ).select_related('usuario_accion').order_by('-fecha')
+        
+        # Preparar datos para JSON
+        historial_data = []
+        for item in historial:
+            historial_data.append({
+                'accion': item.accion,
+                'accion_display': item.get_accion_display(),
+                'fecha': item.fecha.strftime('%d/%m/%Y %H:%M'),
+                'motivo': item.motivo,
+                'automatico': item.automatico,
+                'usuario': item.usuario_accion.username if item.usuario_accion else None
+            })
+        
+        personal_data = {
+            'nombre': personal.nombre,
+            'area': personal.area.nombre,
+            'activo': personal.activo
+        }
+        
+        return JsonResponse({
+            'status': 'success',
+            'historial': historial_data,
+            'personal': personal_data
+        })
+        
+    except Exception as e:
+        return JsonResponse({
+            'status': 'error',
+            'message': str(e)
+        })

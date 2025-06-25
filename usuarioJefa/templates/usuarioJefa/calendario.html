@@ -741,6 +741,45 @@
                 font-size: 0.85rem;
             }
         }
+
+        .usuario-temporal {
+    background: linear-gradient(135deg, #ffc107, #ffeb3b) !important;
+    color: #000 !important;
+    border: 2px solid #ff9800 !important;
+    position: relative;
+    font-weight: 600;
+}
+
+.usuario-temporal::before {
+    content: "⏳";
+    position: absolute;
+    top: -5px;
+    right: -5px;
+    background: #ff9800;
+    color: white;
+    border-radius: 50%;
+    width: 18px;
+    height: 18px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 0.8rem;
+    font-weight: bold;
+}
+
+/* Para mostrar en el calendario bimestral */
+.enfermero-item.temporal {
+    background: linear-gradient(135deg, #ffc107, #ffeb3b) !important;
+    color: #000 !important;
+    border: 2px solid #ff9800;
+}
+
+/* Para mostrar en el calendario mensual */
+.day-enfermero.temporal {
+    background: linear-gradient(135deg, #ffc107, #ffeb3b) !important;
+    color: #000 !important;
+    border: 2px solid #ff9800;
+}
     </style>
 </head>
 <body>
@@ -845,13 +884,17 @@
                                     </span>
                                 {% elif asignacion.tipo == 'normal_con_ausencia_temporal' %}
                                     <span class="enfermero-item enfermero-ausencia-temporal" 
-                                          title="{{ asignacion.tooltip }}">
+                                        title="{{ asignacion.tooltip }}">
                                         {{ asignacion.enfermero.username }}
                                     </span>
                                 {% elif asignacion.tipo == 'emergencia_llegada' %}
                                     <span class="enfermero-item enfermero-emergencia" 
-                                          title="{{ asignacion.tooltip }}">
+                                        title="{{ asignacion.tooltip }}">
                                         {{ asignacion.enfermero.username }}
+                                    </span>
+                                {% elif asignacion.tipo == 'temporal' %}
+                                    <span class="enfermero-item usuario-temporal" title="{{ asignacion.tooltip }}">
+                                        {{ asignacion.enfermero.nombre }}
                                     </span>
                                 {% endif %}
                             {% empty %}
@@ -893,13 +936,17 @@
                                     </span>
                                 {% elif asignacion.tipo == 'normal_con_ausencia_temporal' %}
                                     <span class="enfermero-item enfermero-ausencia-temporal" 
-                                          title="{{ asignacion.tooltip }}">
+                                        title="{{ asignacion.tooltip }}">
                                         {{ asignacion.enfermero.username }}
                                     </span>
                                 {% elif asignacion.tipo == 'emergencia_llegada' %}
                                     <span class="enfermero-item enfermero-emergencia" 
-                                          title="{{ asignacion.tooltip }}">
+                                        title="{{ asignacion.tooltip }}">
                                         {{ asignacion.enfermero.username }}
+                                    </span>
+                                {% elif asignacion.tipo == 'temporal' %}
+                                    <span class="enfermero-item usuario-temporal" title="{{ asignacion.tooltip }}">
+                                        {{ asignacion.enfermero.nombre }}
                                     </span>
                                 {% endif %}
                             {% empty %}
@@ -956,6 +1003,10 @@
                                 {% elif asignacion.tipo == 'emergencia_llegada' %}
                                     <div class="day-enfermero emergencia" title="{{ asignacion.tooltip }}">
                                         {{ asignacion.enfermero.username }}
+                                    </div>
+                                {% elif asignacion.tipo == 'temporal' %}
+                                    <div class="day-enfermero temporal" title="{{ asignacion.tooltip }}">
+                                        {{ asignacion.enfermero.nombre }}
                                     </div>
                                 {% endif %}
                             {% endif %}
@@ -1109,37 +1160,77 @@
     <h3>⏳ Usuarios Temporales Activos</h3>
     
     <!-- Formulario para agregar usuario temporal -->
-    <form method="POST" action="">
-        {% csrf_token %}
-        <div class="form-inline">
-            <div class="form-group">
-                <label class="form-label">Enfermero:</label>
-                <input type="text" name="nombre_temporal" placeholder="Nombre del usuario temporal" required>>
-            </div>
-            <div class="form-group">
-                <label class="form-label">Área:</label>
-                <select name="area" required>
-                    <option value="">Seleccionar área</option>
-                    {% for area in all_areas %}
-                        <option value="{{ area.id }}">{{ area.nombre }}</option>
-                    {% endfor %}
-                </select>
-            </div>
-            <div class="form-group">
-                <label class="form-label">Fecha inicio:</label>
-                <input type="datetime-local" name="fecha_inicio" required>
-            </div>
-            <div class="form-group">
-                <label class="form-label">Fecha fin:</label>
-                <input type="datetime-local" name="fecha_fin" required>
-            </div>
+    <form method="POST" action="{% url 'jefa:gestionar_personal_temporal' %}">
+    {% csrf_token %}
+    <input type="hidden" name="accion" value="crear_nuevo">
+    
+    <div class="form-inline">
+        <<div class="form-group">
+    <label class="form-label">Enfermero:</label>
+    <input type="text" name="nombre_temporal" placeholder="Nombre del usuario temporal" required 
+           style="padding: 12px; border: 1px solid var(--border-color); border-radius: 4px; font-size: 1rem; background: var(--white); min-width: 150px;">
+</div>
+        <div class="form-group">
+            <label class="form-label">Área:</label>
+            <select name="area" required>
+                <option value="">Seleccionar área</option>
+                {% for area in all_areas %}
+                    <option value="{{ area.id }}">{{ area.nombre }}</option>
+                {% endfor %}
+            </select>
         </div>
-        <div class="form-group" style="margin-top: 15px;">
-            <label class="form-label">Motivo:</label>
-            <textarea name="motivo" required placeholder="Describir motivo de la asignación temporal..."></textarea>
+        <div class="form-group">
+            <label class="form-label">Fecha inicio:</label>
+            <input type="datetime-local" name="fecha_inicio" required>
         </div>
-        <button type="submit" class="action-button success">Agregar Usuario Temporal</button>
-    </form>
+        <div class="form-group">
+            <label class="form-label">Fecha fin:</label>
+            <input type="datetime-local" name="fecha_fin" id="fecha_fin">
+        </div>
+        <div class="form-group">
+            <label class="form-label">
+                <input type="checkbox" name="tiempo_indefinido" id="tiempo_indefinido" onchange="toggleFechaFin()">
+                Tiempo indefinido
+            </label>
+        </div>
+    </div>
+    <div class="form-group" style="margin-top: 15px;">
+        <label class="form-label">Motivo:</label>
+        <textarea name="motivo" required placeholder="Describir motivo de la asignación temporal..."></textarea>
+    </div>
+    <button type="submit" class="action-button success">AGREGAR USUARIO TEMPORAL</button>
+</form>
+<script>
+function toggleFechaFin() {
+    const checkbox = document.getElementById('tiempo_indefinido');
+    const fechaFin = document.getElementById('fecha_fin');
+    
+    if (checkbox.checked) {
+        fechaFin.disabled = true;
+        fechaFin.required = false;
+        fechaFin.value = '';
+    } else {
+        fechaFin.disabled = false;
+        fechaFin.required = true;
+    }
+}
+</script>
+
+<script>
+function toggleFechaFin() {
+    const checkbox = document.getElementById('tiempo_indefinido');
+    const fechaFin = document.getElementById('fecha_fin');
+    
+    if (checkbox.checked) {
+        fechaFin.disabled = true;
+        fechaFin.required = false;
+        fechaFin.value = '';
+    } else {
+        fechaFin.disabled = false;
+        fechaFin.required = true;
+    }
+}
+</script>
 
     <!-- Tabla de usuarios temporales -->
     {% if usuarios_temporales %}
@@ -1172,7 +1263,10 @@
                     </td>
                     <td>
                         {% if temp.activo %}
-                        <form method="POST" action="{% url 'jefa:finalizar_temporal' temp.id %}" style="display:inline;">
+                        <form method="POST" action="{% url 'jefa:gestionar_personal_temporal' %}" style="display:inline;">
+                            {% csrf_token %}
+                            <input type="hidden" name="accion" value="finalizar">
+                            <input type="hidden" name="personal_id" value="{{ temp.id }}">
                             {% csrf_token %}
                             <button type="submit" class="action-button danger" 
                                 onclick="return confirm('¿Finalizar esta asignación temporal?')">

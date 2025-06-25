@@ -389,6 +389,90 @@
             }
             return cookieValue;
         }
+        function verHistorialPersonal(personalId) {
+    // Mostrar modal
+    document.getElementById('historialModal').style.display = 'block';
+    
+    // Cargar historial via AJAX
+    fetch(`/jefa/historial-personal-temporal/${personalId}/`, {
+        method: 'GET',
+        headers: {
+            'X-CSRFToken': getCookie('csrftoken'),
+        },
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.status === 'success') {
+            mostrarHistorialDetallado(data.historial, data.personal);
+        } else {
+            document.getElementById('historialContent').innerHTML = '<p style="color: var(--danger-color);">Error al cargar el historial</p>';
+        }
+    })
+    .catch(error => {
+        console.error('Error:', error);
+        document.getElementById('historialContent').innerHTML = '<p style="color: var(--danger-color);">Error de conexión</p>';
+    });
+}
+
+function mostrarHistorialDetallado(historial, personal) {
+    let html = `
+        <div style="margin-bottom: 20px; padding: 15px; background: var(--table-background); border-radius: 6px;">
+            <h4 style="color: var(--secondary-color); margin-bottom: 10px;">Información del Personal</h4>
+            <p><strong>Nombre:</strong> ${personal.nombre}</p>
+            <p><strong>Área:</strong> ${personal.area}</p>
+            <p><strong>Estado:</strong> <span style="color: ${personal.activo ? 'var(--success-color)' : 'var(--danger-color)'};">${personal.activo ? 'Activo' : 'Inactivo'}</span></p>
+        </div>
+        
+        <h4 style="color: var(--primary-color); margin-bottom: 15px;">Registro de Acciones</h4>
+    `;
+    
+    if (historial.length > 0) {
+        historial.forEach(item => {
+            const iconos = {
+                'creacion': '✅',
+                'reactivacion': '🔄', 
+                'desactivacion': '❌'
+            };
+            
+            const colores = {
+                'creacion': 'var(--success-color)',
+                'reactivacion': 'var(--accent-color)',
+                'desactivacion': 'var(--danger-color)'
+            };
+            
+            html += `
+                <div style="margin-bottom: 15px; padding: 15px; border-left: 4px solid ${colores[item.accion]}; background: var(--table-background); border-radius: 4px;">
+                    <div style="display: flex; justify-content: space-between; margin-bottom: 8px;">
+                        <span style="font-weight: 600; color: ${colores[item.accion]};">
+                            ${iconos[item.accion]} ${item.accion_display}
+                        </span>
+                        <span style="color: #6c757d; font-size: 0.9rem;">
+                            ${item.fecha}
+                        </span>
+                    </div>
+                    <p><strong>Motivo:</strong> ${item.motivo || 'No especificado'}</p>
+                    <p><strong>Usuario:</strong> ${item.usuario || 'Sistema automático'}</p>
+                    ${item.automatico ? '<p style="color: var(--accent-color); font-style: italic;">⚡ Acción automática</p>' : ''}
+                </div>
+            `;
+        });
+    } else {
+        html += '<p style="text-align: center; color: #6c757d; font-style: italic;">No hay registros de historial</p>';
+    }
+    
+    document.getElementById('historialContent').innerHTML = html;
+}
+
+function cerrarHistorialModal() {
+    document.getElementById('historialModal').style.display = 'none';
+}
+
+// Cerrar modal al hacer clic fuera
+document.getElementById('historialModal').addEventListener('click', function(e) {
+    if (e.target === this) {
+        cerrarHistorialModal();
+    }
+});
     </script>
 </head>
 <body>
@@ -625,6 +709,74 @@
                         {% endfor %}
                     </tbody>
                 </table>
+            </div>
+
+              <!-- Personal Temporal -->
+            <h2>Personal Temporal</h2>
+            <div class="table-container">
+                <table class="employees-table">
+                    <thead>
+                        <tr>
+                            <th>Nombre</th>
+                            <th>Área</th>
+                            <th>Fecha Inicio</th>
+                            <th>Fecha Fin</th>
+                            <th>Motivo Asignación</th>
+                            <th>Estado</th>
+                            <th>Creado Por</th>
+                            <th>Fecha Creación</th>
+                            <th>Acciones</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for personal in personal_temporal_historial %}
+                            <tr>
+                                <td>{{ personal.nombre }}</td>
+                                <td>{{ personal.area.nombre }}</td>
+                                <td>{{ personal.fecha_inicio|date:"d/m/Y H:i" }}</td>
+                                <td>
+                                    {% if personal.tiempo_indefinido %}
+                                        <span style="color: var(--accent-color); font-weight: 600;">Indefinido</span>
+                                    {% else %}
+                                        {{ personal.fecha_fin|date:"d/m/Y H:i" }}
+                                    {% endif %}
+                                </td>
+                                <td>{{ personal.motivo_asignacion|truncatechars:50 }}</td>
+                                <td>
+                                    {% if personal.activo %}
+                                        <span style="color: var(--success-color); font-weight: 600;">Activo</span>
+                                    {% else %}
+                                        <span style="color: var(--danger-color); font-weight: 600;">Inactivo</span>
+                                    {% endif %}
+                                </td>
+                                <td>{{ personal.creado_por.username }}</td>
+                                <td>{{ personal.fecha_creacion|date:"d/m/Y H:i" }}</td>
+                                <td>
+                                    <button onclick="verHistorialPersonal({{ personal.id }})" class="action-button">
+                                        Ver Historial
+                                    </button>
+                                </td>
+                            </tr>
+                        {% empty %}
+                            <tr>
+                                <td colspan="9" class="empty-message">No hay personal temporal registrado</td>
+                            </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+
+            <!-- Modal para mostrar historial detallado -->
+            <div id="historialModal" style="display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.5); z-index: 1000;">
+                <div style="position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); background: var(--white); border-radius: 8px; padding: 30px; max-width: 800px; width: 90%; max-height: 80vh; overflow-y: auto;">
+                    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; border-bottom: 2px solid var(--primary-color); padding-bottom: 10px;">
+                        <h3 style="color: var(--primary-color); margin: 0;">Historial Detallado del Personal Temporal</h3>
+                        <button onclick="cerrarHistorialModal()" style="background: var(--danger-color); color: white; border: none; padding: 8px 15px; border-radius: 4px; cursor: pointer; font-size: 1.2rem;">&times;</button>
+                    </div>
+                    <div id="historialContent">
+                        <!-- El contenido se cargará dinámicamente -->
+                    </div>
+                </div>
             </div>
         {% endif %}
     </div>

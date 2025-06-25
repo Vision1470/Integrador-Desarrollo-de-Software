@@ -105,5 +105,13 @@ path('api/obtener-fortaleza/<int:fortaleza_id>/', views.obtener_fortaleza, name=
 path('api/obtener-padecimiento/<int:padecimiento_id>/', views.obtener_padecimiento, name='obtener_padecimiento'),
 
 #Usuarios temporales
- path('crear-usuario-temporal/', views.crear_usuario_temporal, name='crear_usuario_temporal'),
+path('crear-usuario-temporal/', views.crear_personal_temporal_nuevo, name='crear_personal_temporal'),
+
+path('gestionar-personal-temporal/', views.gestionar_personal_temporal, name='gestionar_personal_temporal'),
+path('finalizar-temporal/<int:personal_id>/', views.desactivar_personal_temporal, name='finalizar_temporal'),
+path('personal-temporal/', views.gestionar_personal_temporal, name='gestionar_personal_temporal'),
+path('personal-temporal/crear/', views.crear_personal_temporal_nuevo, name='crear_personal_temporal'),
+path('personal-temporal/reactivar/', views.reactivar_personal_historico, name='reactivar_personal_historico'),
+path('personal-temporal/desactivar/', views.desactivar_personal_temporal, name='desactivar_personal_temporal'),
+path('historial-personal-temporal/<int:personal_id>/', views.historial_personal_temporal_ajax, name='historial_personal_temporal_ajax'),
 ]

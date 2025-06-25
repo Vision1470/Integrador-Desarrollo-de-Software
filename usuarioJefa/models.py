@@ -527,3 +527,94 @@ class PadecimientoSimulado(models.Model):
     
     def __str__(self):
         return f"{self.padecimiento.nombre} - {self.paciente_simulado.nombre_simulado}"
+    
+
+class PersonalTemporal(models.Model):
+    nombre = models.CharField(max_length=100, verbose_name="Nombre completo")
+    area = models.ForeignKey(AreaEspecialidad, on_delete=models.CASCADE, verbose_name="Área asignada")
+    
+    # Fechas y tiempo
+    fecha_inicio = models.DateTimeField(verbose_name="Fecha de inicio")
+    fecha_fin = models.DateTimeField(null=True, blank=True, verbose_name="Fecha de fin (opcional)")
+    tiempo_indefinido = models.BooleanField(default=False, verbose_name="Tiempo indefinido")
+    
+    # Estado y control
+    activo = models.BooleanField(default=True)
+    desactivado_automaticamente = models.BooleanField(default=False)
+    fecha_desactivacion = models.DateTimeField(null=True, blank=True)
+    motivo_desactivacion = models.TextField(blank=True)
+    
+    # Metadatos
+    motivo_asignacion = models.TextField(verbose_name="Motivo de la asignación")
+    creado_por = models.ForeignKey(Usuarios, on_delete=models.CASCADE, related_name='personal_temporal_creado')
+    fecha_creacion = models.DateTimeField(auto_now_add=True)
+    
+    # Historial y reactivación
+    fue_reactivado = models.BooleanField(default=False)
+    reactivado_desde = models.ForeignKey('self', null=True, blank=True, on_delete=models.SET_NULL, 
+                                       related_name='reactivaciones')
+    
+    class Meta:
+        verbose_name = "Personal Temporal"
+        verbose_name_plural = "Personal Temporal"
+        ordering = ['-fecha_creacion']
+    
+    def __str__(self):
+        estado = "Activo" if self.activo else "Inactivo"
+        return f"{self.nombre} - {self.area.nombre} ({estado})"
+    
+    def debe_desactivarse_automaticamente(self):
+        """Verifica si debe desactivarse automáticamente por fecha"""
+        if not self.tiempo_indefinido and self.fecha_fin and self.activo:
+            return timezone.now() >= self.fecha_fin
+        return False
+    
+    def esta_activo_en_fecha(self, fecha):
+        """Verifica si está activo en una fecha específica"""
+        if not self.activo:
+            return False
+        
+        if fecha < self.fecha_inicio:
+            return False
+            
+        if not self.tiempo_indefinido and self.fecha_fin:
+            return fecha <= self.fecha_fin
+            
+        return True
+    
+    def desactivar(self, motivo="", automatico=False):
+        """Desactiva el personal temporal y registra en historial"""
+        self.activo = False
+        self.fecha_desactivacion = timezone.now()
+        self.motivo_desactivacion = motivo
+        self.desactivado_automaticamente = automatico
+        self.save()
+        
+        # Crear entrada en historial
+        HistorialPersonalTemporal.objects.create(
+            personal_temporal=self,
+            accion='desactivacion',
+            motivo=motivo,
+            automatico=automatico,
+            usuario_accion=None if automatico else getattr(self, '_usuario_accion', None)
+        )
+
+
+class HistorialPersonalTemporal(models.Model):
+    ACCIONES = [
+        ('creacion', 'Creación'),
+        ('reactivacion', 'Reactivación'),
+        ('desactivacion', 'Desactivación'),
+    ]
+    
+    personal_temporal = models.ForeignKey(PersonalTemporal, on_delete=models.CASCADE, 
+                                        related_name='historial')
+    accion = models.CharField(max_length=20, choices=ACCIONES)
+    fecha = models.DateTimeField(auto_now_add=True)
+    motivo = models.TextField(blank=True)
+    automatico = models.BooleanField(default=False)
+    usuario_accion = models.ForeignKey(Usuarios, null=True, blank=True, on_delete=models.SET_NULL)
+    
+    class Meta:
+        verbose_name = "Historial Personal Temporal"
+        ordering = ['-fecha']

@@ -596,12 +596,18 @@
                             {% for sugerencia in sugerencias %}
                             <tr>
                                 <td>
-                                    <span class="enfermero-badge {% if sugerencia.nueva %}enfermero-nuevo{% else %}enfermero-existente{% endif %}">
+                                    <span class="enfermero-badge {% if not sugerencia.existente %}enfermero-nuevo{% else %}enfermero-existente{% endif %}">
                                         {{ sugerencia.enfermero.first_name }} {{ sugerencia.enfermero.apellidos }}
                                     </span>
                                 </td>
                                 <td>
-                                    <span class="area-badge">{{ sugerencia.area.nombre }}</span>
+                                    <span class="area-badge">
+                                        {% if sugerencia.area_sugerida %}
+                                            {{ sugerencia.area_sugerida.nombre }}
+                                        {% else %}
+                                            Sin área asignada
+                                        {% endif %}
+                                    </span>
                                 </td>
                                 <td>
                                     <div class="periodo-info">
@@ -609,7 +615,7 @@
                                     </div>
                                 </td>
                                 <td>
-                                    {% if sugerencia.nueva %}
+                                    {% if not sugerencia.existente %}
                                         <span style="color: var(--success-color); font-weight: 600;">🆕 Nueva</span>
                                     {% else %}
                                         <span style="color: var(--info-color); font-weight: 600;">✅ Existente</span>
@@ -617,7 +623,7 @@
                                 </td>
                                 <td>
                                     <small style="color: var(--secondary-color);">
-                                        {% if sugerencia.nueva %}
+                                        {% if not sugerencia.existente %}
                                             Asignación sugerida por algoritmo
                                         {% else %}
                                             Ya asignado previamente
