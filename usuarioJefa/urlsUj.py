@@ -51,6 +51,8 @@ urlpatterns = [
     path('historial/<int:paciente_id>/', views.detalle_historial, name='detalle_historial'),
     path('reactivar_paciente/<int:paciente_id>/', views.reactivar_paciente, name='reactivar_paciente'),
     path('reactivar-paciente/<int:paciente_id>/', views.reactivar_paciente_, name='reactivar_paciente_'),
+    path('obtener-doctores/', views.obtener_doctores, name='obtener_doctores'),
+    path('editar-doctor-paciente/<int:paciente_id>/', views.editar_doctor_paciente, name='editar_doctor_paciente'),
 
     # URLs existentes de áreas y fortalezas
     path('areas-fortalezas/', views.areas_fortalezas, name='areas_fortalezas'),

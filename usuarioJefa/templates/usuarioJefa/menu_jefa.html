@@ -24,7 +24,7 @@
         body {
             background-color: var(--background-color);
             display: flex;
-            flex-direction: column;
+            justify-content: center;
             align-items: center;
             min-height: 100vh;
             color: var(--text-color);
@@ -46,7 +46,9 @@
             display: flex;
             justify-content: space-between;
             align-items: center;
-            margin-bottom: 20px;
+            margin-bottom: 30px;
+            flex-wrap: wrap;
+            gap: 15px;
         }
 
         .header h1 {
@@ -56,20 +58,24 @@
         }
 
         .menu-buttons {
-            display: flex;
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
             gap: 15px;
+            margin-top: 10px;
         }
 
         .menu-button {
             background-color: var(--primary-color);
             color: var(--white);
             text-decoration: none;
-            padding: 10px 15px;
+            padding: 15px 20px;
             border-radius: 4px;
             font-size: 0.9rem;
             font-weight: 600;
             text-transform: uppercase;
             transition: background-color 0.3s ease;
+            text-align: center;
+            display: block;
         }
 
         .menu-button:hover {
@@ -94,10 +100,37 @@
             background-color: var(--secondary-color);
         }
 
-        @media (max-width: 600px) {
+        @media (max-width: 768px) {
+            .header {
+                flex-direction: column;
+                text-align: center;
+            }
+            
+            .header h1 {
+                font-size: 1.5rem;
+            }
+            
             .menu-buttons {
-                flex-wrap: wrap;
-                justify-content: center;
+                grid-template-columns: 1fr;
+            }
+            
+            .container {
+                padding: 20px;
+            }
+        }
+
+        @media (max-width: 480px) {
+            body {
+                padding: 10px;
+            }
+            
+            .header h1 {
+                font-size: 1.3rem;
+            }
+            
+            .menu-button {
+                padding: 12px 15px;
+                font-size: 0.8rem;
             }
         }
     </style>

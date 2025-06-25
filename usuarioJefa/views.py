@@ -31,6 +31,7 @@ from .models import PersonalTemporal, HistorialPersonalTemporal
 def menu_jefa(request):
     return render(request, 'usuarioJefa/menu_jefa.html')
 
+@login_required
 def pacientes_jefa(request):
     pacientes = Paciente.objects.select_related(
         'area', 
@@ -44,6 +45,87 @@ def pacientes_jefa(request):
         'pacientes': pacientes,
     }
     return render(request, 'usuarioJefa/pacientes_jefa.html', context)
+
+@csrf_exempt
+@login_required
+def obtener_doctores(request):
+    """Vista para obtener lista de doctores disponibles"""
+    if request.method == 'GET':
+        try:
+            doctores = Usuarios.objects.filter(tipoUsuario='DR').values(
+                'id', 'username', 'first_name', 'last_name'
+            )
+            return JsonResponse(list(doctores), safe=False)
+        except Exception as e:
+            return JsonResponse({'status': 'error', 'message': str(e)}, status=500)
+    return JsonResponse({'status': 'error', 'message': 'Método no permitido'}, status=405)
+
+@csrf_exempt
+@login_required
+def editar_doctor_paciente(request, paciente_id):
+    """Vista para cambiar el doctor asignado a un paciente"""
+    if request.method == 'POST':
+        try:
+            import json
+            data = json.loads(request.body)
+            doctor_id = data.get('doctor_id')
+            
+            # Obtener el paciente
+            paciente = get_object_or_404(Paciente, id=paciente_id)
+            
+            # Si doctor_id es None o vacío, asignar None (sin doctor)
+            if not doctor_id:
+                nuevo_doctor = None
+            else:
+                # Obtener el nuevo doctor
+                nuevo_doctor = get_object_or_404(Usuarios, id=doctor_id, tipoUsuario='DR')
+            
+            # Guardar el doctor anterior en el historial antes de cambiar
+            if paciente.doctor_actual:
+                # Buscar si ya existe un registro activo en el historial
+                historial_actual = HistorialDoctores.objects.filter(
+                    paciente=paciente,
+                    doctor=paciente.doctor_actual,
+                    fecha_fin__isnull=True
+                ).first()
+                
+                if historial_actual:
+                    historial_actual.fecha_fin = timezone.now()
+                    historial_actual.motivo_cambio = "Cambio realizado por jefa de piso"
+                    historial_actual.save()
+            
+            # Asignar el nuevo doctor
+            doctor_anterior = paciente.doctor_actual
+            paciente.doctor_actual = nuevo_doctor
+            paciente.save()
+            
+            # Crear nuevo registro en el historial para el nuevo doctor (solo si no es None)
+            if nuevo_doctor:
+                HistorialDoctores.objects.create(
+                    paciente=paciente,
+                    doctor=nuevo_doctor,
+                    motivo_cambio="Asignación realizada por jefa de piso"
+                )
+            
+            doctor_anterior_nombre = doctor_anterior.username if doctor_anterior else "Sin asignar"
+            doctor_nuevo_nombre = nuevo_doctor.username if nuevo_doctor else "Sin asignar"
+            
+            return JsonResponse({
+                'status': 'success',
+                'message': f'Doctor cambiado de {doctor_anterior_nombre} a {doctor_nuevo_nombre}'
+            })
+            
+        except Usuarios.DoesNotExist:
+            return JsonResponse({'status': 'error', 'message': 'Doctor no encontrado'}, status=404)
+        except Paciente.DoesNotExist:
+            return JsonResponse({'status': 'error', 'message': 'Paciente no encontrado'}, status=404)
+        except json.JSONDecodeError:
+            return JsonResponse({'status': 'error', 'message': 'Datos JSON inválidos'}, status=400)
+        except Exception as e:
+            print(f"Error al editar doctor: {str(e)}")  # Debug
+            return JsonResponse({'status': 'error', 'message': str(e)}, status=500)
+    
+    return JsonResponse({'status': 'error', 'message': 'Método no permitido'}, status=405)
 
 @csrf_exempt  # Temporal para pruebas
 def dar_alta_paciente(request, paciente_id):

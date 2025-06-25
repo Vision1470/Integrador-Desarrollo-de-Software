@@ -143,6 +143,20 @@
                 font-size: 0.9rem;
             }
         }
+       .editable-doctor {
+    cursor: pointer;
+    position: relative;
+}
+
+.editable-doctor:hover {
+    background-color: #f5f5f5;
+}
+
+.editable-doctor:hover::after {
+    content: " ✏️";
+    font-size: 0.8rem;
+    opacity: 0.7;
+}
     </style>
     <script>
         function confirmarAlta(pacienteId) {
@@ -185,6 +199,88 @@
             }
             return cookieValue;
         }
+
+        function editarDoctor(pacienteId, doctorActualId, doctorActualNombre) {
+    // Obtener lista de doctores disponibles
+    fetch(`{% url 'jefa:obtener_doctores' %}`)
+    .then(response => response.json())
+    .then(doctores => {
+        // Crear un select con los doctores
+        let selectHTML = `<select class="doctor-select" id="doctorSelect">`;
+        selectHTML += `<option value="">Sin asignar</option>`;
+        doctores.forEach(doctor => {
+            const selected = doctor.id == doctorActualId ? 'selected' : '';
+            selectHTML += `<option value="${doctor.id}" ${selected}>${doctor.username} - ${doctor.first_name} ${doctor.last_name}</option>`;
+        });
+        selectHTML += `</select>`;
+        
+        // Mostrar un modal más elegante (puedes usar SweetAlert2 o un modal personalizado)
+        const modalHTML = `
+            <div style="font-family: Arial, sans-serif;">
+                <h3 style="color: var(--primary-color); margin-bottom: 15px;">Cambiar Doctor Asignado</h3>
+                <p><strong>Doctor actual:</strong> ${doctorActualNombre}</p>
+                <p><strong>Seleccionar nuevo doctor:</strong></p>
+                ${selectHTML}
+            </div>
+        `;
+        
+        // Crear un div temporal para el contenido
+        const tempDiv = document.createElement('div');
+        tempDiv.innerHTML = modalHTML;
+        
+        // Mostrar en un cuadro de diálogo más básico pero funcional
+        const nuevoDoctor = prompt(`Doctor actual: ${doctorActualNombre}\n\nDoctores disponibles:\n${doctores.map(d => `${d.id}: ${d.username} - ${d.first_name} ${d.last_name}`).join('\n')}\n\nIngrese el ID del nuevo doctor (o deje vacío para "Sin asignar"):`);
+        
+        if (nuevoDoctor !== null) { // null significa que canceló
+            const doctorId = nuevoDoctor.trim();
+            
+            // Validar que el ID existe en la lista o está vacío
+            const doctorValido = doctorId === '' || doctores.some(d => d.id.toString() === doctorId);
+            
+            if (!doctorValido) {
+                alert('ID de doctor inválido. Por favor, seleccione un ID de la lista.');
+                return;
+            }
+            
+            // Confirmar el cambio
+            const doctorSeleccionado = doctorId === '' ? 'Sin asignar' : 
+                doctores.find(d => d.id.toString() === doctorId);
+            const nombreNuevo = doctorId === '' ? 'Sin asignar' : 
+                `${doctorSeleccionado.username} - ${doctorSeleccionado.first_name} ${doctorSeleccionado.last_name}`;
+                
+            if (confirm(`¿Cambiar doctor de "${doctorActualNombre}" a "${nombreNuevo}"?`)) {
+                // Realizar el cambio
+                fetch(`{% url 'jefa:editar_doctor_paciente' 0 %}`.replace('0', pacienteId), {
+                    method: 'POST',
+                    headers: {
+                        'X-CSRFToken': getCookie('csrftoken'),
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({
+                        'doctor_id': doctorId || null
+                    })
+                })
+                .then(response => response.json())
+                .then(data => {
+                    if (data.status === 'success') {
+                        alert('Doctor asignado exitosamente');
+                        location.reload();
+                    } else {
+                        alert('Error al asignar doctor: ' + (data.message || 'Error desconocido'));
+                    }
+                })
+                .catch(error => {
+                    console.error('Error en la petición:', error);
+                    alert('Error en la petición: ' + error);
+                });
+            }
+        }
+    })
+    .catch(error => {
+        console.error('Error al obtener doctores:', error);
+        alert('Error al obtener lista de doctores');
+    });
+}
     </script>
 </head>
 <body>
@@ -237,7 +333,11 @@
                             <td>{{ paciente.fecha_nacimiento|date:"d/m/Y" }}</td>
                             <td>{{ paciente.sexo }}</td>
                             <td>{{ paciente.area }}</td>
-                            <td>{{ paciente.doctor_actual }}</td>
+                            <td class="editable-doctor" 
+                                onclick="editarDoctor('{{ paciente.id }}', '{{ paciente.doctor_actual.id|default:'' }}', '{{ paciente.doctor_actual|default:"Sin asignar" }}')" 
+                                title="Haz clic para cambiar el doctor">
+                                {{ paciente.doctor_actual|default:"Sin asignar" }}
+                            </td>
                             <td>{{ paciente.enfermero_actual }}</td>
                             <td>{{ paciente.hospital_origen|default:"-" }}</td>
                             <td>{{ paciente.numero_ingresos }}</td>

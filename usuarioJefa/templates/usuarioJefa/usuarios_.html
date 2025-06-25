@@ -345,7 +345,9 @@
             <button type="submit" class="menu-button">Cerrar Sesión</button>
         </form>
     </div>
-    <div class="container">
+    <div class="container"> 
+        {% csrf_token %}
+
         <div class="header">
             <h1>Menú de Usuarios</h1>
             <div class="menu-buttons">
@@ -681,16 +683,60 @@
 
         // Funciones para gestionar usuarios
         function confirmarDesactivacion(usuarioId) {
-            if (confirm('¿Está seguro que desea desactivar este usuario?')) {
-                window.location.href = `/jefa/desactivar_usuario/${usuarioId}/`;
-            }
-        }
+    if (confirm('¿Está seguro que desea desactivar este usuario?')) {
+        // Crear formulario para enviar POST
+        const form = document.createElement('form');
+        form.method = 'POST';
+        form.action = `{% url 'jefa:toggle_usuario' 0 %}`.replace('0', usuarioId);
+        
+        // Agregar token CSRF
+        const csrfToken = document.querySelector('[name=csrfmiddlewaretoken]').value;
+        const csrfInput = document.createElement('input');
+        csrfInput.type = 'hidden';
+        csrfInput.name = 'csrfmiddlewaretoken';
+        csrfInput.value = csrfToken;
+        form.appendChild(csrfInput);
+        
+        // Agregar acción
+        const actionInput = document.createElement('input');
+        actionInput.type = 'hidden';
+        actionInput.name = 'action';
+        actionInput.value = 'desactivar';
+        form.appendChild(actionInput);
+        
+        // Enviar formulario
+        document.body.appendChild(form);
+        form.submit();
+    }
+}
 
-        function confirmarReactivacion(usuarioId) {
-            if (confirm('¿Está seguro que desea reactivar este usuario?')) {
-                window.location.href = `/jefa/reactivar_usuario/${usuarioId}/`;
-            }
-        }
+function confirmarReactivacion(usuarioId) {
+    if (confirm('¿Está seguro que desea reactivar este usuario?')) {
+        // Crear formulario para enviar POST
+        const form = document.createElement('form');
+        form.method = 'POST';
+        form.action = `{% url 'jefa:toggle_usuario' 0 %}`.replace('0', usuarioId);
+        
+        // Agregar token CSRF
+        const csrfToken = document.querySelector('[name=csrfmiddlewaretoken]').value;
+        const csrfInput = document.createElement('input');
+        csrfInput.type = 'hidden';
+        csrfInput.name = 'csrfmiddlewaretoken';
+        csrfInput.value = csrfToken;
+        form.appendChild(csrfInput);
+        
+        // Agregar acción
+        const actionInput = document.createElement('input');
+        actionInput.type = 'hidden';
+        actionInput.name = 'action';
+        actionInput.value = 'activar';
+        form.appendChild(actionInput);
+        
+        // Enviar formulario
+        document.body.appendChild(form);
+        form.submit();
+    }
+}
     </script>
 </body>
 </html>

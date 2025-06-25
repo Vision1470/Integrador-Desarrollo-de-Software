@@ -473,6 +473,34 @@ document.getElementById('historialModal').addEventListener('click', function(e) 
         cerrarHistorialModal();
     }
 });
+
+function confirmarReactivacionUsuario(usuarioId) {
+    if (confirm('¿Está seguro que desea reactivar este usuario?')) {
+        // Crear formulario para enviar POST
+        const form = document.createElement('form');
+        form.method = 'POST';
+        form.action = `{% url 'jefa:toggle_usuario' 0 %}`.replace('0', usuarioId);
+        
+        // Agregar token CSRF
+        const csrfToken = getCookie('csrftoken');
+        const csrfInput = document.createElement('input');
+        csrfInput.type = 'hidden';
+        csrfInput.name = 'csrfmiddlewaretoken';
+        csrfInput.value = csrfToken;
+        form.appendChild(csrfInput);
+        
+        // Agregar acción
+        const actionInput = document.createElement('input');
+        actionInput.type = 'hidden';
+        actionInput.name = 'action';
+        actionInput.value = 'activar';
+        form.appendChild(actionInput);
+        
+        // Enviar formulario
+        document.body.appendChild(form);
+        form.submit();
+    }
+}
     </script>
 </head>
 <body>
@@ -632,7 +660,11 @@ document.getElementById('historialModal').addEventListener('click', function(e) 
                                 <td>{{ enfermero.estaActivo|yesno:"Activo,Inactivo" }}</td>
                                 <td>{{ enfermero.fechaRegistro|date:"d/m/Y" }}</td>
                                 <td>{{ enfermero.fechaEliminacion|date:"d/m/Y"|default:"-" }}</td>
-                                <td><!-- Acciones si son necesarias --></td>
+                                <td>
+                                    {% if not enfermero.estaActivo %}
+                                        <button class="action-button success" onclick="confirmarReactivacionUsuario('{{ enfermero.id }}')">Reactivar</button>
+                                    {% endif %}
+                                </td>
                             </tr>
                         {% empty %}
                             <tr>
@@ -667,7 +699,11 @@ document.getElementById('historialModal').addEventListener('click', function(e) 
                                 <td>{{ doctor.estaActivo|yesno:"Activo,Inactivo" }}</td>
                                 <td>{{ doctor.fechaRegistro|date:"d/m/Y" }}</td>
                                 <td>{{ doctor.fechaEliminacion|date:"d/m/Y"|default:"-" }}</td>
-                                <td><!-- Acciones si son necesarias --></td>
+                                <td>
+                                    {% if not doctor.estaActivo %}
+                                        <button class="action-button success" onclick="confirmarReactivacionUsuario('{{ doctor.id }}')">Reactivar</button>
+                                    {% endif %}
+                                </td>
                             </tr>
                         {% empty %}
                             <tr>
@@ -700,7 +736,11 @@ document.getElementById('historialModal').addEventListener('click', function(e) 
                                 <td>{{ jefa.estaActivo|yesno:"Activo,Inactivo" }}</td>
                                 <td>{{ jefa.fechaRegistro|date:"d/m/Y" }}</td>
                                 <td>{{ jefa.fechaEliminacion|date:"d/m/Y"|default:"-" }}</td>
-                                <td><!-- Acciones si son necesarias --></td>
+                                <td>
+                                    {% if not jefa.estaActivo %}
+                                        <button class="action-button success" onclick="confirmarReactivacionUsuario('{{ jefa.id }}')">Reactivar</button>
+                                    {% endif %}
+                                </td>
                             </tr>
                         {% empty %}
                             <tr>
