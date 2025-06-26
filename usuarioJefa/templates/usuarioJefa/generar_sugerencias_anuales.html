@@ -495,6 +495,92 @@
         .stat-card {
             animation: fadeInUp 0.3s ease-out;
         }
+
+        /* AGREGAR este CSS al <style> del template */
+
+/* Contenedor de motivo detallado */
+.motivo-detallado {
+    font-size: 0.9rem;
+    line-height: 1.4;
+    color: var(--text-color);
+}
+
+/* Badges de categoría */
+.categoria-badge {
+    display: inline-block;
+    padding: 4px 8px;
+    border-radius: 12px;
+    font-size: 0.75rem;
+    font-weight: 600;
+    margin-top: 5px;
+    margin-right: 5px;
+    text-transform: uppercase;
+    letter-spacing: 0.3px;
+}
+
+.categoria-ideal_especialidad_fortalezas {
+    background: linear-gradient(135deg, #ffd700, #ffed4e);
+    color: #333;
+    border: 1px solid #e6c200;
+}
+
+.categoria-especialidad_principal {
+    background: var(--success-color);
+    color: var(--white);
+}
+
+.categoria-fortalezas_principal {
+    background: var(--info-color);
+    color: var(--white);
+}
+
+.categoria-carga_critica {
+    background: var(--danger-color);
+    color: var(--white);
+}
+
+.categoria-distribucion_equitativa {
+    background: var(--secondary-color);
+    color: var(--white);
+}
+
+/* Badge de puntuación */
+.puntuacion-badge {
+    display: inline-block;
+    background: linear-gradient(135deg, var(--accent-color), var(--primary-color));
+    color: var(--white);
+    padding: 3px 8px;
+    border-radius: 10px;
+    font-size: 0.7rem;
+    font-weight: 600;
+    margin-top: 5px;
+    border: 1px solid rgba(255,255,255,0.2);
+}
+
+/* Mejorar enfermero badge (ya no necesita indicador de nuevo) */
+.enfermero-badge {
+    background: var(--primary-color);
+    color: var(--white);
+    padding: 8px 12px;
+    border-radius: 20px;
+    font-size: 0.9rem;
+    font-weight: 500;
+    display: inline-block;
+    margin: 2px;
+}
+
+/* Responsive para motivos */
+@media (max-width: 768px) {
+    .motivo-detallado {
+        font-size: 0.8rem;
+    }
+    
+    .categoria-badge,
+    .puntuacion-badge {
+        font-size: 0.65rem;
+        padding: 2px 6px;
+    }
+}
     </style>
 </head>
 <body>
@@ -588,15 +674,14 @@
                                 <th>👨‍⚕️ Enfermero</th>
                                 <th>🏥 Área Asignada</th>
                                 <th>📅 Período</th>
-                                <th>📊 Estado</th>
-                                <th>💡 Motivo</th>
+                                <th>🧠 Motivo del Algoritmo</th>
                             </tr>
                         </thead>
                         <tbody>
                             {% for sugerencia in sugerencias %}
                             <tr>
                                 <td>
-                                    <span class="enfermero-badge {% if not sugerencia.existente %}enfermero-nuevo{% else %}enfermero-existente{% endif %}">
+                                    <span class="enfermero-badge">
                                         {{ sugerencia.enfermero.first_name }} {{ sugerencia.enfermero.apellidos }}
                                     </span>
                                 </td>
@@ -627,20 +712,39 @@
                                     </div>
                                 </td>
                                 <td>
-                                    {% if not sugerencia.existente %}
-                                        <span style="color: var(--success-color); font-weight: 600;">🆕 Nueva</span>
-                                    {% else %}
-                                        <span style="color: var(--info-color); font-weight: 600;">✅ Existente</span>
-                                    {% endif %}
-                                </td>
-                                <td>
-                                    <small style="color: var(--secondary-color);">
-                                        {% if not sugerencia.existente %}
-                                            Asignación sugerida por algoritmo
+                                    <div class="motivo-detallado">
+                                        {% if sugerencia.motivo %}
+                                            {{ sugerencia.motivo }}
                                         {% else %}
-                                            Ya asignado previamente
+                                            Distribución equitativa estándar
                                         {% endif %}
-                                    </small>
+                                        
+                                        <!-- Mostrar categoría con badge -->
+                                        {% if sugerencia.categoria %}
+                                            <div class="categoria-badge categoria-{{ sugerencia.categoria }}">
+                                                {% if sugerencia.categoria == 'ideal_especialidad_fortalezas' %}
+                                                    ⭐ Asignación Ideal
+                                                {% elif sugerencia.categoria == 'especialidad_principal' %}
+                                                    🎯 Por Especialidad
+                                                {% elif sugerencia.categoria == 'fortalezas_principal' %}
+                                                    💪 Por Fortalezas
+                                                {% elif sugerencia.categoria == 'carga_critica' %}
+                                                    🚨 Área Crítica
+                                                {% elif sugerencia.categoria == 'distribucion_equitativa' %}
+                                                    ⚖️ Distribución Equitativa
+                                                {% else %}
+                                                    📊 Algoritmo Estándar
+                                                {% endif %}
+                                            </div>
+                                        {% endif %}
+                                        
+                                        <!-- Mostrar puntuación si existe -->
+                                        {% if sugerencia.puntuacion %}
+                                            <div class="puntuacion-badge">
+                                                📊 Puntuación: {{ sugerencia.puntuacion|floatformat:1 }}
+                                            </div>
+                                        {% endif %}
+                                    </div>
                                 </td>
                             </tr>
                             {% endfor %}
@@ -691,7 +795,6 @@
         <div style="margin-top: 30px; padding: 20px; background: #f8f9fa; border-radius: 8px; border-left: 4px solid var(--info-color);">
             <h4 style="color: var(--primary-color); margin-bottom: 15px;">ℹ️ Información sobre las Sugerencias</h4>
             <ul style="color: var(--text-color); line-height: 1.8;">
-                <li>🎯 <strong>Algoritmo inteligente:</strong> Considera el historial de asignaciones previas</li>
                 <li>🔄 <strong>Rotación equilibrada:</strong> Evita asignar el mismo enfermero a la misma área en bimestres consecutivos</li>
                 <li>📊 <strong>Distribución balanceada:</strong> Asegura cobertura completa de todas las áreas</li>
                 <li>⚡ <strong>Respeta existentes:</strong> No modifica asignaciones ya creadas</li>
