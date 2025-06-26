@@ -611,7 +611,19 @@
                                 </td>
                                 <td>
                                     <div class="periodo-info">
-                                        📅 {{ sugerencia.fecha_inicio|date:"d/m/Y" }} - {{ sugerencia.fecha_fin|date:"d/m/Y" }}
+                                        {% if bimestre == 1 %}
+                                            📅 Enero - Febrero {{ año }}
+                                        {% elif bimestre == 2 %}
+                                            📅 Marzo - Abril {{ año }}
+                                        {% elif bimestre == 3 %}
+                                            📅 Mayo - Junio {{ año }}
+                                        {% elif bimestre == 4 %}
+                                            📅 Julio - Agosto {{ año }}
+                                        {% elif bimestre == 5 %}
+                                            📅 Septiembre - Octubre {{ año }}
+                                        {% elif bimestre == 6 %}
+                                            📅 Noviembre - Diciembre {{ año }}
+                                        {% endif %}
                                     </div>
                                 </td>
                                 <td>

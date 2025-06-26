@@ -2785,16 +2785,47 @@ def generar_sugerencias_anuales(request, año=None):
 
 def algoritmo_sugerencias_anuales_requerimientos(enfermeros, areas, año):
     """
-    Algoritmo que sigue EXACTAMENTE los requerimientos RQNF77-85
-    MODIFICADO para incluir fechas correctas
+    Algoritmo CORREGIDO que garantiza distribución equitativa
+    CON validación post-generación para evitar áreas vacías
     """
-    print(f"🔄 Generando sugerencias anuales según requerimientos para {len(enfermeros)} enfermeros")
+    if not enfermeros or not areas:
+        print("⚠️ WARNING: No hay enfermeros o áreas disponibles")
+        return {}
     
-    # Estructura para almacenar sugerencias
+    # Convertir a listas
+    if hasattr(enfermeros, 'all'):
+        enfermeros = list(enfermeros)
+    if hasattr(areas, 'all'):
+        areas = list(areas)
+    
+    print(f"🎯 ALGORITMO BALANCEADO - Generando sugerencias para {len(enfermeros)} enfermeros y {len(areas)} áreas")
+    
     sugerencias_por_bimestre = {}
-    historial_asignaciones = {enfermero.id: [] for enfermero in enfermeros}
     
-    # Función para calcular fechas de bimestre
+    # NUEVA ESTRATEGIA: Distribución forzada equitativa
+    cupos_por_area = calcular_cupos_forzados_equitativos(len(enfermeros), areas)
+    
+    # Generar para cada bimestre
+    for bimestre in range(1, 7):
+        print(f"\n📅 === BIMESTRE {bimestre} ===")
+        
+        # PASO 1: Generar sugerencias básicas
+        sugerencias_iniciales = generar_sugerencias_distribucion_forzada(
+            enfermeros, areas, bimestre, año, cupos_por_area, sugerencias_por_bimestre
+        )
+        
+        # PASO 2: VALIDACIÓN Y CORRECCIÓN OBLIGATORIA
+        sugerencias_corregidas = validar_y_corregir_areas_vacias(
+            sugerencias_iniciales, areas, cupos_por_area, bimestre
+        )
+        
+        sugerencias_por_bimestre[bimestre] = sugerencias_corregidas
+        
+        # Debug de distribución
+        mostrar_resumen_distribucion(sugerencias_corregidas, areas, bimestre)
+    
+    return sugerencias_por_bimestre
+
 def calcular_fechas_bimestre(año, bimestre):
     """
     Calcula las fechas de inicio y fin de un bimestre específico
@@ -2820,10 +2851,16 @@ def calcular_fechas_bimestre(año, bimestre):
         
     return fecha_inicio, fecha_fin
 
-def generar_sugerencias_base_mejoradas(enfermeros, areas):
+def generar_sugerencias_base_mejoradas(enfermeros, areas, año=None):
     """
     Generar sugerencias para el primer bimestre del año
     """
+    if not enfermeros or not areas:
+        return []
+    
+    if año is None:
+        año = datetime.now().year
+    
     sugerencias = []
     
     for enfermero in enfermeros:
@@ -2834,6 +2871,9 @@ def generar_sugerencias_base_mejoradas(enfermeros, areas):
             activo=True
         ).first()
         
+        # Calcular fechas del bimestre 1
+        fecha_inicio, fecha_fin = calcular_fechas_bimestre(año, 1)
+        
         if asignacion_existente:
             # Incluir asignación existente
             sugerencias.append({
@@ -2842,7 +2882,10 @@ def generar_sugerencias_base_mejoradas(enfermeros, areas):
                 'motivo': 'Asignación existente (reactivar)',
                 'puntuacion': 0,
                 'existente': True,
-                'categoria': 'existente'
+                'categoria': 'existente',
+                'fecha_inicio': fecha_inicio,
+                'fecha_fin': fecha_fin,
+                'bimestre': 1
             })
         else:
             # Generar nueva sugerencia según parámetros
@@ -2854,7 +2897,10 @@ def generar_sugerencias_base_mejoradas(enfermeros, areas):
                     'motivo': f"Área de especialidad: {enfermero.areaEspecialidad.nombre}",
                     'puntuacion': 10,
                     'existente': False,
-                    'categoria': 'especialidad'
+                    'categoria': 'especialidad',
+                    'fecha_inicio': fecha_inicio,
+                    'fecha_fin': fecha_fin,
+                    'bimestre': 1
                 })
             elif enfermero.fortalezas.exists():
                 # PRIORIDAD 2: Fortalezas
@@ -2865,19 +2911,24 @@ def generar_sugerencias_base_mejoradas(enfermeros, areas):
                     'motivo': f"Por fortalezas: {area_sugerida.nombre}",
                     'puntuacion': 5,
                     'existente': False,
-                    'categoria': 'fortalezas'
+                    'categoria': 'fortalezas',
+                    'fecha_inicio': fecha_inicio,
+                    'fecha_fin': fecha_fin,
+                    'bimestre': 1
                 })
             else:
                 # PRIORIDAD 3: Asignación aleatoria equitativa
-                import random
-                area_sugerida = random.choice(areas)
+                area_sugerida = asignacion_aleatoria_segura(enfermero, areas)
                 sugerencias.append({
                     'enfermero': enfermero,
                     'area_sugerida': area_sugerida,
-                    'motivo': 'Asignación aleatoria equitativa',
+                    'motivo': 'Asignación aleatoria equitativa (sin parámetros)',
                     'puntuacion': 1,
                     'existente': False,
-                    'categoria': 'aleatoria'
+                    'categoria': 'aleatoria',
+                    'fecha_inicio': fecha_inicio,
+                    'fecha_fin': fecha_fin,
+                    'bimestre': 1
                 })
     
     return sugerencias
@@ -2971,10 +3022,13 @@ def generar_primera_rotacion_mejorada(enfermeros, areas, historial_asignaciones)
     
     return sugerencias
 
-def generar_rotacion_subsecuente_mejorada(enfermeros, areas, bimestre, historial_asignaciones):
+def generar_rotacion_subsecuente_mejorada(enfermeros, areas, bimestre, historial_asignaciones, año):
     """
     Generar rotación para bimestres subsecuentes evitando repetir áreas consecutivas
     """
+    if not enfermeros or not areas:
+        return []
+    
     print(f"  🔄 Generando rotación bimestre {bimestre}")
     sugerencias = []
     
@@ -2986,107 +3040,90 @@ def generar_rotacion_subsecuente_mejorada(enfermeros, areas, bimestre, historial
             activo=True
         ).first()
         
+        # Calcular fechas del bimestre
+        fecha_inicio, fecha_fin = calcular_fechas_bimestre(año, bimestre)
+        
         if asignacion_existente:
             # Incluir asignación existente
             sugerencias.append({
                 'enfermero': enfermero,
                 'area_sugerida': asignacion_existente.area,
-                'motivo': 'Asignación existente',
+                'motivo': 'Asignación existente (reactivar)',
                 'puntuacion': 0,
                 'existente': True,
-                'categoria': 'existente'
+                'categoria': 'existente',
+                'fecha_inicio': fecha_inicio,
+                'fecha_fin': fecha_fin,
+                'bimestre': bimestre
             })
         else:
             # Obtener área anterior del historial
-            historial_enfermero = historial_asignaciones.get(enfermero.id, [])
             area_anterior = None
+            if enfermero.id in historial_asignaciones and historial_asignaciones[enfermero.id]:
+                area_anterior = historial_asignaciones[enfermero.id][-1]
             
-            if historial_enfermero:
-                ultima_asignacion = historial_enfermero[-1]
-                area_anterior = ultima_asignacion['area']
-            
-            # Filtrar áreas disponibles (evitar repetir la anterior)
+            # Áreas disponibles (excluyendo la anterior)
             areas_disponibles = [a for a in areas if a != area_anterior]
+            
             if not areas_disponibles:
                 areas_disponibles = areas  # Si no hay opciones, usar todas
             
-            # Seleccionar nueva área
-            if enfermero.areaEspecialidad and enfermero.areaEspecialidad in areas_disponibles:
-                area_sugerida = enfermero.areaEspecialidad
-                motivo = f"Área de especialidad (evita {area_anterior.nombre if area_anterior else 'ninguna'})"
-            else:
-                import random
-                area_sugerida = random.choice(areas_disponibles)
-                motivo = f"Rotación automática (evita {area_anterior.nombre if area_anterior else 'ninguna'})"
+            # Seleccionar área según prioridades
+            area_sugerida, motivo, puntuacion, categoria = seleccionar_area_inteligente(
+                enfermero, areas_disponibles, bimestre, area_anterior
+            )
             
             sugerencias.append({
                 'enfermero': enfermero,
                 'area_sugerida': area_sugerida,
                 'motivo': motivo,
-                'puntuacion': 3,
+                'puntuacion': puntuacion,
                 'existente': False,
-                'categoria': 'rotacion'
+                'categoria': categoria,
+                'fecha_inicio': fecha_inicio,
+                'fecha_fin': fecha_fin,
+                'bimestre': bimestre
             })
     
     return sugerencias
 
-def encontrar_area_por_fortalezas(enfermero, areas):
+def encontrar_area_por_fortalezas_simple(enfermero, areas):
     """
-    Versión segura que no usa .get() y maneja errores
+    Encuentra área con más fortalezas coincidentes (versión simple)
     """
-    fortalezas_enfermero = set(enfermero.fortalezas.values_list('id', flat=True))
+    if not areas:
+        return None
     
-    mejor_area = None
-    max_coincidencias = 0
+    if not enfermero.fortalezas.exists():
+        return areas[0]  # Primera área disponible
+    
+    fortalezas_enfermero = set(enfermero.fortalezas.all())
+    mejor_area = areas[0]
+    mejor_coincidencias = 0
     
     for area in areas:
-        fortalezas_area = set(area.fortalezas.values_list('id', flat=True))
-        coincidencias = len(fortalezas_enfermero.intersection(fortalezas_area))
-        
-        if coincidencias > max_coincidencias:
-            max_coincidencias = coincidencias
-            mejor_area = area
+        try:
+            fortalezas_area = set(area.fortalezas.all())
+            coincidencias = len(fortalezas_enfermero.intersection(fortalezas_area))
+            
+            if coincidencias > mejor_coincidencias:
+                mejor_coincidencias = coincidencias
+                mejor_area = area
+        except:
+            continue
     
-    # Si no hay coincidencias, asignar área con menos personal
-    if max_coincidencias == 0 or mejor_area is None:
-        mejor_area = min(
-            areas,
-            key=lambda a: AsignacionCalendario.objects.filter(
-                area=a, bimestre=1, activo=True
-            ).count()
-        )
-        max_coincidencias = 0
-    
-    return mejor_area, max_coincidencias
+    return mejor_area
 
 def asignacion_aleatoria_segura(enfermero, areas):
     """
-    Asignación segura para enfermeros sin parámetros
+    Asignación aleatoria equitativa segura
     """
-    # Filtrar áreas de nivel 1 y 2 de forma segura
-    areas_nivel_bajo = []
-    for area in areas:
-        try:
-            nivel = NivelPrioridadArea.objects.filter(area=area).first()
-            if nivel and nivel.nivel_prioridad <= 2:
-                areas_nivel_bajo.append(area)
-            elif not nivel:
-                areas_nivel_bajo.append(area)  # Sin nivel = nivel 1
-        except:
-            areas_nivel_bajo.append(area)  # En caso de error, incluir
+    if not areas:
+        return None
     
-    if not areas_nivel_bajo:
-        areas_nivel_bajo = list(areas)
-    
-    # Encontrar área con menos enfermeros asignados
-    area_menos_cargada = min(
-        areas_nivel_bajo,
-        key=lambda a: AsignacionCalendario.objects.filter(
-            area=a, bimestre=1, activo=True
-        ).count()
-    )
-    
-    return area_menos_cargada
+    import random
+    return random.choice(areas)
+
 
 def obtener_areas_ultimas_rotaciones(enfermero_id, bimestre_actual, historial, num_rotaciones):
     """
@@ -3129,7 +3166,7 @@ def calcular_mejor_area_rotacion_subsecuente(enfermero, areas_disponibles, bimes
     
     # PRIORIDAD 2: Área con más fortalezas coincidentes
     if enfermero.fortalezas.exists():
-        area_fortalezas, coincidencias = encontrar_area_por_fortalezas(enfermero, areas_disponibles)
+        area_fortalezas, coincidencias = encontrar_area_por_fortalezas_simple(enfermero, areas_disponibles)
         if coincidencias > 0:
             return (
                 area_fortalezas,
@@ -3178,63 +3215,69 @@ def calcular_estadisticas_sugerencias(sugerencias_por_bimestre):
 def aplicar_sugerencias_automaticas(sugerencias_por_bimestre, año):
     """
     Aplica las sugerencias generadas al sistema real
-    IGNORANDO duplicados y reactivando/creando según sea necesario
+    CORREGIDO: Sin parámetro 'creado_por'
     """
+    if not sugerencias_por_bimestre:
+        print("⚠️ No hay sugerencias para aplicar")
+        return
+    
     with transaction.atomic():
-        # PASO 1: Desactivar TODAS las asignaciones del año
+        # Desactivar todas las asignaciones del año
         AsignacionCalendario.objects.filter(year=año).update(activo=False)
         print(f"✅ Todas las asignaciones del año {año} desactivadas")
         
         sugerencias_aplicadas = 0
         
         for bimestre, sugerencias in sugerencias_por_bimestre.items():
+            if not sugerencias:
+                continue
+                
+            print(f"  🔄 Aplicando {len(sugerencias)} sugerencias para bimestre {bimestre}")
+            
             for sugerencia in sugerencias:
-                # Aplicar TODAS las sugerencias (existentes y nuevas)
-                enfermero = sugerencia['enfermero']
-                area = sugerencia['area_sugerida']
-                
-                # Calcular fechas del bimestre
-                mes_inicio = ((bimestre - 1) * 2) + 1
-                fecha_inicio = datetime(año, mes_inicio, 1)
-                
-                if mes_inicio + 1 <= 12:
-                    ultimo_dia_mes2 = calendar.monthrange(año, mes_inicio + 1)[1]
-                    fecha_fin = datetime(año, mes_inicio + 1, ultimo_dia_mes2)
-                else:
-                    fecha_fin = datetime(año, 12, 31)
-                
-                # PASO 2: Buscar si existe una asignación similar para reutilizar
-                asignacion_existente = AsignacionCalendario.objects.filter(
-                    enfermero=enfermero,
-                    area=area,
-                    bimestre=bimestre,
-                    year=año,
-                    fecha_inicio=fecha_inicio.date(),
-                    fecha_fin=fecha_fin.date()
-                ).first()  # Usar .first() para evitar errores de múltiples
-                
-                if asignacion_existente:
-                    # REACTIVAR la asignación existente
-                    asignacion_existente.activo = True
-                    asignacion_existente.save()
-                    print(f"  🔄 Reactivada: {enfermero.username} → {area.nombre} (Bimestre {bimestre})")
-                else:
-                    # CREAR nueva asignación
-                    AsignacionCalendario.objects.create(
+                try:
+                    enfermero = sugerencia['enfermero']
+                    area = sugerencia['area_sugerida']
+                    
+                    if not enfermero or not area:
+                        continue
+                    
+                    # Calcular fechas del bimestre
+                    fecha_inicio, fecha_fin = calcular_fechas_bimestre(año, bimestre)
+                    
+                    # Buscar asignación existente para reactivar
+                    asignacion_existente = AsignacionCalendario.objects.filter(
                         enfermero=enfermero,
                         area=area,
-                        fecha_inicio=fecha_inicio.date(),
-                        fecha_fin=fecha_fin.date(),
                         bimestre=bimestre,
-                        year=año,
-                        activo=True
-                    )
-                    print(f"  ✨ Creada: {enfermero.username} → {area.nombre} (Bimestre {bimestre})")
-                
-                sugerencias_aplicadas += 1
+                        year=año
+                    ).first()
+                    
+                    if asignacion_existente:
+                        # Reactivar existente
+                        asignacion_existente.activo = True
+                        asignacion_existente.save()
+                        print(f"    ♻️ Reactivada: {enfermero.username} → {area.nombre}")
+                    else:
+                        # Crear nueva (SIN 'creado_por')
+                        AsignacionCalendario.objects.create(
+                            enfermero=enfermero,
+                            area=area,
+                            fecha_inicio=fecha_inicio,
+                            fecha_fin=fecha_fin,
+                            bimestre=bimestre,
+                            year=año,
+                            activo=True
+                        )
+                        print(f"    ✅ Creada: {enfermero.username} → {area.nombre}")
+                    
+                    sugerencias_aplicadas += 1
+                    
+                except Exception as e:
+                    print(f"    ❌ Error aplicando sugerencia: {str(e)}")
+                    continue
         
-        print(f"✅ {sugerencias_aplicadas} sugerencias aplicadas automáticamente")
-        return sugerencias_aplicadas
+        print(f"✅ Total aplicadas: {sugerencias_aplicadas} asignaciones")
 
 
 #SObrecarga
@@ -6679,3 +6722,1034 @@ def historial_personal_temporal_ajax(request, personal_id):
             'status': 'error',
             'message': str(e)
         })
+    
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+# ===== FUNCIONES AUXILIARES PARA SUGERENCIAS =====
+
+def seleccionar_area_inteligente(enfermero, areas_disponibles, bimestre, area_anterior):
+    """
+    Selecciona área según prioridades inteligentes
+    """
+    if not areas_disponibles:
+        return None, "Sin áreas disponibles", 0, 'error'
+    
+    # Áreas prohibidas (la anterior)
+    areas_prohibidas = [area_anterior] if area_anterior else []
+    
+    # PRIORIDAD 1: Área de especialidad (si está disponible)
+    if enfermero.areaEspecialidad and enfermero.areaEspecialidad in areas_disponibles:
+        return (
+            enfermero.areaEspecialidad, 
+            f"Área de especialidad disponible: {enfermero.areaEspecialidad.nombre}",
+            10,
+            'especialidad'
+        )
+    
+    # PRIORIDAD 2: Área con más fortalezas coincidentes
+    if enfermero.fortalezas.exists():
+        area_fortalezas = encontrar_area_por_fortalezas_simple(enfermero, areas_disponibles)
+        if area_fortalezas:
+            coincidencias = len(set(enfermero.fortalezas.all()).intersection(set(area_fortalezas.fortalezas.all())))
+            return (
+                area_fortalezas,
+                f"Fortalezas coincidentes ({coincidencias}) - Evita área anterior",
+                coincidencias,
+                'fortalezas'
+            )
+    
+    # PRIORIDAD 3: Distribución equitativa en áreas disponibles
+    area_menos_cargada = min(
+        areas_disponibles,
+        key=lambda a: AsignacionCalendario.objects.filter(
+            area=a, bimestre=bimestre, activo=True
+        ).count()
+    )
+    
+    return (
+        area_menos_cargada,
+        f"Distribución equitativa - Evita área anterior",
+        1,
+        'equitativa'
+    )
+
+def encontrar_area_por_fortalezas_simple(enfermero, areas):
+    """
+    Encuentra área con más fortalezas coincidentes (versión simple)
+    """
+    if not areas:
+        return None
+    
+    if not enfermero.fortalezas.exists():
+        return areas[0]  # Primera área disponible
+    
+    fortalezas_enfermero = set(enfermero.fortalezas.all())
+    mejor_area = areas[0]
+    mejor_coincidencias = 0
+    
+    for area in areas:
+        try:
+            fortalezas_area = set(area.fortalezas.all())
+            coincidencias = len(fortalezas_enfermero.intersection(fortalezas_area))
+            
+            if coincidencias > mejor_coincidencias:
+                mejor_coincidencias = coincidencias
+                mejor_area = area
+        except:
+            continue
+    
+    return mejor_area
+
+def asignacion_aleatoria_segura(enfermero, areas):
+    """
+    Asignación aleatoria equitativa segura
+    """
+    if not areas:
+        return None
+    
+    import random
+    return random.choice(areas)
+
+def calcular_estadisticas_sugerencias(sugerencias_por_bimestre):
+    """
+    Calcula estadísticas útiles de las sugerencias generadas
+    """
+    if not sugerencias_por_bimestre:
+        return {
+            'total_sugerencias': 0,
+            'nuevas_asignaciones': 0,
+            'asignaciones_existentes': 0
+        }
+    
+    total_sugerencias = 0
+    nuevas_asignaciones = 0
+    asignaciones_existentes = 0
+    
+    for bimestre, sugerencias in sugerencias_por_bimestre.items():
+        if sugerencias:
+            total_sugerencias += len(sugerencias)
+            for sugerencia in sugerencias:
+                if sugerencia.get('existente', False):
+                    asignaciones_existentes += 1
+                else:
+                    nuevas_asignaciones += 1
+    
+    return {
+        'total_sugerencias': total_sugerencias,
+        'nuevas_asignaciones': nuevas_asignaciones,
+        'asignaciones_existentes': asignaciones_existentes
+    }
+
+def aplicar_sugerencias_automaticas(sugerencias_por_bimestre, año):
+    """
+    Aplica las sugerencias generadas al sistema real
+    IGNORANDO duplicados y reactivando/creando según sea necesario
+    """
+    if not sugerencias_por_bimestre:
+        print("⚠️ No hay sugerencias para aplicar")
+        return
+    
+    with transaction.atomic():
+        # PASO 1: Desactivar TODAS las asignaciones del año
+        AsignacionCalendario.objects.filter(year=año).update(activo=False)
+        print(f"✅ Todas las asignaciones del año {año} desactivadas")
+        
+        sugerencias_aplicadas = 0
+        
+        for bimestre, sugerencias in sugerencias_por_bimestre.items():
+            if not sugerencias:
+                continue
+                
+            print(f"  🔄 Aplicando {len(sugerencias)} sugerencias para bimestre {bimestre}")
+            
+            for sugerencia in sugerencias:
+                try:
+                    enfermero = sugerencia['enfermero']
+                    area = sugerencia['area_sugerida']
+                    
+                    if not enfermero or not area:
+                        continue
+                    
+                    # Calcular fechas del bimestre
+                    fecha_inicio, fecha_fin = calcular_fechas_bimestre(año, bimestre)
+                    
+                    # Buscar asignación existente para reactivar
+                    asignacion_existente = AsignacionCalendario.objects.filter(
+                        enfermero=enfermero,
+                        area=area,
+                        bimestre=bimestre,
+                        year=año
+                    ).first()
+                    
+                    if asignacion_existente:
+                        # Reactivar existente
+                        asignacion_existente.activo = True
+                        asignacion_existente.save()
+                        print(f"    ♻️ Reactivada: {enfermero.username} → {area.nombre}")
+                    else:
+                        # Crear nueva
+                        AsignacionCalendario.objects.create(
+                            enfermero=enfermero,
+                            area=area,
+                            fecha_inicio=fecha_inicio,
+                            fecha_fin=fecha_fin,
+                            bimestre=bimestre,
+                            year=año,
+                            activo=True,
+                            creado_por=None  # Sistema automático
+                        )
+                        print(f"    ✅ Creada: {enfermero.username} → {area.nombre}")
+                    
+                    sugerencias_aplicadas += 1
+                    
+                except Exception as e:
+                    print(f"    ❌ Error aplicando sugerencia: {str(e)}")
+                    continue
+        
+        print(f"✅ Total aplicadas: {sugerencias_aplicadas} asignaciones")
+
+def calcular_fechas_bimestre(año, bimestre):
+    """
+    Calcula las fechas de inicio y fin de un bimestre específico
+    """
+    meses_por_bimestre = {
+        1: (1, 2),   # Enero-Febrero
+        2: (3, 4),   # Marzo-Abril  
+        3: (5, 6),   # Mayo-Junio
+        4: (7, 8),   # Julio-Agosto
+        5: (9, 10),  # Septiembre-Octubre
+        6: (11, 12)  # Noviembre-Diciembre
+    }
+    
+    if bimestre not in meses_por_bimestre:
+        raise ValueError(f"Bimestre {bimestre} no válido")
+    
+    mes_inicio, mes_fin = meses_por_bimestre[bimestre]
+    fecha_inicio = datetime(año, mes_inicio, 1).date()
+    
+    # Último día del segundo mes
+    if mes_fin == 12:
+        fecha_fin = datetime(año, 12, 31).date()
+    else:
+        siguiente_mes = datetime(año, mes_fin + 1, 1).date()
+        fecha_fin = siguiente_mes - timedelta(days=1)
+        
+    return fecha_inicio, fecha_fin
+
+
+
+
+def algoritmo_sugerencias_anuales_equitativo(enfermeros, areas, año):
+    """
+    Algoritmo MEJORADO que prioriza distribución equitativa
+    usando los 4 parámetros oficiales de los requerimientos:
+    1. Área de especialidad (40%)
+    2. Fortalezas/actividades (30%) 
+    3. Carga de trabajo actual (20%)
+    4. Nivel de prioridad del área (10%)
+    """
+    if not enfermeros or not areas:
+        print("⚠️ WARNING: No hay enfermeros o áreas disponibles")
+        return {}
+    
+    # Convertir a listas
+    if hasattr(enfermeros, 'all'):
+        enfermeros = list(enfermeros)
+    if hasattr(areas, 'all'):
+        areas = list(areas)
+    
+    print(f"🎯 ALGORITMO EQUITATIVO - Generando sugerencias para {len(enfermeros)} enfermeros y {len(areas)} áreas")
+    
+    sugerencias_por_bimestre = {}
+    
+    # Calcular cupos por área (distribución base)
+    enfermeros_por_area = calcular_cupos_equitativos(len(enfermeros), areas)
+    
+    # Generar para cada bimestre
+    for bimestre in range(1, 7):
+        print(f"\n📅 === BIMESTRE {bimestre} ===")
+        
+        sugerencias = generar_sugerencias_bimestre_equitativo(
+            enfermeros, areas, bimestre, año, enfermeros_por_area,
+            sugerencias_por_bimestre  # Historial para evitar repeticiones
+        )
+        
+        sugerencias_por_bimestre[bimestre] = sugerencias
+    
+    return sugerencias_por_bimestre
+
+# ===== ALGORITMO EQUITATIVO MEJORADO =====
+
+def calcular_cupos_equitativos(total_enfermeros, areas):
+    """
+    Calcula cuántos enfermeros debe tener cada área para distribución equitativa
+    Considera el nivel de prioridad como factor de peso
+    CORREGIDO: Nivel 5 = alta prioridad, Nivel 1 = baja prioridad
+    """
+    print(f"⚖️ Calculando distribución equitativa para {total_enfermeros} enfermeros")
+    
+    # Obtener niveles de prioridad
+    niveles_prioridad = {}
+    for area in areas:
+        try:
+            nivel = NivelPrioridadArea.objects.get(area=area)
+            niveles_prioridad[area.id] = nivel.nivel_prioridad
+        except NivelPrioridadArea.DoesNotExist:
+            niveles_prioridad[area.id] = 3  # Nivel medio por defecto
+    
+    # Calcular peso por prioridad (nivel 5 = más peso, nivel 1 = menos peso)
+    pesos_areas = {}
+    total_peso = 0
+    
+    for area in areas:
+        # Nivel directo: nivel 5 = peso 5, nivel 1 = peso 1
+        peso = niveles_prioridad[area.id]
+        pesos_areas[area.id] = peso
+        total_peso += peso
+    
+    # Distribución proporcional
+    enfermeros_por_area = {}
+    enfermeros_asignados = 0
+    
+    for area in areas:
+        proporcion = pesos_areas[area.id] / total_peso
+        cupo = max(1, round(total_enfermeros * proporcion))  # Mínimo 1 enfermero
+        enfermeros_por_area[area.id] = cupo
+        enfermeros_asignados += cupo
+        
+        print(f"  🏥 {area.nombre}: {cupo} enfermeros (prioridad {niveles_prioridad[area.id]}, peso {pesos_areas[area.id]})")
+    
+    # Ajustar si hay diferencia
+    diferencia = total_enfermeros - enfermeros_asignados
+    if diferencia != 0:
+        print(f"⚖️ Ajustando {abs(diferencia)} enfermeros...")
+        # Ajustar en áreas de mayor prioridad primero
+        areas_ordenadas = sorted(areas, key=lambda a: niveles_prioridad[a.id], reverse=True)
+        
+        for area in areas_ordenadas[:abs(diferencia)]:
+            if diferencia > 0:
+                enfermeros_por_area[area.id] += 1
+            else:
+                enfermeros_por_area[area.id] = max(1, enfermeros_por_area[area.id] - 1)
+    
+    return enfermeros_por_area
+
+def generar_sugerencias_bimestre_equitativo(enfermeros, areas, bimestre, año, enfermeros_por_area, historial):
+    """
+    Genera sugerencias para un bimestre específico priorizando distribución equitativa
+    """
+    sugerencias = []
+    areas_disponibles = list(areas)
+    enfermeros_disponibles = list(enfermeros)
+    
+    # Contador de enfermeros asignados por área
+    contador_por_area = {area.id: 0 for area in areas}
+    
+    # FASE 1: Verificar asignaciones existentes
+    for enfermero in enfermeros:
+        asignacion_existente = AsignacionCalendario.objects.filter(
+            enfermero=enfermero,
+            bimestre=bimestre,
+            activo=True
+        ).first()
+        
+        if asignacion_existente:
+            # Incluir asignación existente
+            fecha_inicio, fecha_fin = calcular_fechas_bimestre(año, bimestre)
+            
+            sugerencias.append({
+                'enfermero': enfermero,
+                'area_sugerida': asignacion_existente.area,
+                'motivo': 'Asignación existente',
+                'puntuacion': 0,
+                'existente': True,
+                'categoria': 'existente',
+                'fecha_inicio': fecha_inicio,
+                'fecha_fin': fecha_fin,
+                'bimestre': bimestre
+            })
+            
+            # Actualizar contadores
+            contador_por_area[asignacion_existente.area.id] += 1
+            enfermeros_disponibles.remove(enfermero)
+    
+    # FASE 2: Asignar enfermeros nuevos con algoritmo equitativo
+    print(f"🎯 Asignando {len(enfermeros_disponibles)} enfermeros nuevos para bimestre {bimestre}")
+    
+    for enfermero in enfermeros_disponibles:
+        mejor_area = seleccionar_area_con_algoritmo_4_parametros(
+            enfermero, areas_disponibles, bimestre, año, 
+            contador_por_area, enfermeros_por_area, historial
+        )
+        
+        if mejor_area:
+            fecha_inicio, fecha_fin = calcular_fechas_bimestre(año, bimestre)
+            
+            sugerencias.append({
+                'enfermero': enfermero,
+                'area_sugerida': mejor_area['area'],
+                'motivo': mejor_area['motivo'],
+                'puntuacion': mejor_area['puntuacion'],
+                'existente': False,
+                'categoria': mejor_area['categoria'],
+                'fecha_inicio': fecha_inicio,
+                'fecha_fin': fecha_fin,
+                'bimestre': bimestre
+            })
+            
+            # Actualizar contador
+            contador_por_area[mejor_area['area'].id] += 1
+    
+    return sugerencias
+
+def seleccionar_area_con_algoritmo_4_parametros(enfermero, areas, bimestre, año, contador_por_area, enfermeros_por_area, historial):
+    """
+    Algoritmo de 4 parámetros según requerimientos oficiales:
+    1. Área de especialidad (peso 40%)
+    2. Fortalezas/actividades (peso 30%)
+    3. Carga de trabajo actual (peso 20%) 
+    4. Nivel de prioridad del área (peso 10%)
+    """
+    
+    # Obtener área anterior para evitar repetición
+    area_anterior = obtener_area_anterior(enfermero, bimestre, historial)
+    areas_disponibles = [a for a in areas if a != area_anterior]
+    
+    if not areas_disponibles:
+        areas_disponibles = areas  # Si no hay opciones, usar todas
+    
+    puntuaciones = []
+    
+    for area in areas_disponibles:
+        puntuacion_total = 0
+        detalles_calculo = {}
+        
+        # 1. ÁREA DE ESPECIALIDAD (40%)
+        if enfermero.areaEspecialidad == area:
+            puntos_especialidad = 40
+            detalles_calculo['especialidad'] = {
+                'puntos': puntos_especialidad,
+                'razon': f"Especialista en {area.nombre}"
+            }
+        else:
+            puntos_especialidad = 0
+            detalles_calculo['especialidad'] = {'puntos': 0, 'razon': None}
+        
+        # 2. FORTALEZAS/ACTIVIDADES (30%)
+        puntos_fortalezas_raw, coincidencias_fortalezas = calcular_puntos_fortalezas_detallado(enfermero, area)
+        puntos_fortalezas = puntos_fortalezas_raw * 0.3
+        detalles_calculo['fortalezas'] = {
+            'puntos': puntos_fortalezas,
+            'coincidencias': coincidencias_fortalezas,
+            'razon': f"{coincidencias_fortalezas} fortaleza(s) coincidente(s)" if coincidencias_fortalezas > 0 else None
+        }
+        
+        # 3. CARGA DE TRABAJO ACTUAL (20%)
+        puntos_carga_raw, info_carga = calcular_puntos_carga_equitativa_detallado(area, contador_por_area, enfermeros_por_area)
+        puntos_carga = puntos_carga_raw * 0.2
+        detalles_calculo['carga'] = {
+            'puntos': puntos_carga,
+            'asignados_actual': info_carga['asignados'],
+            'cupo_objetivo': info_carga['objetivo'],
+            'faltantes': info_carga['faltantes'],
+            'razon': info_carga['razon']
+        }
+        
+        # 4. NIVEL DE PRIORIDAD DEL ÁREA (10%)
+        puntos_prioridad_raw, nivel_prioridad = calcular_puntos_prioridad_detallado(area)
+        puntos_prioridad = puntos_prioridad_raw * 0.1
+        detalles_calculo['prioridad'] = {
+            'puntos': puntos_prioridad,
+            'nivel': nivel_prioridad,
+            'razon': f"Área prioridad {nivel_prioridad}" if nivel_prioridad >= 4 else None
+        }
+        
+        # 5. ROTACIÓN (factor informativo)
+        detalles_calculo['rotacion'] = {
+            'area_anterior': area_anterior.nombre if area_anterior else None,
+            'razon': f"Evita repetir {area_anterior.nombre}" if area_anterior else "Sin restricción anterior"
+        }
+        
+        # TOTAL
+        puntuacion_total = puntos_especialidad + puntos_fortalezas + puntos_carga + puntos_prioridad
+        
+        # Generar motivo detallado
+        motivo_detallado = generar_motivo_detallado(detalles_calculo, puntuacion_total)
+        categoria_principal = determinar_categoria_principal_mejorada(detalles_calculo)
+        
+        puntuaciones.append({
+            'area': area,
+            'puntuacion': puntuacion_total,
+            'motivo': motivo_detallado,
+            'categoria': categoria_principal,
+            'detalles': detalles_calculo
+        })
+    
+    # Seleccionar el área con mayor puntuación
+    if puntuaciones:
+        mejor = max(puntuaciones, key=lambda x: x['puntuacion'])
+        print(f"  👤 {enfermero.username} → {mejor['area'].nombre} ({mejor['puntuacion']:.1f} pts)")
+        print(f"      💡 {mejor['motivo']}")
+        return mejor
+    
+    return None
+
+def generar_motivo_detallado(detalles, puntuacion_total):
+    """
+    Genera un motivo específico y claro basado en los factores que más influenciaron la decisión
+    """
+    motivos_principales = []
+    motivos_secundarios = []
+    
+    # 1. ESPECIALIDAD (factor más importante)
+    if detalles['especialidad']['puntos'] > 0:
+        motivos_principales.append(f"🏆 {detalles['especialidad']['razon']}")
+    
+    # 2. DISTRIBUCIÓN EQUITATIVA (muy importante si hay faltantes)
+    if detalles['carga']['faltantes'] > 0:
+        if detalles['carga']['faltantes'] >= 2:
+            motivos_principales.append(f"⚖️ {detalles['carga']['razon']} (crítico)")
+        else:
+            motivos_secundarios.append(f"⚖️ {detalles['carga']['razon']}")
+    
+    # 3. FORTALEZAS (importante si hay coincidencias)
+    if detalles['fortalezas']['coincidencias'] > 0:
+        if detalles['fortalezas']['coincidencias'] >= 3:
+            motivos_principales.append(f"🎯 {detalles['fortalezas']['razon']} (alta coincidencia)")
+        else:
+            motivos_secundarios.append(f"🎯 {detalles['fortalezas']['razon']}")
+    
+    # 4. PRIORIDAD DEL ÁREA (factor de desempate)
+    if detalles['prioridad']['nivel'] >= 4 and len(motivos_principales) == 0:
+        motivos_principales.append(f"🚨 {detalles['prioridad']['razon']}")
+    elif detalles['prioridad']['nivel'] >= 4:
+        motivos_secundarios.append(f"🚨 {detalles['prioridad']['razon']}")
+    
+    # 5. ROTACIÓN (siempre mostrar si evita repetición)
+    if detalles['rotacion']['area_anterior']:
+        motivos_secundarios.append(f"🔄 {detalles['rotacion']['razon']}")
+    
+    # 6. CASOS ESPECIALES
+    # Combinación potente: Especialidad + Fortalezas
+    if (detalles['especialidad']['puntos'] > 0 and 
+        detalles['fortalezas']['coincidencias'] >= 2):
+        return f"⭐ ASIGNACIÓN IDEAL: Especialista con {detalles['fortalezas']['coincidencias']} fortalezas coincidentes"
+    
+    # Distribución crítica (override otros factores)
+    if detalles['carga']['faltantes'] >= 3:
+        return f"🚨 DISTRIBUCIÓN CRÍTICA: Área necesita {detalles['carga']['faltantes']} enfermeros más (prioridad {detalles['prioridad']['nivel']})"
+    
+    # Sin factores fuertes - decisión por distribución
+    if len(motivos_principales) == 0 and len(motivos_secundarios) <= 1:
+        return f"⚖️ DISTRIBUCIÓN EQUITATIVA: Balanceando cargas entre áreas (puntuación: {puntuacion_total:.1f})"
+    
+    # Construir mensaje final
+    if motivos_principales:
+        motivo_final = " | ".join(motivos_principales)
+        if motivos_secundarios:
+            motivo_final += f" + {motivos_secundarios[0]}"  # Solo el más relevante
+    else:
+        motivo_final = " | ".join(motivos_secundarios[:2])  # Máximo 2 secundarios
+    
+    return motivo_final
+
+def calcular_puntos_fortalezas_detallado(enfermero, area):
+    """
+    Calcula puntos por fortalezas coincidentes (0-100) con información detallada
+    """
+    if not enfermero.fortalezas.exists():
+        return 0, 0
+    
+    try:
+        fortalezas_enfermero = set(enfermero.fortalezas.all())
+        fortalezas_area = set(area.fortalezas.all())
+        coincidencias = len(fortalezas_enfermero.intersection(fortalezas_area))
+        
+        # Máximo 100 puntos si tiene todas las fortalezas del área
+        max_posible = len(fortalezas_area) if fortalezas_area else 1
+        puntos = min(100, (coincidencias / max_posible) * 100)
+        
+        return puntos, coincidencias
+    except:
+        return 0, 0
+
+def calcular_puntos_carga_equitativa_detallado(area, contador_actual, enfermeros_por_area):
+    """
+    Calcula puntos por distribución equitativa (0-100) con información detallada
+    """
+    cupo_objetivo = enfermeros_por_area.get(area.id, 1)
+    asignados_actual = contador_actual.get(area.id, 0)
+    faltantes = max(0, cupo_objetivo - asignados_actual)
+    
+    # Generar razón descriptiva
+    if faltantes == 0:
+        razon = f"Área completa ({asignados_actual}/{cupo_objetivo})"
+        puntos = 0
+    elif faltantes == 1:
+        razon = f"Necesita 1 enfermero más ({asignados_actual}/{cupo_objetivo})"
+        puntos = 50
+    else:
+        razon = f"Necesita {faltantes} enfermeros más ({asignados_actual}/{cupo_objetivo})"
+        puntos = min(100, (faltantes / cupo_objetivo) * 100)
+    
+    info_detallada = {
+        'asignados': asignados_actual,
+        'objetivo': cupo_objetivo,
+        'faltantes': faltantes,
+        'razon': razon
+    }
+    
+    return puntos, info_detallada
+
+def calcular_puntos_prioridad_detallado(area):
+    """
+    Calcula puntos por nivel de prioridad del área (0-100) con información detallada
+    """
+    try:
+        nivel_obj = NivelPrioridadArea.objects.get(area=area)
+        nivel = nivel_obj.nivel_prioridad
+        # Convertir nivel 1-5 a puntos 20-100
+        puntos = nivel * 20
+        return puntos, nivel
+    except NivelPrioridadArea.DoesNotExist:
+        return 60, 3  # Nivel medio por defecto
+
+def obtener_area_anterior(enfermero, bimestre_actual, historial):
+    """
+    Obtiene el área del bimestre anterior para evitar repeticiones
+    """
+    bimestre_anterior = bimestre_actual - 1
+    
+    if bimestre_anterior < 1:
+        return None  # No hay bimestre anterior
+    
+    if bimestre_anterior in historial:
+        sugerencias_anteriores = historial[bimestre_anterior]
+        for sugerencia in sugerencias_anteriores:
+            if sugerencia['enfermero'] == enfermero:
+                return sugerencia['area_sugerida']
+    
+    return None
+
+def determinar_categoria_principal_mejorada(detalles):
+    """
+    Determina la categoría principal de la asignación basada en factores dominantes
+    """
+    if detalles['especialidad']['puntos'] > 0:
+        if detalles['fortalezas']['coincidencias'] >= 2:
+            return 'especialidad_fortalezas'  # Combinación ideal
+        else:
+            return 'especialidad'
+    elif detalles['carga']['faltantes'] >= 2:
+        return 'distribucion_critica'
+    elif detalles['fortalezas']['coincidencias'] >= 3:
+        return 'fortalezas_alta'
+    elif detalles['fortalezas']['coincidencias'] > 0:
+        return 'fortalezas'
+    elif detalles['prioridad']['nivel'] >= 4:
+        return 'prioridad_alta'
+    else:
+        return 'equitativa'
+
+# ===== FUNCIONES DE COMPATIBILIDAD =====
+
+def calcular_puntos_fortalezas(enfermero, area):
+    """
+    Calcula puntos por fortalezas coincidentes (0-100)
+    NOTA: Esta función se mantiene para compatibilidad, pero se recomienda usar calcular_puntos_fortalezas_detallado
+    """
+    puntos, _ = calcular_puntos_fortalezas_detallado(enfermero, area)
+    return puntos
+
+def calcular_puntos_carga_equitativa(area, contador_actual, enfermeros_por_area):
+    """
+    Calcula puntos por distribución equitativa (0-100)
+    NOTA: Esta función se mantiene para compatibilidad, pero se recomienda usar calcular_puntos_carga_equitativa_detallado
+    """
+    puntos, _ = calcular_puntos_carga_equitativa_detallado(area, contador_actual, enfermeros_por_area)
+    return puntos
+
+def calcular_puntos_prioridad(area):
+    """
+    Calcula puntos por nivel de prioridad del área (0-100)
+    NOTA: Esta función se mantiene para compatibilidad, pero se recomienda usar calcular_puntos_prioridad_detallado
+    """
+    puntos, _ = calcular_puntos_prioridad_detallado(area)
+    return puntos
+
+def determinar_categoria_principal(puntos_especialidad, puntos_fortalezas, puntos_carga):
+    """
+    Determina la categoría principal de la asignación
+    NOTA: Esta función se mantiene para compatibilidad, pero se recomienda usar determinar_categoria_principal_mejorada
+    """
+    if puntos_especialidad > 0:
+        return 'especialidad'
+    elif puntos_fortalezas > puntos_carga:
+        return 'fortalezas'
+    else:
+        return 'equitativa'
+    
+
+
+def calcular_cupos_forzados_equitativos(total_enfermeros, areas):
+    """
+    Calcula cupos GARANTIZANDO que ningún área quede vacía
+    """
+    print(f"⚖️ Calculando distribución FORZADA EQUITATIVA para {total_enfermeros} enfermeros")
+    
+    # PASO 1: Garantizar mínimo 1 enfermero por área
+    cupos_minimos = {area.id: 1 for area in areas}
+    enfermeros_asignados = len(areas)
+    enfermeros_restantes = total_enfermeros - enfermeros_asignados
+    
+    if enfermeros_restantes < 0:
+        print(f"⚠️ WARNING: Más áreas ({len(areas)}) que enfermeros ({total_enfermeros})")
+        return cupos_minimos
+    
+    # PASO 2: Distribuir el resto según prioridad
+    niveles_prioridad = {}
+    for area in areas:
+        try:
+            nivel = NivelPrioridadArea.objects.get(area=area)
+            niveles_prioridad[area.id] = nivel.nivel_prioridad
+        except NivelPrioridadArea.DoesNotExist:
+            niveles_prioridad[area.id] = 3
+    
+    # Distribuir enfermeros restantes proporcionalmente
+    total_peso = sum(niveles_prioridad.values())
+    
+    for area in areas:
+        if enfermeros_restantes > 0:
+            proporcion = niveles_prioridad[area.id] / total_peso
+            extra = round(enfermeros_restantes * proporcion)
+            cupos_minimos[area.id] += extra
+    
+    # PASO 3: Ajustar para que la suma sea exacta
+    total_asignado = sum(cupos_minimos.values())
+    diferencia = total_enfermeros - total_asignado
+    
+    if diferencia != 0:
+        # Ajustar en áreas de mayor prioridad
+        areas_ordenadas = sorted(areas, key=lambda a: niveles_prioridad[a.id], reverse=True)
+        
+        for i, area in enumerate(areas_ordenadas[:abs(diferencia)]):
+            if diferencia > 0:
+                cupos_minimos[area.id] += 1
+            elif cupos_minimos[area.id] > 1:  # Nunca bajar de 1
+                cupos_minimos[area.id] -= 1
+    
+    # Debug
+    for area in areas:
+        print(f"  🏥 {area.nombre}: {cupos_minimos[area.id]} enfermeros (prioridad {niveles_prioridad[area.id]})")
+    
+    return cupos_minimos
+
+def generar_sugerencias_distribucion_forzada(enfermeros, areas, bimestre, año, cupos_por_area, historial):
+    """
+    Genera sugerencias FORZANDO distribución equitativa
+    """
+    sugerencias = []
+    enfermeros_disponibles = list(enfermeros)
+    contador_por_area = {area.id: 0 for area in areas}
+    
+    # FASE 1: Verificar asignaciones existentes
+    for enfermero in list(enfermeros_disponibles):
+        asignacion_existente = AsignacionCalendario.objects.filter(
+            enfermero=enfermero,
+            bimestre=bimestre,
+            activo=True
+        ).first()
+        
+        if asignacion_existente:
+            fecha_inicio, fecha_fin = calcular_fechas_bimestre(año, bimestre)
+            
+            sugerencias.append({
+                'enfermero': enfermero,
+                'area_sugerida': asignacion_existente.area,
+                'motivo': 'Asignación existente',
+                'puntuacion': 0,
+                'existente': True,
+                'categoria': 'existente',
+                'fecha_inicio': fecha_inicio,
+                'fecha_fin': fecha_fin,
+                'bimestre': bimestre
+            })
+            
+            contador_por_area[asignacion_existente.area.id] += 1
+            enfermeros_disponibles.remove(enfermero)
+    
+    # FASE 2: Distribución forzada por cupos
+    print(f"🎯 Distribuyendo {len(enfermeros_disponibles)} enfermeros por cupos forzados")
+    
+    # Crear lista de "slots" que necesitan llenarse
+    slots_pendientes = []
+    for area in areas:
+        cupo_objetivo = cupos_por_area[area.id]
+        asignados_actual = contador_por_area[area.id]
+        faltantes = cupo_objetivo - asignados_actual
+        
+        for _ in range(faltantes):
+            slots_pendientes.append(area)
+    
+    # Asignar enfermeros a slots
+    area_anterior_por_enfermero = {}
+    
+    for enfermero in enfermeros_disponibles:
+        if not slots_pendientes:
+            break
+        
+        # Obtener área anterior
+        area_anterior = obtener_area_anterior(enfermero, bimestre, historial)
+        area_anterior_por_enfermero[enfermero.id] = area_anterior
+        
+        # Encontrar mejor slot disponible
+        mejor_area = seleccionar_mejor_slot_disponible(
+            enfermero, slots_pendientes, area_anterior
+        )
+        
+        if mejor_area:
+            fecha_inicio, fecha_fin = calcular_fechas_bimestre(año, bimestre)
+            
+            # Generar motivo
+            motivo = generar_motivo_slot(enfermero, mejor_area, area_anterior)
+            
+            sugerencias.append({
+                'enfermero': enfermero,
+                'area_sugerida': mejor_area,
+                'motivo': motivo,
+                'puntuacion': calcular_puntuacion_slot(enfermero, mejor_area),
+                'existente': False,
+                'categoria': determinar_categoria_slot(enfermero, mejor_area),
+                'fecha_inicio': fecha_inicio,
+                'fecha_fin': fecha_fin,
+                'bimestre': bimestre
+            })
+            
+            # Remover slot usado
+            slots_pendientes.remove(mejor_area)
+            contador_por_area[mejor_area.id] += 1
+    
+    return sugerencias
+
+def seleccionar_mejor_slot_disponible(enfermero, slots_disponibles, area_anterior):
+    """
+    Selecciona el mejor slot disponible para un enfermero
+    """
+    if not slots_disponibles:
+        return None
+    
+    # Filtrar slots que no sean el área anterior
+    slots_filtrados = [area for area in slots_disponibles if area != area_anterior]
+    
+    if not slots_filtrados:
+        slots_filtrados = slots_disponibles  # Si no hay opciones, usar todas
+    
+    # PRIORIDAD 1: Área de especialidad
+    if enfermero.areaEspecialidad in slots_filtrados:
+        return enfermero.areaEspecialidad
+    
+    # PRIORIDAD 2: Área con fortalezas
+    mejor_area = None
+    mejor_coincidencias = 0
+    
+    for area in slots_filtrados:
+        coincidencias = contar_fortalezas_coincidentes(enfermero, area)
+        if coincidencias > mejor_coincidencias:
+            mejor_coincidencias = coincidencias
+            mejor_area = area
+    
+    if mejor_area:
+        return mejor_area
+    
+    # PRIORIDAD 3: Área de mayor prioridad disponible
+    return max(slots_filtrados, key=lambda a: obtener_nivel_prioridad(a))
+
+def validar_y_corregir_areas_vacias(sugerencias, areas, cupos_objetivo, bimestre):
+    """
+    VALIDACIÓN OBLIGATORIA: Corrige áreas vacías redistribuyendo enfermeros
+    """
+    print(f"🔍 Validando distribución para bimestre {bimestre}...")
+    
+    # Contar asignaciones por área
+    contador_actual = {area.id: 0 for area in areas}
+    for sugerencia in sugerencias:
+        contador_actual[sugerencia['area_sugerida'].id] += 1
+    
+    # Identificar áreas vacías
+    areas_vacias = []
+    areas_sobrecargadas = []
+    
+    for area in areas:
+        objetivo = cupos_objetivo[area.id]
+        actual = contador_actual[area.id]
+        
+        if actual == 0:
+            areas_vacias.append(area)
+        elif actual > objetivo:
+            areas_sobrecargadas.append((area, actual - objetivo))
+    
+    if areas_vacias:
+        print(f"🚨 CORRIGIENDO {len(areas_vacias)} áreas vacías: {[a.nombre for a in areas_vacias]}")
+        
+        # Redistribuir desde áreas sobrecargadas
+        for area_vacia in areas_vacias:
+            # Buscar enfermero para reasignar
+            enfermero_reasignado = encontrar_enfermero_para_reasignar(
+                sugerencias, areas_sobrecargadas, area_vacia, bimestre
+            )
+            
+            if enfermero_reasignado:
+                # Actualizar sugerencia
+                for sugerencia in sugerencias:
+                    if sugerencia['enfermero'] == enfermero_reasignado:
+                        area_anterior = sugerencia['area_sugerida']
+                        sugerencia['area_sugerida'] = area_vacia
+                        sugerencia['motivo'] = f"🔄 REDISTRIBUCIÓN: Movido desde {area_anterior.nombre} para evitar área vacía"
+                        sugerencia['categoria'] = 'redistribucion'
+                        
+                        print(f"  ↔️ {enfermero_reasignado.username}: {area_anterior.nombre} → {area_vacia.nombre}")
+                        break
+    
+    return sugerencias
+
+def encontrar_enfermero_para_reasignar(sugerencias, areas_sobrecargadas, area_destino, bimestre):
+    """
+    Encuentra el mejor enfermero para reasignar a un área vacía
+    """
+    candidatos = []
+    
+    # Buscar candidatos en áreas sobrecargadas
+    for area_sobrecargada, exceso in areas_sobrecargadas:
+        if exceso > 0:
+            for sugerencia in sugerencias:
+                if (sugerencia['area_sugerida'] == area_sobrecargada and 
+                    not sugerencia['existente']):
+                    
+                    # Calcular compatibilidad
+                    enfermero = sugerencia['enfermero']
+                    compatibilidad = calcular_compatibilidad_reasignacion(enfermero, area_destino)
+                    
+                    candidatos.append((enfermero, compatibilidad, area_sobrecargada))
+    
+    if candidatos:
+        # Seleccionar el más compatible
+        mejor_candidato = max(candidatos, key=lambda x: x[1])
+        return mejor_candidato[0]
+    
+    return None
+
+def calcular_compatibilidad_reasignacion(enfermero, area_destino):
+    """
+    Calcula qué tan compatible es un enfermero con un área para reasignación
+    """
+    puntos = 0
+    
+    # Especialidad
+    if enfermero.areaEspecialidad == area_destino:
+        puntos += 50
+    
+    # Fortalezas
+    puntos += contar_fortalezas_coincidentes(enfermero, area_destino) * 10
+    
+    # Prioridad del área
+    puntos += obtener_nivel_prioridad(area_destino) * 5
+    
+    return puntos
+    
+def contar_fortalezas_coincidentes(enfermero, area):
+    """
+    Cuenta fortalezas coincidentes entre enfermero y área
+    """
+    try:
+        fortalezas_enfermero = set(enfermero.fortalezas.all())
+        fortalezas_area = set(area.fortalezas.all())
+        return len(fortalezas_enfermero.intersection(fortalezas_area))
+    except:
+        return 0
+    
+def obtener_nivel_prioridad(area):
+    """
+    Obtiene el nivel de prioridad de un área
+    """
+    try:
+        nivel = NivelPrioridadArea.objects.get(area=area)
+        return nivel.nivel_prioridad
+    except NivelPrioridadArea.DoesNotExist:
+        return 3
+
+def generar_motivo_slot(enfermero, area, area_anterior):
+    """
+    Genera motivo específico para asignación por slots
+    """
+    motivos = []
+    
+    if enfermero.areaEspecialidad == area:
+        motivos.append("🏆 Especialista")
+    
+    coincidencias = contar_fortalezas_coincidentes(enfermero, area)
+    if coincidencias > 0:
+        motivos.append(f"🎯 {coincidencias} fortaleza(s)")
+    
+    prioridad = obtener_nivel_prioridad(area)
+    if prioridad >= 4:
+        motivos.append(f"🚨 Prioridad {prioridad}")
+    
+    if area_anterior:
+        motivos.append(f"🔄 Evita {area_anterior.nombre}")
+    
+    if not motivos:
+        motivos.append("⚖️ Distribución equitativa")
+    
+    return " | ".join(motivos)
+
+def calcular_puntuacion_slot(enfermero, area):
+    """
+    Calcula puntuación simple para slot
+    """
+    puntos = 0
+    
+    if enfermero.areaEspecialidad == area:
+        puntos += 40
+    
+    puntos += contar_fortalezas_coincidentes(enfermero, area) * 5
+    puntos += obtener_nivel_prioridad(area) * 2
+    
+    return puntos
+
+def determinar_categoria_slot(enfermero, area):
+    """
+    Determina categoría para slot
+    """
+    if enfermero.areaEspecialidad == area:
+        return 'especialidad'
+    elif contar_fortalezas_coincidentes(enfermero, area) > 0:
+        return 'fortalezas'
+    else:
+        return 'equitativa'
+
+def mostrar_resumen_distribucion(sugerencias, areas, bimestre):
+    """
+    Muestra resumen de la distribución generada
+    """
+    contador = {area.id: 0 for area in areas}
+    for sugerencia in sugerencias:
+        contador[sugerencia['area_sugerida'].id] += 1
+    
+    print(f"📊 DISTRIBUCIÓN BIMESTRE {bimestre}:")
+    for area in areas:
+        count = contador[area.id]
+        status = "✅" if count > 0 else "❌"
+        print(f"  {status} {area.nombre}: {count} enfermeros")
