@@ -619,48 +619,106 @@ def toggle_usuario(request, usuario_id):
 
 @login_required
 def almacen_(request):
-    tipo_vista = request.GET.get('tipo', 'medicamentos')  # Por defecto muestra medicamentos
+    """Vista principal del almacén con todas las funcionalidades"""
     
-    if request.method == 'POST':
-        if 'agregar_medicamento' in request.POST:
-            try:
-                nombre = request.POST.get('nombre')
-                gramaje = request.POST.get('gramaje')
-                cantidad = request.POST.get('cantidad', 0)
-                compuestos = request.POST.getlist('compuestos')
-
+    # Obtener el tipo de vista actual
+    tipo_vista = request.GET.get('tipo', 'medicamentos')
+    
+    # Obtener medicamentos y compuestos
+    medicamentos = Medicamento.objects.all().order_by('nombre')
+    compuestos = Compuesto.objects.all()
+    instrumentos = Instrumento.objects.all().order_by('nombre')
+    
+    # Obtener solicitudes pendientes para la pestaña de solicitudes
+    solicitudes_pendientes = SolicitudMedicamento.objects.filter(
+        solicitante=request.user
+    ).order_by('-fecha_solicitud')[:20]  # Últimas 20 solicitudes
+    
+    # Obtener formularios externos para la pestaña de formularios
+    formularios_externos = FormularioMedicamentoExterno.objects.filter(
+        creado_por=request.user
+    ).order_by('-fecha_actualizacion')  # Todos los formularios
+    
+    # Obtener plantillas disponibles
+    plantillas = FormularioMedicamentoExterno.objects.filter(
+        es_plantilla=True
+    ).order_by('nombre_formulario')
+    
+    # Procesar creación de medicamentos
+    if request.method == 'POST' and 'agregar_medicamento' in request.POST:
+        try:
+            nombre = request.POST.get('nombre')
+            gramaje = request.POST.get('gramaje')
+            cantidad = request.POST.get('cantidad')
+            compuestos_ids = request.POST.getlist('compuestos')
+            
+            if not all([nombre, gramaje, cantidad]):
+                messages.error(request, 'Todos los campos son obligatorios')
+            else:
                 medicamento = Medicamento.objects.create(
                     nombre=nombre,
                     gramaje=gramaje,
-                    cantidad_disponible=cantidad
+                    cantidad_disponible=int(cantidad)
                 )
-                medicamento.compuestos.set(compuestos)
+                if compuestos_ids:
+                    medicamento.compuestos.set(compuestos_ids)
+                
+                # Registrar movimiento de inventario
+                MovimientoInventario.objects.create(
+                    medicamento=medicamento,
+                    tipo_movimiento='entrada',
+                    cantidad=int(cantidad),
+                    usuario=request.user,
+                    descripcion=f'Medicamento agregado al sistema: {nombre}'
+                )
+                
                 messages.success(request, 'Medicamento agregado exitosamente')
-            except Exception as e:
-                messages.error(request, f'Error al agregar medicamento: {str(e)}')
-
-        elif 'agregar_instrumento' in request.POST:
-            try:
-                nombre = request.POST.get('nombre')
-                cantidad = request.POST.get('cantidad', 0)
-                especificaciones = request.POST.get('especificaciones')
-
-                Instrumento.objects.create(
+        except Exception as e:
+            messages.error(request, f'Error al agregar medicamento: {str(e)}')
+        
+        return redirect('jefa:almacen_')
+    
+    # Procesar creación de instrumentos
+    if request.method == 'POST' and 'agregar_instrumento' in request.POST:
+        try:
+            nombre = request.POST.get('nombre')
+            cantidad = request.POST.get('cantidad')
+            especificaciones = request.POST.get('especificaciones')
+            
+            if not all([nombre, cantidad, especificaciones]):
+                messages.error(request, 'Todos los campos son obligatorios')
+            else:
+                instrumento = Instrumento.objects.create(
                     nombre=nombre,
-                    cantidad=cantidad,
+                    cantidad=int(cantidad),
                     especificaciones=especificaciones
                 )
+                
+                # Registrar movimiento de inventario
+                MovimientoInventario.objects.create(
+                    instrumento=instrumento,
+                    tipo_movimiento='entrada',
+                    cantidad=int(cantidad),
+                    usuario=request.user,
+                    descripcion=f'Instrumento agregado al sistema: {nombre}'
+                )
+                
                 messages.success(request, 'Instrumento agregado exitosamente')
-            except Exception as e:
-                messages.error(request, f'Error al agregar instrumento: {str(e)}')
-
-    # Siempre cargar ambos tipos de datos
+        except Exception as e:
+            messages.error(request, f'Error al agregar instrumento: {str(e)}')
+        
+        return redirect(f'{reverse("jefa:almacen_")}?tipo=instrumentos')
+    
     context = {
+        'medicamentos': medicamentos,
+        'compuestos': compuestos,
+        'instrumentos': instrumentos,
+        'solicitudes_pendientes': solicitudes_pendientes,
+        'formularios_externos': formularios_externos,
+        'plantillas': plantillas,
         'tipo_vista': tipo_vista,
-        'medicamentos': Medicamento.objects.all().prefetch_related('compuestos'),
-        'instrumentos': Instrumento.objects.all(),
-        'compuestos': Compuesto.objects.all(),
     }
+    
     return render(request, 'usuarioJefa/almacen_.html', context)
 
 @login_required
@@ -8828,3 +8886,245 @@ def aplicar_sugerencias_automaticas(sugerencias_por_bimestre, año):
         print(f"✅ Asignaciones nuevas creadas: {exitosas}")
         print(f"❌ Asignaciones fallidas: {fallidas}")
         print(f"🎯 Todas las asignaciones fueron generadas por el algoritmo de 4 parámetros")
+
+
+#Formularios externos
+#Formularios externos
+#Formularios externos
+
+
+
+
+@login_required
+def crear_formulario_externo(request):
+    """Crear un nuevo formulario de medicamento externo"""
+    if request.method == 'POST':
+        try:
+            # Obtener datos del formulario
+            nombre_formulario = request.POST.get('nombre_formulario')
+            nombre_medicamento = request.POST.get('nombre_medicamento')
+            presentacion = request.POST.get('presentacion')
+            cantidad = request.POST.get('cantidad')
+            fecha_solicitud = request.POST.get('fecha_solicitud')
+            tipo_firma = request.POST.get('tipo_firma', 'impresa')
+            guardar_como_plantilla = request.POST.get('guardar_como_plantilla')
+            plantilla_base_id = request.POST.get('plantilla_base')
+            
+            # Validaciones
+            if not all([nombre_formulario, nombre_medicamento, presentacion, cantidad, fecha_solicitud]):
+                messages.error(request, 'Todos los campos son obligatorios')
+                return redirect('jefa:formularios_externos')
+            
+            # Procesar firma dibujada si existe
+            firma_dibujada = None
+            if tipo_firma == 'dibujada':
+                firma_dibujada = request.POST.get('firma_dibujada')
+            
+            # Crear formulario
+            formulario = FormularioMedicamentoExterno.objects.create(
+                nombre_formulario=nombre_formulario,
+                nombre_medicamento=nombre_medicamento,
+                presentacion=presentacion,
+                cantidad=int(cantidad),
+                fecha_solicitud=datetime.strptime(fecha_solicitud, '%Y-%m-%d').date(),
+                tipo_firma=tipo_firma,
+                firma_dibujada=firma_dibujada,
+                creado_por=request.user,
+                es_plantilla=bool(guardar_como_plantilla),
+                plantilla_base_id=plantilla_base_id if plantilla_base_id else None
+            )
+            
+            messages.success(request, 'Formulario creado exitosamente')
+            
+        except Exception as e:
+            messages.error(request, f'Error al crear formulario: {str(e)}')
+    
+    return redirect('jefa:almacen_')
+
+
+@login_required
+def editar_formulario_externo(request, formulario_id):
+    """Editar un formulario existente"""
+    formulario = get_object_or_404(FormularioMedicamentoExterno, id=formulario_id)
+    
+    if request.method == 'POST':
+        try:
+            # Actualizar campos
+            formulario.nombre_formulario = request.POST.get('nombre_formulario')
+            formulario.nombre_medicamento = request.POST.get('nombre_medicamento')
+            formulario.presentacion = request.POST.get('presentacion')
+            formulario.cantidad = int(request.POST.get('cantidad'))
+            formulario.fecha_solicitud = datetime.strptime(
+                request.POST.get('fecha_solicitud'), '%Y-%m-%d'
+            ).date()
+            formulario.tipo_firma = request.POST.get('tipo_firma', 'impresa')
+            
+            # Procesar firma si es dibujada
+            if formulario.tipo_firma == 'dibujada':
+                firma_data = request.POST.get('firma_dibujada')
+                if firma_data:
+                    formulario.firma_dibujada = firma_data
+            
+            formulario.save()
+            messages.success(request, 'Formulario actualizado exitosamente')
+            
+        except Exception as e:
+            messages.error(request, f'Error al actualizar formulario: {str(e)}')
+    
+    return redirect('jefa:almacen_')
+
+
+@login_required
+def duplicar_formulario_externo(request, formulario_id):
+    """Crear una copia de un formulario existente"""
+    if request.method == 'POST':
+        try:
+            formulario_original = get_object_or_404(FormularioMedicamentoExterno, id=formulario_id)
+            
+            # Crear nueva copia
+            formulario_copia = FormularioMedicamentoExterno.objects.create(
+                nombre_formulario=f"{formulario_original.nombre_formulario} (Copia)",
+                nombre_medicamento=formulario_original.nombre_medicamento,
+                presentacion=formulario_original.presentacion,
+                cantidad=formulario_original.cantidad,
+                fecha_solicitud=timezone.now().date(),
+                tipo_firma=formulario_original.tipo_firma,
+                creado_por=request.user,
+                plantilla_base=formulario_original
+            )
+            
+            messages.success(request, 'Formulario duplicado exitosamente')
+            
+        except Exception as e:
+            messages.error(request, f'Error al duplicar formulario: {str(e)}')
+    
+    return redirect('jefa:almacen_')
+
+
+@login_required
+def eliminar_formulario_externo(request, formulario_id):
+    """Eliminar un formulario"""
+    if request.method == 'POST':
+        try:
+            formulario = get_object_or_404(FormularioMedicamentoExterno, id=formulario_id)
+            nombre_formulario = formulario.nombre_formulario
+            formulario.delete()
+            
+            messages.success(request, f'Formulario "{nombre_formulario}" eliminado exitosamente')
+            
+        except Exception as e:
+            messages.error(request, f'Error al eliminar formulario: {str(e)}')
+    
+    return redirect('jefa:almacen_')
+
+
+@login_required
+def generar_pdf_formulario(request, formulario_id):
+    """Generar vista previa del formulario para impresión"""
+    formulario = get_object_or_404(FormularioMedicamentoExterno, id=formulario_id)
+    
+    context = {
+        'formulario': formulario,
+        'fecha_generacion': timezone.now(),
+    }
+    
+    # Renderizar template específico para PDF/impresión
+    return render(request, 'usuarioJefa/formulario_pdf.html', context)
+
+
+@login_required 
+def get_formulario_externo(request, formulario_id):
+    """Vista para obtener datos de un formulario"""
+    formulario = get_object_or_404(FormularioMedicamentoExterno, id=formulario_id)
+    
+    # Si es una petición AJAX
+    if request.headers.get('X-Requested-With') == 'XMLHttpRequest':
+        context = {
+            'formulario_data': {
+                'id': formulario.id,
+                'nombre_formulario': formulario.nombre_formulario,
+                'nombre_medicamento': formulario.nombre_medicamento,
+                'presentacion': formulario.presentacion,
+                'cantidad': formulario.cantidad,
+                'fecha_solicitud': formulario.fecha_solicitud.strftime('%Y-%m-%d'),
+                'tipo_firma': formulario.tipo_firma,
+                'version': formulario.version,
+            }
+        }
+        return render(request, 'usuarioJefa/formulario_data.html', context)
+    
+    # Si no es AJAX, redirigir al almacén
+    return redirect('jefa:almacen_')
+
+
+@login_required
+def solicitar_medicamento_interno(request):
+    """Solicitar medicamentos internos a farmacia"""
+    if request.method == 'POST':
+        try:
+            medicamento_id = request.POST.get('medicamento_id')
+            cantidad = request.POST.get('cantidad')
+            observaciones = request.POST.get('observaciones', '')
+            
+            if not medicamento_id or not cantidad:
+                messages.error(request, 'Medicamento y cantidad son obligatorios')
+                return redirect('jefa:almacen_')
+            
+            medicamento = get_object_or_404(Medicamento, id=medicamento_id)
+            
+            # Crear solicitud
+            solicitud = SolicitudMedicamento.objects.create(
+                medicamento=medicamento,
+                cantidad_solicitada=int(cantidad),
+                solicitante=request.user,
+                observaciones=observaciones
+            )
+            
+            # Registrar movimiento
+            MovimientoInventario.objects.create(
+                medicamento=medicamento,
+                tipo_movimiento='solicitud',
+                cantidad=int(cantidad),
+                usuario=request.user,
+                descripcion=f'Solicitud a farmacia: {observaciones}',
+                solicitud_relacionada=solicitud
+            )
+            
+            messages.success(request, f'Solicitud de {cantidad} unidades de {medicamento.nombre} enviada a farmacia')
+            
+        except Exception as e:
+            messages.error(request, f'Error al crear solicitud: {str(e)}')
+    
+    return redirect('jefa:almacen_')
+
+
+@login_required
+def confirmar_entrega_medicamento(request, solicitud_id):
+    """Confirmar entrega de medicamento solicitado"""
+    if request.method == 'POST':
+        try:
+            solicitud = get_object_or_404(SolicitudMedicamento, id=solicitud_id)
+            
+            if solicitud.confirmada:
+                messages.warning(request, 'Esta solicitud ya fue confirmada')
+                return redirect('jefa:almacen_')
+            
+            # Confirmar entrega
+            solicitud.confirmar_entrega()
+            
+            # Registrar movimiento
+            MovimientoInventario.objects.create(
+                medicamento=solicitud.medicamento,
+                tipo_movimiento='confirmacion',
+                cantidad=solicitud.cantidad_solicitada,
+                usuario=request.user,
+                descripcion='Confirmación de entrega de farmacia',
+                solicitud_relacionada=solicitud
+            )
+            
+            messages.success(request, f'Entrega confirmada: {solicitud.cantidad_solicitada} unidades de {solicitud.medicamento.nombre}')
+            
+        except Exception as e:
+            messages.error(request, f'Error al confirmar entrega: {str(e)}')
+    
+    return redirect('jefa:almacen_')

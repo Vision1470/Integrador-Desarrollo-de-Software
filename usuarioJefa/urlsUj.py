@@ -116,4 +116,22 @@ path('personal-temporal/crear/', views.crear_personal_temporal_nuevo, name='crea
 path('personal-temporal/reactivar/', views.reactivar_personal_historico, name='reactivar_personal_historico'),
 path('personal-temporal/desactivar/', views.desactivar_personal_temporal, name='desactivar_personal_temporal'),
 path('historial-personal-temporal/<int:personal_id>/', views.historial_personal_temporal_ajax, name='historial_personal_temporal_ajax'),
+
+  # URLs de formularios externos
+    # URLs simplificadas para formularios externos
+
+    # URLs de formularios externos
+    path('crear-formulario-externo/', views.crear_formulario_externo, name='crear_formulario_externo'),
+    path('editar-formulario-externo/<int:formulario_id>/', views.editar_formulario_externo, name='editar_formulario_externo'),
+    path('duplicar-formulario-externo/<int:formulario_id>/', views.duplicar_formulario_externo, name='duplicar_formulario_externo'),
+    path('eliminar-formulario-externo/<int:formulario_id>/', views.eliminar_formulario_externo, name='eliminar_formulario_externo'),
+    path('generar-pdf-formulario/<int:formulario_id>/', views.generar_pdf_formulario, name='generar_pdf_formulario'),
+    path('get-formulario-externo/<int:formulario_id>/', views.get_formulario_externo, name='get_formulario_externo'),
+    
+    # URLs de solicitudes internas (estas se mantienen)
+    path('solicitar-medicamento-interno/', views.solicitar_medicamento_interno, name='solicitar_medicamento_interno'),
+    path('confirmar-entrega/<int:solicitud_id>/', views.confirmar_entrega_medicamento, name='confirmar_entrega_medicamento'),
+    # URLs de solicitudes internas
+    path('solicitar-medicamento-interno/', views.solicitar_medicamento_interno, name='solicitar_medicamento_interno'),
+    path('confirmar-entrega/<int:solicitud_id>/', views.confirmar_entrega_medicamento, name='confirmar_entrega_medicamento'),
 ]

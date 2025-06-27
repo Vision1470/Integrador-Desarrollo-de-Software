@@ -618,3 +618,146 @@ class HistorialPersonalTemporal(models.Model):
     class Meta:
         verbose_name = "Historial Personal Temporal"
         ordering = ['-fecha']
+
+
+
+class FormularioMedicamentoExterno(models.Model):
+    TIPOS_FIRMA = [
+        ('impresa', 'Imprimir (sin firma)'),
+        ('digital', 'Firma Digital'),
+        ('dibujada', 'Firma Dibujada'),
+    ]
+    
+    # Información del formulario
+    nombre_formulario = models.CharField(max_length=200, help_text="Nombre para identificar este formulario")
+    nombre_medicamento = models.CharField(max_length=200)
+    presentacion = models.CharField(max_length=200)
+    cantidad = models.PositiveIntegerField()
+    fecha_solicitud = models.DateField()
+    
+    # Versión y fechas
+    version = models.PositiveIntegerField(default=1)
+    fecha_creacion = models.DateTimeField(auto_now_add=True)
+    fecha_actualizacion = models.DateTimeField(auto_now=True)
+    
+    # Usuario que crea el formulario
+    creado_por = models.ForeignKey(
+        'login.Usuarios',
+        on_delete=models.PROTECT,
+        limit_choices_to={'tipoUsuario': 'JF'}
+    )
+    
+    # Tipo de firma elegido
+    tipo_firma = models.CharField(max_length=20, choices=TIPOS_FIRMA, default='impresa')
+    firma_digital = models.TextField(blank=True, null=True, help_text="Contenido de la firma digital")
+    firma_dibujada = models.TextField(blank=True, null=True, help_text="Datos de la firma dibujada en base64")
+    
+    # Para guardar como plantilla
+    es_plantilla = models.BooleanField(default=False)
+    plantilla_base = models.ForeignKey(
+        'self', 
+        on_delete=models.SET_NULL, 
+        null=True, 
+        blank=True,
+        help_text="Formulario base si fue creado desde una plantilla"
+    )
+    
+    class Meta:
+        verbose_name = "Formulario de Medicamento Externo"
+        verbose_name_plural = "Formularios de Medicamentos Externos"
+        ordering = ['-fecha_actualizacion']
+    
+    def __str__(self):
+        return f"{self.nombre_formulario} - {self.nombre_medicamento} (v{self.version})"
+    
+    def crear_nueva_version(self):
+        """Crea una nueva versión de este formulario"""
+        nueva_version = FormularioMedicamentoExterno.objects.create(
+            nombre_formulario=f"{self.nombre_formulario} v{self.version + 1}",
+            nombre_medicamento=self.nombre_medicamento,
+            presentacion=self.presentacion,
+            cantidad=self.cantidad,
+            fecha_solicitud=self.fecha_solicitud,
+            version=self.version + 1,
+            creado_por=self.creado_por,
+            tipo_firma=self.tipo_firma,
+            plantilla_base=self.plantilla_base or self
+        )
+        return nueva_version
+
+
+class SolicitudMedicamento(models.Model):
+    """Modelo para gestionar solicitudes de medicamentos internos a farmacia"""
+    medicamento = models.ForeignKey(Medicamento, on_delete=models.PROTECT)
+    cantidad_solicitada = models.PositiveIntegerField()
+    fecha_solicitud = models.DateTimeField(auto_now_add=True)
+    
+    # Estados de la solicitud
+    confirmada = models.BooleanField(default=False)
+    fecha_confirmacion = models.DateTimeField(null=True, blank=True)
+    
+    # Usuario que solicita
+    solicitante = models.ForeignKey(
+        'login.Usuarios',
+        on_delete=models.PROTECT,
+        limit_choices_to={'tipoUsuario__in': ['JF', 'EN']}
+    )
+    
+    observaciones = models.TextField(blank=True)
+    
+    class Meta:
+        verbose_name = "Solicitud de Medicamento"
+        verbose_name_plural = "Solicitudes de Medicamentos"
+        ordering = ['-fecha_solicitud']
+    
+    def __str__(self):
+        return f"Solicitud: {self.medicamento.nombre} - {self.cantidad_solicitada} unidades"
+    
+    def confirmar_entrega(self):
+        """Confirma la entrega y actualiza el stock"""
+        if not self.confirmada:
+            self.medicamento.cantidad_disponible += self.cantidad_solicitada
+            self.medicamento.save()
+            self.confirmada = True
+            self.fecha_confirmacion = timezone.now()
+            self.save()
+
+
+class MovimientoInventario(models.Model):
+    TIPOS_MOVIMIENTO = [
+        ('entrada', 'Entrada'),
+        ('salida', 'Salida'),
+        ('solicitud', 'Solicitud a farmacia'),
+        ('confirmacion', 'Confirmación de entrega'),
+    ]
+    
+    # Puede ser medicamento o instrumento
+    medicamento = models.ForeignKey(Medicamento, on_delete=models.PROTECT, null=True, blank=True)
+    instrumento = models.ForeignKey(Instrumento, on_delete=models.PROTECT, null=True, blank=True)
+    
+    tipo_movimiento = models.CharField(max_length=20, choices=TIPOS_MOVIMIENTO)
+    cantidad = models.IntegerField()
+    fecha_movimiento = models.DateTimeField(auto_now_add=True)
+    
+    # Usuario responsable del movimiento
+    usuario = models.ForeignKey('login.Usuarios', on_delete=models.PROTECT)
+    
+    # Descripción del movimiento
+    descripcion = models.TextField(blank=True)
+    
+    # Relación con solicitud si aplica
+    solicitud_relacionada = models.ForeignKey(
+        SolicitudMedicamento, 
+        on_delete=models.SET_NULL, 
+        null=True, 
+        blank=True
+    )
+    
+    class Meta:
+        verbose_name = "Movimiento de Inventario"
+        verbose_name_plural = "Movimientos de Inventario"
+        ordering = ['-fecha_movimiento']
+    
+    def __str__(self):
+        item = self.medicamento or self.instrumento
+        return f"{self.get_tipo_movimiento_display()}: {item} - {self.cantidad} unidades"

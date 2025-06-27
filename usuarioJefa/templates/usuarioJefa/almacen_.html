@@ -68,6 +68,8 @@
             font-weight: 600;
             text-transform: uppercase;
             transition: background-color 0.3s ease;
+            border: none;
+            cursor: pointer;
         }
 
         .menu-button:hover {
@@ -147,7 +149,7 @@
             overflow-x: auto;
         }
 
-        .medicines-table, .instruments-table {
+        .medicines-table, .instruments-table, .formularios-table, .solicitudes-table {
             width: 100%;
             border-collapse: separate;
             border-spacing: 0;
@@ -159,7 +161,7 @@
             background-color: var(--table-background);
         }
 
-        .medicines-table th, .instruments-table th {
+        .medicines-table th, .instruments-table th, .formularios-table th, .solicitudes-table th {
             background-color: var(--primary-color);
             color: var(--white);
             padding: 12px;
@@ -168,25 +170,29 @@
             border-bottom: 2px solid var(--primary-color);
         }
 
-        .medicines-table td, .instruments-table td {
+        .medicines-table td, .instruments-table td, .formularios-table td, .solicitudes-table td {
             padding: 12px;
             border-bottom: 2px solid var(--primary-color);
             border-right: 2px solid var(--primary-color);
         }
 
-        .medicines-table tr:last-child td, .instruments-table tr:last-child td {
+        .medicines-table tr:last-child td, .instruments-table tr:last-child td, 
+        .formularios-table tr:last-child td, .solicitudes-table tr:last-child td {
             border-bottom: none;
         }
 
-        .medicines-table td:last-child, .instruments-table td:last-child {
+        .medicines-table td:last-child, .instruments-table td:last-child, 
+        .formularios-table td:last-child, .solicitudes-table td:last-child {
             border-right: none;
         }
 
-        .medicines-table tr:nth-child(even), .instruments-table tr:nth-child(even) {
+        .medicines-table tr:nth-child(even), .instruments-table tr:nth-child(even),
+        .formularios-table tr:nth-child(even), .solicitudes-table tr:nth-child(even) {
             background-color: #F6F9F7;
         }
 
-        .medicines-table tr:hover, .instruments-table tr:hover {
+        .medicines-table tr:hover, .instruments-table tr:hover,
+        .formularios-table tr:hover, .solicitudes-table tr:hover {
             background-color: #E6EAE7;
         }
 
@@ -201,10 +207,24 @@
             font-weight: 600;
             text-transform: uppercase;
             transition: background-color 0.3s ease;
+            margin-right: 5px;
         }
 
         .action-button:hover {
             background-color: var(--accent-color);
+        }
+
+        .action-button.success {
+            background-color: #28a745;
+        }
+
+        .action-button.danger {
+            background-color: #dc3545;
+        }
+
+        .action-button.warning {
+            background-color: #ffc107;
+            color: #000;
         }
 
         .modal {
@@ -226,6 +246,8 @@
             border-radius: 8px;
             max-width: 500px;
             width: 100%;
+            max-height: 80vh;
+            overflow-y: auto;
         }
 
         .modal-content h3 {
@@ -240,7 +262,7 @@
             gap: 15px;
         }
 
-        .modal-content input, .modal-content textarea {
+        .modal-content input, .modal-content textarea, .modal-content select {
             padding: 10px;
             border: 1px solid var(--border-color);
             border-radius: 4px;
@@ -282,12 +304,56 @@
             margin-bottom: 20px;
         }
 
+        .status-badge {
+            padding: 4px 8px;
+            border-radius: 4px;
+            font-size: 0.8rem;
+            font-weight: bold;
+            text-transform: uppercase;
+        }
+
+        .status-borrador {
+            background-color: #f8f9fa;
+            color: #6c757d;
+        }
+
+        .status-enviado {
+            background-color: #cce5ff;
+            color: #0066cc;
+        }
+
+        .status-aprobado {
+            background-color: #d4edda;
+            color: #155724;
+        }
+
+        .status-rechazado {
+            background-color: #f8d7da;
+            color: #721c24;
+        }
+
+        .form-group {
+            margin-bottom: 15px;
+        }
+
+        .form-group label {
+            display: block;
+            margin-bottom: 5px;
+            font-weight: bold;
+        }
+
+        .checkbox-group {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 10px;
+        }
+
         @media (max-width: 768px) {
             .container {
                 padding: 20px;
             }
 
-            .medicines-table, .instruments-table {
+            .medicines-table, .instruments-table, .formularios-table, .solicitudes-table {
                 font-size: 0.9rem;
             }
             
@@ -357,13 +423,21 @@
                         Instrumentos
                     </a>
                 </li>
+                <li>
+                    <a href="{% url 'jefa:almacen_' %}?tipo=formularios" class="{% if tipo_vista == 'formularios' %}active{% endif %}">
+                        Formularios Externos
+                    </a>
+                </li>
+                
             </ul>
 
             <!-- Contenido de la pestaña Medicamentos -->
             <div id="tabMedicamentos" class="tab-content {% if tipo_vista == 'medicamentos' or not tipo_vista %}active{% endif %}">
                 <div class="tab-header">
                     <h2>Medicamentos</h2>
-                    <button class="action-button" onclick="mostrarFormularioCrearMedicamento()">Agregar Medicamento</button>
+                    <div>
+                        <button class="action-button" onclick="mostrarFormularioCrearMedicamento()">Agregar Medicamento</button>
+                    </div>
                 </div>
                 
                 <div class="table-container">
@@ -392,7 +466,7 @@
                                 <td>{{ medicamento.fecha_actualizacion|date:"d/m/Y H:i" }}</td>
                                 <td>
                                     <button class="action-button" onclick="mostrarFormularioEditarMedicamento({{ medicamento.id }})">Editar</button>
-                                    <button class="action-button" onclick="confirmarEliminacion('medicamento', {{ medicamento.id }})">Eliminar</button>
+                                    <button class="action-button danger" onclick="confirmarEliminacion('medicamento', {{ medicamento.id }})">Eliminar</button>
                                 </td>
                             </tr>
                             {% empty %}
@@ -432,12 +506,120 @@
                                 <td>{{ instrumento.fecha_actualizacion|date:"d/m/Y H:i" }}</td>
                                 <td>
                                     <button class="action-button" onclick="mostrarFormularioEditarInstrumento({{ instrumento.id }})">Editar</button>
-                                    <button class="action-button" onclick="confirmarEliminacion('instrumento', {{ instrumento.id }})">Eliminar</button>
+                                    <button class="action-button danger" onclick="confirmarEliminacion('instrumento', {{ instrumento.id }})">Eliminar</button>
                                 </td>
                             </tr>
                             {% empty %}
                             <tr>
                                 <td colspan="5">No hay instrumentos registrados</td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+
+            <!-- Contenido de la pestaña Formularios Externos -->
+            <div id="tabFormularios" class="tab-content {% if tipo_vista == 'formularios' %}active{% endif %}">
+                <div class="tab-header">
+                    <h2>Formularios de Medicamentos Externos</h2>
+                    <div>
+                        <button class="action-button primary" onclick="mostrarFormularioCrearExterno()">Nuevo Formulario</button>
+                    </div>
+                </div>
+
+                <!-- Plantillas rápidas -->
+                {% if plantillas %}
+                <div style="background-color: #f8f9fa; padding: 15px; border-radius: 8px; margin-bottom: 20px;">
+                    <h4 style="color: var(--primary-color); margin-bottom: 10px;">Plantillas Disponibles:</h4>
+                    <div style="display: flex; gap: 10px; flex-wrap: wrap;">
+                        {% for plantilla in plantillas %}
+                        <button class="action-button" onclick="usarPlantillaRapida({{ plantilla.id }})" style="font-size: 0.8rem;">
+                            {{ plantilla.nombre_formulario|truncatechars:20 }}
+                        </button>
+                        {% endfor %}
+                    </div>
+                </div>
+                {% endif %}
+                
+                <div class="table-container">
+                    <table class="formularios-table">
+                        <thead>
+                            <tr>
+                                <th>Nombre del Formulario</th>
+                                <th>Medicamento</th>
+                                <th>Cantidad</th>
+                                <th>Fecha Solicitud</th>
+                                <th>Tipo de Firma</th>
+                                <th>Acciones</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for formulario in formularios_externos %}
+                            <tr>
+                                <td>{{ formulario.nombre_formulario|truncatechars:30 }}</td>
+                                <td>{{ formulario.nombre_medicamento }}</td>
+                                <td>{{ formulario.cantidad }}</td>
+                                <td>{{ formulario.fecha_solicitud|date:"d/m/Y" }}</td>
+                                <td>{{ formulario.get_tipo_firma_display }}</td>
+                                <td>
+                                    <button class="action-button" onclick="editarFormularioExterno({{ formulario.id }})">Editar</button>
+                                    <button class="action-button warning" onclick="duplicarFormularioExterno({{ formulario.id }})">Duplicar</button>
+                                    <a href="{% url 'jefa:generar_pdf_formulario' formulario.id %}#print" class="action-button" target="_blank">PDF</a>
+                                    <button class="action-button danger" onclick="eliminarFormularioExterno({{ formulario.id }})">Eliminar</button>
+                                </td>
+                            </tr>
+                            {% empty %}
+                            <tr>
+                                <td colspan="6">No hay formularios creados. <a href="{% url 'jefa:almacen_' %}">Crear el primero</a></td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+
+            <!-- Contenido de la pestaña Solicitudes Internas -->
+            <div id="tabSolicitudes" class="tab-content {% if tipo_vista == 'solicitudes' %}active{% endif %}">
+                <div class="tab-header">
+                    <h2>Solicitudes a Farmacia</h2>
+                </div>
+                
+                <div class="table-container">
+                    <table class="solicitudes-table">
+                        <thead>
+                            <tr>
+                                <th>Medicamento</th>
+                                <th>Cantidad Solicitada</th>
+                                <th>Fecha Solicitud</th>
+                                <th>Estado</th>
+                                <th>Observaciones</th>
+                                <th>Acciones</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for solicitud in solicitudes_pendientes %}
+                            <tr>
+                                <td>{{ solicitud.medicamento.nombre }}</td>
+                                <td>{{ solicitud.cantidad_solicitada }}</td>
+                                <td>{{ solicitud.fecha_solicitud|date:"d/m/Y H:i" }}</td>
+                                <td>
+                                    {% if solicitud.confirmada %}
+                                        <span class="status-badge status-aprobado">Confirmada</span>
+                                    {% else %}
+                                        <span class="status-badge status-enviado">Pendiente</span>
+                                    {% endif %}
+                                </td>
+                                <td>{{ solicitud.observaciones|truncatechars:50 }}</td>
+                                <td>
+                                    {% if not solicitud.confirmada %}
+                                        <button class="action-button success" onclick="confirmarEntrega({{ solicitud.id }})">Confirmar Entrega</button>
+                                    {% endif %}
+                                </td>
+                            </tr>
+                            {% empty %}
+                            <tr>
+                                <td colspan="6">No hay solicitudes pendientes</td>
                             </tr>
                             {% endfor %}
                         </tbody>
@@ -453,27 +635,31 @@
                 <form method="POST">
                     {% csrf_token %}
                     <input type="hidden" name="agregar_medicamento" value="1">
-                    <p>
+                    <div class="form-group">
                         <label>Nombre:</label>
                         <input type="text" name="nombre" required>
-                    </p>
-                    <p>
+                    </div>
+                    <div class="form-group">
                         <label>Gramaje:</label>
                         <input type="text" name="gramaje" required>
-                    </p>
-                    <p>
-                        <label>Compuestos:</label><br>
+                    </div>
+                    <div class="form-group">
+                        <label>Compuestos:</label>
                         {% for compuesto in compuestos %}
-                            <input type="checkbox" name="compuestos" value="{{ compuesto.id }}">
-                            {{ compuesto.nombre }}<br>
+                            <div class="checkbox-group">
+                                <input type="checkbox" name="compuestos" value="{{ compuesto.id }}" id="comp_{{ compuesto.id }}">
+                                <label for="comp_{{ compuesto.id }}">{{ compuesto.nombre }}</label>
+                            </div>
                         {% endfor %}
-                    </p>
-                    <p>
+                    </div>
+                    <div class="form-group">
                         <label>Cantidad:</label>
                         <input type="number" name="cantidad" required>
-                    </p>
-                    <button type="submit">Guardar</button>
-                    <button type="button" onclick="ocultarModal('modalCrearMedicamento')">Cancelar</button>
+                    </div>
+                    <div style="display: flex; gap: 10px;">
+                        <button type="submit">Guardar</button>
+                        <button type="button" onclick="ocultarModal('modalCrearMedicamento')">Cancelar</button>
+                    </div>
                 </form>
             </div>
         </div>
@@ -484,27 +670,31 @@
                 <h3>Editar Medicamento</h3>
                 <form method="POST" id="formEditarMedicamento">
                     {% csrf_token %}
-                    <p>
+                    <div class="form-group">
                         <label>Nombre:</label>
                         <input type="text" name="nombre" required>
-                    </p>
-                    <p>
+                    </div>
+                    <div class="form-group">
                         <label>Gramaje:</label>
                         <input type="text" name="gramaje" required>
-                    </p>
-                    <p>
-                        <label>Compuestos:</label><br>
+                    </div>
+                    <div class="form-group">
+                        <label>Compuestos:</label>
                         {% for compuesto in compuestos %}
-                            <input type="checkbox" name="compuestos" value="{{ compuesto.id }}">
-                            {{ compuesto.nombre }}<br>
+                            <div class="checkbox-group">
+                                <input type="checkbox" name="compuestos" value="{{ compuesto.id }}" id="edit_comp_{{ compuesto.id }}">
+                                <label for="edit_comp_{{ compuesto.id }}">{{ compuesto.nombre }}</label>
+                            </div>
                         {% endfor %}
-                    </p>
-                    <p>
+                    </div>
+                    <div class="form-group">
                         <label>Cantidad:</label>
                         <input type="number" name="cantidad" required>
-                    </p>
-                    <button type="submit">Guardar cambios</button>
-                    <button type="button" onclick="ocultarModal('modalEditarMedicamento')">Cancelar</button>
+                    </div>
+                    <div style="display: flex; gap: 10px;">
+                        <button type="submit">Guardar cambios</button>
+                        <button type="button" onclick="ocultarModal('modalEditarMedicamento')">Cancelar</button>
+                    </div>
                 </form>
             </div>
         </div>
@@ -516,20 +706,22 @@
                 <form method="POST">
                     {% csrf_token %}
                     <input type="hidden" name="agregar_instrumento" value="1">
-                    <p>
+                    <div class="form-group">
                         <label>Nombre:</label>
                         <input type="text" name="nombre" required>
-                    </p>
-                    <p>
+                    </div>
+                    <div class="form-group">
                         <label>Cantidad:</label>
                         <input type="number" name="cantidad" required>
-                    </p>
-                    <p>
-                        <label>Especificaciones:</label><br>
+                    </div>
+                    <div class="form-group">
+                        <label>Especificaciones:</label>
                         <textarea name="especificaciones" required></textarea>
-                    </p>
-                    <button type="submit">Guardar</button>
-                    <button type="button" onclick="ocultarModal('modalCrearInstrumento')">Cancelar</button>
+                    </div>
+                    <div style="display: flex; gap: 10px;">
+                        <button type="submit">Guardar</button>
+                        <button type="button" onclick="ocultarModal('modalCrearInstrumento')">Cancelar</button>
+                    </div>
                 </form>
             </div>
         </div>
@@ -540,20 +732,49 @@
                 <h3>Editar Instrumento</h3>
                 <form method="POST" id="formEditarInstrumento">
                     {% csrf_token %}
-                    <p>
+                    <div class="form-group">
                         <label>Nombre:</label>
                         <input type="text" name="nombre" required>
-                    </p>
-                    <p>
+                    </div>
+                    <div class="form-group">
                         <label>Cantidad:</label>
                         <input type="number" name="cantidad" required>
-                    </p>
-                    <p>
-                        <label>Especificaciones:</label><br>
+                    </div>
+                    <div class="form-group">
+                        <label>Especificaciones:</label>
                         <textarea name="especificaciones" required></textarea>
-                    </p>
-                    <button type="submit">Guardar cambios</button>
-                    <button type="button" onclick="ocultarModal('modalEditarInstrumento')">Cancelar</button>
+                    </div>
+                    <div style="display: flex; gap: 10px;">
+                        <button type="submit">Guardar cambios</button>
+                        <button type="button" onclick="ocultarModal('modalEditarInstrumento')">Cancelar</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+
+        <!-- Modal para solicitar medicamento interno -->
+        <div id="modalSolicitarMedicamento" class="modal hidden">
+            <div class="modal-content">
+                <h3>Solicitar Medicamento a Farmacia</h3>
+                <form method="POST" action="{% url 'jefa:solicitar_medicamento_interno' %}">
+                    {% csrf_token %}
+                    <input type="hidden" name="medicamento_id" id="solicitar_medicamento_id">
+                    <div class="form-group">
+                        <label>Medicamento:</label>
+                        <input type="text" id="solicitar_medicamento_nombre" readonly>
+                    </div>
+                    <div class="form-group">
+                        <label>Cantidad a solicitar:</label>
+                        <input type="number" name="cantidad" required min="1">
+                    </div>
+                    <div class="form-group">
+                        <label>Observaciones:</label>
+                        <textarea name="observaciones" placeholder="Motivo de la solicitud (opcional)"></textarea>
+                    </div>
+                    <div style="display: flex; gap: 10px;">
+                        <button type="submit">Enviar Solicitud</button>
+                        <button type="button" onclick="ocultarModal('modalSolicitarMedicamento')">Cancelar</button>
+                    </div>
                 </form>
             </div>
         </div>
@@ -565,24 +786,86 @@
                 <p>¿Estás seguro de que deseas eliminar este elemento?</p>
                 <form id="formEliminar" method="POST">
                     {% csrf_token %}
-                    <button type="button" onclick="ocultarModal('modalConfirmacion')">Cancelar</button>
-                    <button type="submit">Confirmar</button>
+                    <div style="display: flex; gap: 10px;">
+                        <button type="button" onclick="ocultarModal('modalConfirmacion')">Cancelar</button>
+                        <button type="submit" class="action-button danger">Confirmar</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+
+        <!-- Modal para crear formulario externo -->
+        <div id="modalCrearFormularioExterno" class="modal hidden">
+            <div class="modal-content">
+                <h3>Nuevo Formulario de Medicamento Externo</h3>
+                <form method="POST" action="{% url 'jefa:crear_formulario_externo' %}">
+                    {% csrf_token %}
+                    <div class="form-group">
+                        <label>Nombre del Formulario:</label>
+                        <input type="text" name="nombre_formulario" required placeholder="Ej: Solicitud Paracetamol Enero 2025">
+                    </div>
+                    <div class="form-group">
+                        <label>Nombre del Medicamento:</label>
+                        <input type="text" name="nombre_medicamento" required placeholder="Ej: Paracetamol">
+                    </div>
+                    <div class="form-group">
+                        <label>Presentación:</label>
+                        <input type="text" name="presentacion" required placeholder="Ej: Tabletas de 500mg">
+                    </div>
+                    <div class="form-group">
+                        <label>Cantidad:</label>
+                        <input type="number" name="cantidad" required min="1" placeholder="Ej: 100">
+                    </div>
+                    <div class="form-group">
+                        <label>Fecha de Solicitud:</label>
+                        <input type="date" name="fecha_solicitud" required id="fecha_solicitud_rapida">
+                    </div>
+                    <div class="form-group">
+                        <label>Tipo de Firma:</label>
+                        <select name="tipo_firma">
+                            <option value="impresa">Imprimir (sin firma)</option>
+                            <option value="digital">Firma Digital</option>
+                            <option value="dibujada">Firma Dibujada</option>
+                        </select>
+                    </div>
+                    <input type="hidden" name="plantilla_base" id="plantilla_base_rapida">
+                    <div style="display: flex; gap: 10px;">
+                        <button type="button" onclick="ocultarModal('modalCrearFormularioExterno')">Cancelar</button>
+                        <button type="submit">Crear Formulario</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+
+        <!-- Modal de confirmación para entrega -->
+        <div id="modalConfirmarEntrega" class="modal hidden">
+            <div class="modal-content">
+                <h3>Confirmar Entrega</h3>
+                <p>¿Confirmas que has recibido el medicamento solicitado?</p>
+                <form id="formConfirmarEntrega" method="POST">
+                    {% csrf_token %}
+                    <div style="display: flex; gap: 10px;">
+                        <button type="button" onclick="ocultarModal('modalConfirmarEntrega')">Cancelar</button>
+                        <button type="submit" class="action-button success">Confirmar Entrega</button>
+                    </div>
                 </form>
             </div>
         </div>
     </div>
 
     <script>
-        // El JavaScript ya no necesita la función de cambiar vista porque ahora
-        // los cambios de pestaña se manejan con enlaces de navegación
-        // que recargará la página con el parámetro "tipo" correcto
-
         function mostrarFormularioCrearMedicamento() {
             document.getElementById('modalCrearMedicamento').classList.remove('hidden');
         }
 
         function mostrarFormularioCrearInstrumento() {
             document.getElementById('modalCrearInstrumento').classList.remove('hidden');
+        }
+
+        function mostrarFormularioSolicitar(medicamentoId, nombreMedicamento) {
+            document.getElementById('solicitar_medicamento_id').value = medicamentoId;
+            document.getElementById('solicitar_medicamento_nombre').value = nombreMedicamento;
+            document.getElementById('modalSolicitarMedicamento').classList.remove('hidden');
         }
 
         async function mostrarFormularioEditarMedicamento(id) {
@@ -620,9 +903,137 @@
             document.getElementById('formEliminar').action = `/jefa/eliminar-${tipo}/${id}/`;
         }
 
+        function confirmarEntrega(solicitudId) {
+            document.getElementById('modalConfirmarEntrega').classList.remove('hidden');
+            document.getElementById('formConfirmarEntrega').action = `/jefa/confirmar-entrega/${solicitudId}/`;
+        }
+
         function ocultarModal(modalId) {
             document.getElementById(modalId).classList.add('hidden');
         }
+
+        function mostrarFormularioCrearExterno() {
+            // Establecer fecha actual
+            const today = new Date().toISOString().split('T')[0];
+            document.getElementById('fecha_solicitud_rapida').value = today;
+            document.getElementById('plantilla_base_rapida').value = '';
+            document.getElementById('modalCrearFormularioExterno').classList.remove('hidden');
+        }
+
+        function usarPlantillaRapida(plantillaId) {
+            // Cargar datos de la plantilla usando fetch
+            fetch(`/jefa/get-formulario-externo/${plantillaId}/`, {
+                headers: {
+                    'X-Requested-With': 'XMLHttpRequest',
+                }
+            })
+            .then(response => response.text())
+            .then(htmlContent => {
+                const tempDiv = document.createElement('div');
+                tempDiv.innerHTML = htmlContent;
+                
+                const scriptElement = tempDiv.querySelector('#formulario-data');
+                if (scriptElement) {
+                    const data = JSON.parse(scriptElement.textContent);
+                    
+                    // Rellenar formulario rápido
+                    const form = document.querySelector('#modalCrearFormularioExterno form');
+                    form.querySelector('input[name="nombre_formulario"]').value = data.nombre_formulario + ' (Copia)';
+                    form.querySelector('input[name="nombre_medicamento"]').value = data.nombre_medicamento;
+                    form.querySelector('input[name="presentacion"]').value = data.presentacion;
+                    form.querySelector('input[name="cantidad"]').value = data.cantidad;
+                    form.querySelector('select[name="tipo_firma"]').value = data.tipo_firma;
+                    document.getElementById('plantilla_base_rapida').value = plantillaId;
+                    
+                    // Fecha actual
+                    const today = new Date().toISOString().split('T')[0];
+                    document.getElementById('fecha_solicitud_rapida').value = today;
+                    
+                    document.getElementById('modalCrearFormularioExterno').classList.remove('hidden');
+                }
+            })
+            .catch(error => {
+                console.error('Error al cargar plantilla:', error);
+                alert('Error al cargar la plantilla');
+            });
+        }
+
+        function duplicarFormularioExterno(formularioId) {
+            if (confirm('¿Desea crear una copia de este formulario?')) {
+                const form = document.createElement('form');
+                form.method = 'POST';
+                form.action = `/jefa/duplicar-formulario-externo/${formularioId}/`;
+                
+                const csrfToken = document.querySelector('[name=csrfmiddlewaretoken]').value;
+                const csrfInput = document.createElement('input');
+                csrfInput.type = 'hidden';
+                csrfInput.name = 'csrfmiddlewaretoken';
+                csrfInput.value = csrfToken;
+                
+                form.appendChild(csrfInput);
+                document.body.appendChild(form);
+                form.submit();
+            }
+        }
+
+        function eliminarFormularioExterno(formularioId) {
+            if (confirm('¿Está seguro de que desea eliminar este formulario? Esta acción no se puede deshacer.')) {
+                const form = document.createElement('form');
+                form.method = 'POST';
+                form.action = `/jefa/eliminar-formulario-externo/${formularioId}/`;
+                
+                const csrfToken = document.querySelector('[name=csrfmiddlewaretoken]').value;
+                const csrfInput = document.createElement('input');
+                csrfInput.type = 'hidden';
+                csrfInput.name = 'csrfmiddlewaretoken';
+                csrfInput.value = csrfToken;
+                
+                form.appendChild(csrfInput);
+                document.body.appendChild(form);
+                form.submit();
+            }
+        }
+
+        function editarFormularioExterno(formularioId) {
+            // Cargar datos del formulario para editar en el modal
+            fetch(`/jefa/get-formulario-externo/${formularioId}/`, {
+                headers: {'X-Requested-With': 'XMLHttpRequest'}
+            })
+            .then(response => response.text())
+            .then(htmlContent => {
+                const tempDiv = document.createElement('div');
+                tempDiv.innerHTML = htmlContent;
+                const scriptElement = tempDiv.querySelector('#formulario-data');
+                const data = JSON.parse(scriptElement.textContent);
+                
+                // Cambiar título y acción del modal
+                document.querySelector('#modalCrearFormularioExterno h3').textContent = 'Editar Formulario';
+                const form = document.querySelector('#modalCrearFormularioExterno form');
+                form.action = `/jefa/editar-formulario-externo/${formularioId}/`;
+                
+                // Rellenar campos con datos existentes
+                form.querySelector('input[name="nombre_formulario"]').value = data.nombre_formulario;
+                form.querySelector('input[name="nombre_medicamento"]').value = data.nombre_medicamento;
+                form.querySelector('input[name="presentacion"]').value = data.presentacion;
+                form.querySelector('input[name="cantidad"]').value = data.cantidad;
+                form.querySelector('input[name="fecha_solicitud"]').value = data.fecha_solicitud;
+                form.querySelector('select[name="tipo_firma"]').value = data.tipo_firma;
+                
+                // Mostrar modal
+                document.getElementById('modalCrearFormularioExterno').classList.remove('hidden');
+            })
+            .catch(error => {
+                console.error('Error:', error);
+                alert('Error al cargar el formulario');
+            });
+        }
+
+        // Cerrar modales al hacer clic fuera de ellos
+        document.addEventListener('click', function(event) {
+            if (event.target.classList.contains('modal')) {
+                event.target.classList.add('hidden');
+            }
+        });
     </script>
 </body>
 </html>

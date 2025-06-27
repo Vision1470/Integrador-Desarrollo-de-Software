@@ -1,0 +1,18 @@
+{% comment %}
+Template para devolver datos de formulario en formato JSON-like para JavaScript
+Este template simula una respuesta JSON usando un format específico que JavaScript puede parsear
+{% endcomment %}
+
+<script type="application/json" id="formulario-data">
+{
+    "id": {{ formulario_data.id }},
+    "nombre_formulario": "{{ formulario_data.nombre_formulario|escapejs }}",
+    "nombre_medicamento": "{{ formulario_data.nombre_medicamento|escapejs }}",
+    "presentacion": "{{ formulario_data.presentacion|escapejs }}",
+    "cantidad": {{ formulario_data.cantidad }},
+    "fecha_solicitud": "{{ formulario_data.fecha_solicitud }}",
+    "tipo_firma": "{{ formulario_data.tipo_firma }}",
+    "estado": "{{ formulario_data.estado }}",
+    "version": {{ formulario_data.version }}
+}
+</script>
