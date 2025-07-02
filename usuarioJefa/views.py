@@ -1552,19 +1552,46 @@ def obtener_padecimientos_por_area_y_fortalezas(area, fortalezas_enfermero):
 def calendario_area(request):
     """
     Vista principal del calendario híbrido con vista bimestral y mensual
+    ✅ CORREGIDA - Con desactivación automática throttled (cada 30 segundos)
     """
     try:
-         # AGREGAR ESTA LÍNEA AL INICIO
-        # Ejecutar desactivación automática cada vez que se carga el calendario
-        desactivaciones_automaticas = ejecutar_desactivacion_automatica()
-        if desactivaciones_automaticas > 0:
-            messages.info(request, f"🕒 Se desactivaron automáticamente {desactivaciones_automaticas} personas temporales por tiempo vencido.")
+        # ✅ NUEVA LÓGICA - Desactivación automática con throttling
+        from django.core.cache import cache
         
-        # Obtener datos básicos
-        areas = AreaEspecialidad.objects.all()
-        enfermeros = Usuarios.objects.filter(tipoUsuario='EN', estaActivo=True)
-        bimestres = range(1, 7)
+        ultima_verificacion = cache.get('ultima_verificacion_personal_temporal')
+        tiempo_actual = timezone.now()
+        
+        # Solo verificar si han pasado al menos 30 segundos desde la última verificación
+        if not ultima_verificacion or (tiempo_actual - ultima_verificacion).total_seconds() > 30:
+            desactivaciones_automaticas = ejecutar_desactivacion_automatica()
+            if desactivaciones_automaticas > 0:
+                messages.info(request, f"🕒 Se desactivaron automáticamente {desactivaciones_automaticas} personas temporales por tiempo vencido.")
+            
+            # Actualizar timestamp de la última verificación (válido por 60 segundos)
+            cache.set('ultima_verificacion_personal_temporal', tiempo_actual, timeout=60)
 
+        # Manejar POST requests (crear asignaciones, emergencias, personal temporal)
+        if request.method == 'POST':
+            action = request.POST.get('action')
+            
+            if action == 'crear_asignacion':
+                return crear_asignacion(request)
+            elif action == 'crear_emergencia':
+                return crear_emergencia(request)
+            elif action == 'crear_personal_temporal':
+                return gestionar_personal_temporal(request)
+            elif action == 'finalizar_personal_temporal':
+                personal_id = request.POST.get('personal_id')
+                try:
+                    personal = get_object_or_404(PersonalTemporal, id=personal_id, activo=True)
+                    personal._usuario_accion = request.user
+                    personal.desactivar(motivo="Finalización manual desde calendario", automatico=False)
+                    
+                    messages.success(request, f"✅ Personal temporal '{personal.nombre}' desactivado correctamente.")
+                    
+                except Exception as e:
+                    messages.error(request, f"❌ Error al finalizar personal temporal: {str(e)}")
+        
         # Obtener datos básicos
         areas = AreaEspecialidad.objects.all()
         enfermeros = Usuarios.objects.filter(tipoUsuario='EN', estaActivo=True)
@@ -1615,39 +1642,20 @@ def calendario_area(request):
                     context['bimestres_data'] = []
                 
                 # Datos para vista mensual
-                if vista_tipo == 'mensual':
-                    try:
-                        datos_mensual = obtener_datos_mensual(area_seleccionada, mes_actual, año_actual)
-                        context.update(datos_mensual)
-                    except Exception as e:
-                        print(f"Warning: Error obteniendo datos mensual: {e}")
-                
-                # Historial de asignaciones
                 try:
-                    historial_asignaciones = AsignacionCalendario.objects.filter(
-                        area=area_seleccionada
-                    ).select_related('enfermero').order_by('-fecha_inicio')[:10]
-                    context['historial_asignaciones'] = historial_asignaciones
+                    datos_mensual = obtener_datos_mensual(area_seleccionada, mes_actual, año_actual)
+                    context.update(datos_mensual)
                 except Exception as e:
-                    print(f"Warning: Error obteniendo historial asignaciones: {e}")
-                    context['historial_asignaciones'] = []
+                    print(f"Warning: Error obteniendo datos mensuales: {e}")
+                    context['calendario'] = []
+                    context['asignaciones_dia'] = []
                 
-                # Historial de cambios
-                try:
-                    historial_cambios = HistorialCambios.objects.filter(
-                        Q(area_anterior=area_seleccionada) | Q(area_nueva=area_seleccionada)
-                    ).select_related('asignacion__enfermero', 'area_anterior', 'area_nueva').order_by('-fecha_cambio')[:10]
-                    context['historial'] = historial_cambios
-                except Exception as e:
-                    print(f"Warning: Error obteniendo historial cambios: {e}")
-                    context['historial'] = []
-                
-                # Emergencias activas
+                # Emergencias activas del área seleccionada
                 try:
                     emergencias_activas = AsignacionEmergencia.objects.filter(
                         Q(area_destino=area_seleccionada) | Q(area_origen=area_seleccionada),
                         activa=True
-                    ).select_related('enfermero', 'area_origen', 'area_destino', 'creada_por').order_by('-fecha_creacion')
+                    ).select_related('enfermero', 'area_origen', 'area_destino').order_by('-fecha_inicio')
                     context['emergencias_activas'] = emergencias_activas
                 except Exception as e:
                     print(f"Warning: Error obteniendo emergencias: {e}")
@@ -2085,12 +2093,31 @@ def finalizar_emergencia(request, emergencia_id):
 
 def obtener_area_actual_enfermero(enfermero, fecha=None):
     """
-    Obtiene el área actual de un enfermero en una fecha específica
+    Obtiene el área actual de un enfermero en una fecha específica.
+    Prioriza emergencias activas sobre asignaciones normales del calendario.
     """
     if fecha is None:
         fecha = timezone.now().date()
     
-    # Buscar asignación normal activa
+    # Convertir fecha a datetime si es necesario para comparar con AsignacionEmergencia
+    if isinstance(fecha, date):
+        fecha_datetime = timezone.make_aware(datetime.combine(fecha, datetime.min.time()))
+    else:
+        fecha_datetime = fecha
+    
+    # 1. PRIORIDAD: Buscar asignaciones de emergencia activas
+    emergencia_activa = AsignacionEmergencia.objects.filter(
+        enfermero=enfermero,
+        activa=True,
+        fecha_inicio__lte=fecha_datetime,
+        fecha_fin__gte=fecha_datetime
+    ).first()
+    
+    if emergencia_activa:
+        print(f"DEBUG: {enfermero.username} está en emergencia en {emergencia_activa.area_destino.nombre}")
+        return emergencia_activa.area_destino
+    
+    # 2. SECUNDARIO: Buscar asignación normal activa del calendario
     asignacion_actual = AsignacionCalendario.objects.filter(
         enfermero=enfermero,
         fecha_inicio__lte=fecha,
@@ -2099,15 +2126,27 @@ def obtener_area_actual_enfermero(enfermero, fecha=None):
     ).first()
     
     if asignacion_actual:
+        print(f"DEBUG: {enfermero.username} está en asignación normal en {asignacion_actual.area.nombre}")
         return asignacion_actual.area
     
+    print(f"DEBUG: {enfermero.username} no tiene asignación activa en la fecha {fecha}")
     return None
 
-def ver_distribucion(request, area_id):
+def ver_distribucion(request, area_id):    
     """
-    Muestra la distribución actual de pacientes en un área
+    Vista para visualizar la distribución actual de pacientes en un área.
     """
     area = get_object_or_404(AreaEspecialidad, id=area_id)
+    
+    # Buscar las distribuciones activas para esta área
+    distribuciones = DistribucionPacientes.objects.filter(
+        area=area,
+        activo=True
+    ).select_related('enfermero')
+    
+    if not distribuciones.exists():
+        messages.info(request, "No hay una distribución activa para esta área.")
+        return redirect('jefa:distribuir_pacientes', area_id=area_id)
     
     # Obtener distribuciones activas para esta área
     distribuciones_activas = DistribucionPacientes.objects.filter(
@@ -2134,6 +2173,20 @@ def ver_distribucion(request, area_id):
                 esta_activo=True
             )
         
+        # Añadir información de gravedad a cada paciente
+        pacientes_con_gravedad = []
+        for paciente in pacientes_asignados:
+            gravedad = GravedadPaciente.objects.filter(
+                paciente=paciente
+            ).order_by('-fecha_asignacion').first()
+            
+            paciente_info = {
+                'paciente': paciente,
+                'nivel_gravedad': gravedad.nivel_gravedad if gravedad else 1,
+                'gravedad_texto': gravedad.get_nivel_gravedad_display() if gravedad else 'Leve'
+            }
+            pacientes_con_gravedad.append(paciente_info)
+            
         total_pacientes = distribucion.total_pacientes()
         total_pacientes_area += total_pacientes
         
@@ -2149,7 +2202,7 @@ def ver_distribucion(request, area_id):
         distribuciones_data.append({
             'distribucion': distribucion,
             'enfermero': distribucion.enfermero,
-            'pacientes_asignados': pacientes_asignados,
+            'pacientes_asignados': pacientes_con_gravedad,  # ✅ AHORA CON INFORMACIÓN DE GRAVEDAD
             'total_pacientes': total_pacientes,
             'carga_trabajo': carga_trabajo,
             'gravedad_1': distribucion.pacientes_gravedad_1,
@@ -2157,16 +2210,50 @@ def ver_distribucion(request, area_id):
             'gravedad_3': distribucion.pacientes_gravedad_3,
         })
     
-    # Calcular estadísticas del área
-    enfermeros_activos = len(distribuciones_activas)
-    promedio_pacientes = total_pacientes_area / enfermeros_activos if enfermeros_activos > 0 else 0
+    # Calcular estadísticas generales del área
+    pacientes_en_area = GravedadPaciente.objects.filter(
+        paciente__area=area, 
+        paciente__esta_activo=True
+    ).select_related('paciente')
+    
+    # Contar pacientes por nivel de gravedad
+    pacientes_gravedad_1 = pacientes_en_area.filter(nivel_gravedad=1).count()
+    pacientes_gravedad_2 = pacientes_en_area.filter(nivel_gravedad=2).count()
+    pacientes_gravedad_3 = pacientes_en_area.filter(nivel_gravedad=3).count()
+    total_pacientes = pacientes_gravedad_1 + pacientes_gravedad_2 + pacientes_gravedad_3
+    
+    # Calcular porcentajes para la barra visual
+    total_ponderado = (pacientes_gravedad_1 * 1) + (pacientes_gravedad_2 * 2) + (pacientes_gravedad_3 * 3)
+    if total_ponderado > 0:
+        porcentaje_gravedad_1 = (pacientes_gravedad_1 * 1 * 100) / total_ponderado
+        porcentaje_gravedad_2 = (pacientes_gravedad_2 * 2 * 100) / total_ponderado
+        porcentaje_gravedad_3 = (pacientes_gravedad_3 * 3 * 100) / total_ponderado
+    else:
+        porcentaje_gravedad_1 = porcentaje_gravedad_2 = porcentaje_gravedad_3 = 0
+    
+    # Verificar si el área está en sobrecarga
+    area_sobrecarga = AreaSobrecarga.objects.filter(area=area, activo=True).exists()
+    
+    # Obtener nivel de prioridad
+    try:
+        nivel_prioridad = NivelPrioridadArea.objects.get(area=area).nivel_prioridad
+    except NivelPrioridadArea.DoesNotExist:
+        nivel_prioridad = 1
     
     context = {
         'area': area,
-        'distribuciones_data': distribuciones_data,
-        'total_pacientes_area': total_pacientes_area,
-        'enfermeros_activos': enfermeros_activos,
-        'promedio_pacientes': round(promedio_pacientes, 1),
+        'enfermeros_data': distribuciones_data,  # ✅ DATOS CORREGIDOS
+        'total_pacientes': total_pacientes,
+        'pacientes_gravedad_1': pacientes_gravedad_1,
+        'pacientes_gravedad_2': pacientes_gravedad_2,
+        'pacientes_gravedad_3': pacientes_gravedad_3,
+        'porcentaje_gravedad_1': porcentaje_gravedad_1,
+        'porcentaje_gravedad_2': porcentaje_gravedad_2,
+        'porcentaje_gravedad_3': porcentaje_gravedad_3,
+        'area_en_sobrecarga': area_sobrecarga,
+        'nivel_prioridad': nivel_prioridad,
+        'ratio_pacientes_enfermero': total_pacientes / len(distribuciones_data) if distribuciones_data else 0,
+        'distribucion_fecha': distribuciones.first().fecha_asignacion if distribuciones.exists() else None,
     }
     
     return render(request, 'usuarioJefa/ver_distribucion.html', context)
@@ -6704,32 +6791,46 @@ def desactivar_personal_temporal(request, personal_id):
 def ejecutar_desactivacion_automatica():
     """
     Ejecuta desactivación automática - CUMPLE RQNF5
+    ✅ VERSIÓN MEJORADA con margen de tolerancia para evitar desactivaciones inmediatas
     """
     try:
+        # ✅ CAMBIO: Agregar margen de 5 segundos para evitar desactivaciones por milisegundos
+        tiempo_limite = timezone.now() - timedelta(seconds=5)
+        
         # Buscar personal temporal que debe ser desactivado
         personal_a_desactivar = PersonalTemporal.objects.filter(
             activo=True,
             tiempo_indefinido=False,
-            fecha_fin__lt=timezone.now()
+            fecha_fin__lt=tiempo_limite  # ✅ Usar tiempo con margen de seguridad
         )
         
         count = 0
         for personal in personal_a_desactivar:
             try:
-                # Desactivar manualmente si no existe el método
-                personal.activo = False
-                personal.save()
-                
-                # Crear entrada en historial
-                HistorialPersonalTemporal.objects.create(
-                    personal_temporal=personal,
-                    accion='desactivacion',
-                    motivo="Desactivación automática por tiempo vencido",
-                    usuario_accion=None  # Es automático
-                )
-                
-                count += 1
-                print(f"🕒 Desactivado automáticamente: {personal.nombre} - {personal.area.nombre}")
+                # ✅ Verificación adicional para estar absolutamente seguro
+                if personal.fecha_fin and personal.fecha_fin < timezone.now():
+                    # Usar el método del modelo si existe
+                    if hasattr(personal, 'desactivar'):
+                        personal.desactivar(motivo="Desactivación automática por tiempo vencido", automatico=True)
+                    else:
+                        # Fallback manual
+                        personal.activo = False
+                        personal.fecha_desactivacion = timezone.now()
+                        personal.desactivado_automaticamente = True
+                        personal.motivo_desactivacion = "Desactivación automática por tiempo vencido"
+                        personal.save()
+                        
+                        # Crear entrada en historial
+                        HistorialPersonalTemporal.objects.create(
+                            personal_temporal=personal,
+                            accion='desactivacion',
+                            motivo="Desactivación automática por tiempo vencido",
+                            automatico=True,
+                            usuario_accion=None
+                        )
+                    
+                    count += 1
+                    print(f"🕒 Desactivado automáticamente: {personal.nombre} - {personal.area.nombre}")
                 
             except Exception as e:
                 print(f"Error al desactivar {personal.nombre}: {e}")
@@ -9040,17 +9141,18 @@ def get_formulario_externo(request, formulario_id):
     # Si es una petición AJAX
     if request.headers.get('X-Requested-With') == 'XMLHttpRequest':
         context = {
-            'formulario_data': {
-                'id': formulario.id,
-                'nombre_formulario': formulario.nombre_formulario,
-                'nombre_medicamento': formulario.nombre_medicamento,
-                'presentacion': formulario.presentacion,
-                'cantidad': formulario.cantidad,
-                'fecha_solicitud': formulario.fecha_solicitud.strftime('%Y-%m-%d'),
-                'tipo_firma': formulario.tipo_firma,
-                'version': formulario.version,
-            }
-        }
+                        'formulario_data': {
+                            'id': formulario.id,
+                            'nombre_formulario': formulario.nombre_formulario,
+                            'nombre_medicamento': formulario.nombre_medicamento,
+                            'presentacion': formulario.presentacion,
+                            'cantidad': formulario.cantidad,
+                            'fecha_solicitud': formulario.fecha_solicitud.strftime('%Y-%m-%d'),
+                            'tipo_firma': formulario.tipo_firma,
+                            'firma_dibujada': formulario.firma_dibujada,
+                            'version': formulario.version,
+                        }
+                    }
         return render(request, 'usuarioJefa/formulario_data.html', context)
     
     # Si no es AJAX, redirigir al almacén

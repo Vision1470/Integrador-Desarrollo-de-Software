@@ -8,52 +8,41 @@ from .models import *
 from usuarioDoctor.models import *
 
 @login_required
+@login_required
+@login_required
 def pacientes_enfermeria(request):
     enfermero_actual = request.user
     print("Enfermero actual:", enfermero_actual.username, enfermero_actual.tipoUsuario)  # Debug
     
-    # Obtener el área asignada actual del calendario
-    from usuarioJefa.models import AsignacionCalendario
+    # Importar función corregida
+    from usuarioJefa.views import obtener_area_actual_enfermero
     from datetime import date
     
-    try:
-        asignacion_actual = AsignacionCalendario.objects.filter(
-            enfermero=enfermero_actual,
-            fecha_inicio__lte=date.today(),
-            fecha_fin__gte=date.today(),
-            activo=True
-        ).select_related('area').first()
+    # Obtener el área actual considerando emergencias
+    area_actual = obtener_area_actual_enfermero(enfermero_actual, date.today())
+    
+    if area_actual:
+        print(f"DEBUG: Área actual determinada: {area_actual.nombre}")
         
-        print(f"Asignación encontrada: {asignacion_actual}")  # Debug
+        # Filtrar pacientes por área actual y enfermero
+        pacientes_asignados = Paciente.objects.filter(
+            enfermero_actual=enfermero_actual,
+            esta_activo=True,
+            area=area_actual  # Usar el área actual (puede ser de emergencia)
+        ).select_related('area', 'doctor_actual')
         
-        # Filtrar pacientes por área asignada y enfermero actual
-        if asignacion_actual and asignacion_actual.area:
-            pacientes_asignados = Paciente.objects.filter(
-                enfermero_actual=enfermero_actual,
-                esta_activo=True,
-                area=asignacion_actual.area
-            ).select_related('area', 'doctor_actual')
-            print(f"Área asignada: {asignacion_actual.area.nombre}")  # Debug
-        else:
-            # Si no hay asignación, mostrar todos los pacientes asignados directamente al enfermero
-            pacientes_asignados = Paciente.objects.filter(
-                enfermero_actual=enfermero_actual,
-                esta_activo=True
-            ).select_related('area', 'doctor_actual')
-            print("Sin asignación de calendario, mostrando pacientes directos")  # Debug
+        print(f"DEBUG: Pacientes encontrados: {pacientes_asignados.count()}")
         
-        print("Número de pacientes:", pacientes_asignados.count())  # Debug
-        
-    except Exception as e:
-        print(f"Error en la consulta: {str(e)}")  # Debug
-        # En caso de error, devolver queryset vacío
-        pacientes_asignados = Paciente.objects.none()
-        asignacion_actual = None
+    else:
+        print("DEBUG: No se encontró área actual para el enfermero")
+        pacientes_asignados = Paciente.objects.none()  # Queryset vacío
+    
+    print("Número de pacientes:", pacientes_asignados.count())  # Debug
     
     return render(request, 'usuarioEnfermeria/pacientes_enfermeria.html', {
         'pacientes': pacientes_asignados,
         'enfermero': enfermero_actual,
-        'area_asignada': asignacion_actual.area if asignacion_actual else None
+        'area_asignada': area_actual  # ← CORREGIDO: usar area_actual aquí
     })
 
 @login_required

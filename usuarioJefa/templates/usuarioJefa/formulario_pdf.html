@@ -5,179 +5,207 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Formulario de Medicamento Externo - {{ formulario.nombre_formulario }}</title>
     <style>
+        @media print {
+            body { margin: 0; }
+            .no-print { display: none; }
+        }
+        
         body {
             font-family: Arial, sans-serif;
-            margin: 40px;
+            line-height: 1.4;
+            margin: 20px;
             color: #333;
-            line-height: 1.6;
         }
         
         .header {
             text-align: center;
-            margin-bottom: 40px;
-            border-bottom: 2px solid #0A2342;
-            padding-bottom: 20px;
+            margin-bottom: 30px;
+            border-bottom: 2px solid #333;
+            padding-bottom: 15px;
         }
         
-        .header h1 {
-            color: #0A2342;
+        .hospital-name {
+            font-size: 24px;
+            font-weight: bold;
+            margin-bottom: 5px;
+        }
+        
+        .form-title {
+            font-size: 18px;
             margin-bottom: 10px;
         }
         
-        .header h2 {
+        .form-number {
+            font-size: 14px;
             color: #666;
-            font-weight: normal;
         }
         
-        .field-group {
-            margin-bottom: 20px;
+        .content {
+            margin: 30px 0;
+        }
+        
+        .field-row {
             display: flex;
+            margin-bottom: 15px;
             align-items: center;
         }
         
         .field-label {
             font-weight: bold;
-            width: 200px;
-            color: #0A2342;
+            min-width: 150px;
+            margin-right: 15px;
         }
         
         .field-value {
-            flex: 1;
-            padding: 8px;
-            border-bottom: 1px solid #ccc;
-            margin-left: 10px;
+            border-bottom: 1px solid #333;
+            flex-grow: 1;
+            padding: 5px;
+            min-height: 20px;
         }
         
         .signature-section {
-            margin-top: 60px;
-            page-break-inside: avoid;
+            margin-top: 50px;
+            border: 2px solid #333;
+            padding: 20px;
+            min-height: 120px;
         }
         
-        .signature-area {
-            border: 2px solid #ccc;
-            height: 100px;
-            width: 400px;
-            margin: 20px 0;
+        .signature-title {
+            font-weight: bold;
+            margin-bottom: 15px;
+            text-align: center;
+        }
+        
+        .signature-content {
+            min-height: 80px;
             display: flex;
             align-items: center;
             justify-content: center;
-            background-color: #f9f9f9;
+            position: relative;
+        }
+        
+        .signature-image {
+            max-height: 70px;
+            max-width: 200px;
+        }
+        
+        .signature-placeholder {
+            color: #666;
+            font-style: italic;
+        }
+        
+        .signature-line {
+            position: absolute;
+            bottom: 10px;
+            left: 50%;
+            transform: translateX(-50%);
+            width: 200px;
+            border-bottom: 1px solid #333;
+            text-align: center;
+            padding-top: 5px;
+            font-size: 12px;
         }
         
         .footer {
-            margin-top: 50px;
-            text-align: right;
-            font-size: 0.9em;
+            margin-top: 40px;
+            text-align: center;
+            font-size: 12px;
             color: #666;
-            border-top: 1px solid #ccc;
-            padding-top: 20px;
-        }
-        
-        .status-info {
-            background-color: #f8f9fa;
-            padding: 15px;
-            border-left: 4px solid #0A2342;
-            margin-bottom: 30px;
-        }
-        
-        @media print {
-            body {
-                margin: 20px;
-            }
-            .no-print {
-                display: none;
-            }
         }
         
         .print-button {
-            background-color: #0A2342;
+            background-color: #007bff;
             color: white;
-            padding: 10px 20px;
             border: none;
-            border-radius: 4px;
+            padding: 10px 20px;
+            border-radius: 5px;
             cursor: pointer;
             margin-bottom: 20px;
         }
         
         .print-button:hover {
-            background-color: #2E4057;
+            background-color: #0056b3;
         }
     </style>
 </head>
 <body>
-    <div class="no-print">
-        <button class="print-button" onclick="window.print()">🖨️ Imprimir Formulario</button>
-        <button class="print-button" onclick="window.close()">❌ Cerrar</button>
-    </div>
-
+    <button class="print-button no-print" onclick="window.print()">🖨️ Imprimir Formulario</button>
+    
     <div class="header">
-        <h1>FORMULARIO DE SOLICITUD DE MEDICAMENTO EXTERNO</h1>
-        <h2>Hospital Sistema de Gestión</h2>
-    </div>
-
-    <div class="status-info">
-        <strong>Estado del Formulario:</strong> {{ formulario.get_estado_display }} | 
-        <strong>Versión:</strong> {{ formulario.version }} |
-        <strong>Creado por:</strong> {{ formulario.creado_por.first_name }} {{ formulario.creado_por.apellidos }}
+        <div class="hospital-name">HOSPITAL GENERAL</div>
+        <div class="form-title">SOLICITUD DE MEDICAMENTO EXTERNO</div>
+        <div class="form-number">Formulario #{{ formulario.id }} - Versión {{ formulario.version }}</div>
     </div>
     
-    <div class="field-group">
-        <div class="field-label">Nombre del Formulario:</div>
-        <div class="field-value">{{ formulario.nombre_formulario }}</div>
-    </div>
-    
-    <div class="field-group">
-        <div class="field-label">Medicamento Solicitado:</div>
-        <div class="field-value">{{ formulario.nombre_medicamento }}</div>
-    </div>
-    
-    <div class="field-group">
-        <div class="field-label">Presentación:</div>
-        <div class="field-value">{{ formulario.presentacion }}</div>
-    </div>
-    
-    <div class="field-group">
-        <div class="field-label">Cantidad:</div>
-        <div class="field-value">{{ formulario.cantidad }} unidades</div>
-    </div>
-    
-    <div class="field-group">
-        <div class="field-label">Fecha de Solicitud:</div>
-        <div class="field-value">{{ formulario.fecha_solicitud|date:"d/m/Y" }}</div>
-    </div>
-    
-    <div class="field-group">
-        <div class="field-label">Tipo de Firma:</div>
-        <div class="field-value">{{ formulario.get_tipo_firma_display }}</div>
+    <div class="content">
+        <div class="field-row">
+            <div class="field-label">Nombre del Formulario:</div>
+            <div class="field-value">{{ formulario.nombre_formulario }}</div>
+        </div>
+        
+        <div class="field-row">
+            <div class="field-label">Medicamento:</div>
+            <div class="field-value">{{ formulario.nombre_medicamento }}</div>
+        </div>
+        
+        <div class="field-row">
+            <div class="field-label">Presentación:</div>
+            <div class="field-value">{{ formulario.presentacion }}</div>
+        </div>
+        
+        <div class="field-row">
+            <div class="field-label">Cantidad Solicitada:</div>
+            <div class="field-value">{{ formulario.cantidad }}</div>
+        </div>
+        
+        <div class="field-row">
+            <div class="field-label">Fecha de Solicitud:</div>
+            <div class="field-value">{{ formulario.fecha_solicitud|date:"d/m/Y" }}</div>
+        </div>
+        
+        <div class="field-row">
+            <div class="field-label">Solicitado por:</div>
+            <div class="field-value">{{ formulario.creado_por.get_full_name|default:formulario.creado_por.username }}</div>
+        </div>
     </div>
     
     <div class="signature-section">
-        <div class="field-label">Firma del Solicitante:</div>
-        <div class="signature-area">
-            {% if formulario.tipo_firma == 'digital' and formulario.firma_digital %}
-                <strong>✓ FIRMA DIGITAL APLICADA</strong>
-            {% elif formulario.tipo_firma == 'dibujada' and formulario.firma_dibujada %}
-                <strong>✓ FIRMA DIBUJADA APLICADA</strong>
+        <div class="signature-title">FIRMA DEL SOLICITANTE</div>
+        <div class="signature-content">
+            {% if formulario.tipo_firma == 'dibujada' and formulario.firma_dibujada %}
+                <img src="{{ formulario.firma_dibujada }}" alt="Firma" class="signature-image">
+            {% elif formulario.tipo_firma == 'digital' and formulario.firma_digital %}
+                <div style="font-family: 'Brush Script MT', cursive; font-size: 24px;">
+                    {{ formulario.firma_digital }}
+                </div>
             {% else %}
-                <em>Espacio para firma manual</em>
+                <div class="signature-placeholder">
+                    {% if formulario.tipo_firma == 'impresa' %}
+                        Espacio para firma manual
+                    {% else %}
+                        ✓ FIRMA DIBUJADA APLICADA
+                    {% endif %}
+                </div>
             {% endif %}
+        </div>
+        <div class="signature-line">
+            Firma y Sello
         </div>
     </div>
     
     <div class="footer">
-        <p><strong>Fecha de generación:</strong> {{ fecha_generacion|date:"d/m/Y H:i" }}</p>
-        <p><strong>Documento generado por:</strong> Sistema de Gestión Hospitalaria</p>
-        {% if formulario.estado == 'borrador' %}
-            <p><em>⚠️ Este es un documento borrador. No tiene validez oficial hasta ser enviado.</em></p>
-        {% endif %}
+        <p>Generado el {{ fecha_generacion|date:"d/m/Y" }} a las {{ fecha_generacion|date:"H:i" }}</p>
+        <p>Este documento es válido únicamente con la firma y sello correspondiente</p>
     </div>
-
+    
     <script>
-        // Auto-abrir diálogo de impresión si se especifica en la URL
+        // Auto-imprimir si se accede con #print en la URL
         if (window.location.hash === '#print') {
             window.onload = function() {
-                window.print();
-            }
+                setTimeout(function() {
+                    window.print();
+                }, 500);
+            };
         }
     </script>
 </body>

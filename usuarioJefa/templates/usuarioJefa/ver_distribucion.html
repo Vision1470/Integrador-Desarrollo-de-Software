@@ -1,4 +1,4 @@
-html<!DOCTYPE html>
+<!DOCTYPE html>
 <html lang="es">
 <head>
     <meta charset="UTF-8">
@@ -475,19 +475,22 @@ html<!DOCTYPE html>
                            </div>
                        </div>
                        
-                       <h4>Pacientes:</h4>
-                       <ul class="patient-list">
-                           {% for paciente_data in enfermero_data.pacientes %}
-                           <li class="patient-item">
-                               <span>{{ paciente_data.paciente.nombres }} {{ paciente_data.paciente.apellidos }}</span>
-                               <span class="patient-gravity gravity-{{ paciente_data.nivel_gravedad }}">
-                                   Gravedad {{ paciente_data.nivel_gravedad }}
-                               </span>
-                           </li>
-                           {% empty %}
-                           <li class="patient-item">No hay pacientes asignados</li>
-                           {% endfor %}
-                       </ul>
+ <h4>Pacientes:</h4>
+{% if enfermero_data.pacientes_asignados %}
+    <ul class="patient-list">
+        {% for item in enfermero_data.pacientes_asignados %}
+            <li class="patient-item">
+                <span>{{ item.paciente.nombres }} {{ item.paciente.apellidos }}</span>
+                <span class="patient-gravity gravity-{{ item.nivel_gravedad }}">
+                    Nivel {{ item.nivel_gravedad }}
+                </span>
+            </li>
+        {% endfor %}
+    </ul>
+{% else %}
+    <p>No hay pacientes asignados</p>
+{% endif %}
+
                    </div>
                </div>
                {% endfor %}

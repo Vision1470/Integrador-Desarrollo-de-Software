@@ -821,13 +821,22 @@
                         <input type="date" name="fecha_solicitud" required id="fecha_solicitud_rapida">
                     </div>
                     <div class="form-group">
-                        <label>Tipo de Firma:</label>
-                        <select name="tipo_firma">
-                            <option value="impresa">Imprimir (sin firma)</option>
-                            <option value="digital">Firma Digital</option>
-                            <option value="dibujada">Firma Dibujada</option>
-                        </select>
-                    </div>
+    <label>Tipo de Firma:</label>
+    <select name="tipo_firma" id="tipoFirmaSelect" onchange="manejarCambioTipoFirma()">
+        <option value="impresa">Sin firma</option>
+        <option value="dibujada">Firma Dibujada</option>
+    </select>
+</div>
+<div class="form-group" id="grupoFirma" style="display: none;">
+    <label>Firma:</label>
+    <div id="previewFirma" style="border: 1px solid var(--border-color); height: 80px; border-radius: 4px; background-color: #f9f9f9; display: flex; align-items: center; justify-content: center; color: #666;">
+        <span id="textoPreview">Haga clic en "Dibujar Firma" para crear su firma</span>
+        <img id="imagenPreview" style="max-height: 70px; display: none;" />
+    </div>
+    <button type="button" class="action-button" onclick="abrirModalFirma()" style="margin-top: 5px;">Dibujar Firma</button>
+    <input type="hidden" name="firma_dibujada" id="firmaData">
+</div>
+
                     <input type="hidden" name="plantilla_base" id="plantilla_base_rapida">
                     <div style="display: flex; gap: 10px;">
                         <button type="button" onclick="ocultarModal('modalCrearFormularioExterno')">Cancelar</button>
@@ -851,6 +860,27 @@
                 </form>
             </div>
         </div>
+
+        <div id="modalFirmaDigital" class="modal hidden">
+    <div class="modal-content" style="max-width: 600px;">
+        <h3>Dibujar Firma</h3>
+        <div class="form-group">
+            <label>Dibuje su firma en el área de abajo:</label>
+            <div style="border: 2px solid var(--border-color); border-radius: 4px; background-color: white;">
+                <canvas id="canvasFirma" width="550" height="200" style="display: block; cursor: crosshair;"></canvas>
+            </div>
+            <div style="margin-top: 10px; display: flex; gap: 10px;">
+                <button type="button" class="action-button" onclick="limpiarCanvas()">Limpiar</button>
+                <button type="button" class="action-button" onclick="cambiarColorFirma('#000000')" style="background-color: #000000;">Negro</button>
+                <button type="button" class="action-button" onclick="cambiarColorFirma('#0000FF')" style="background-color: #0000FF;">Azul</button>
+            </div>
+        </div>
+        <div style="display: flex; gap: 10px; margin-top: 20px;">
+            <button type="button" onclick="guardarFirma()">Guardar Firma</button>
+            <button type="button" onclick="cerrarModalFirma()">Cancelar</button>
+        </div>
+    </div>
+</div>
     </div>
 
     <script>
@@ -1034,6 +1064,142 @@
                 event.target.classList.add('hidden');
             }
         });
+
+        // Variables para el canvas de firma
+let canvas, ctx;
+let dibujando = false;
+let colorFirma = '#000000';
+
+function manejarCambioTipoFirma() {
+    const tipoFirma = document.getElementById('tipoFirmaSelect').value;
+    const grupoFirma = document.getElementById('grupoFirma');
+    
+    if (tipoFirma === 'dibujada') {
+        grupoFirma.style.display = 'block';
+    } else {
+        grupoFirma.style.display = 'none';
+        // Limpiar datos de firma si cambia de tipo
+        document.getElementById('firmaData').value = '';
+        document.getElementById('textoPreview').style.display = 'block';
+        document.getElementById('imagenPreview').style.display = 'none';
+    }
+}
+
+function abrirModalFirma() {
+    document.getElementById('modalFirmaDigital').classList.remove('hidden');
+    
+    // Inicializar canvas
+    canvas = document.getElementById('canvasFirma');
+    ctx = canvas.getContext('2d');
+    
+    // Configuración inicial del canvas
+    ctx.strokeStyle = colorFirma;
+    ctx.lineWidth = 2;
+    ctx.lineCap = 'round';
+    ctx.lineJoin = 'round';
+    
+    // Limpiar canvas
+    ctx.fillStyle = 'white';
+    ctx.fillRect(0, 0, canvas.width, canvas.height);
+    
+    // Event listeners para dibujar
+    canvas.addEventListener('mousedown', iniciarDibujo);
+    canvas.addEventListener('mousemove', dibujar);
+    canvas.addEventListener('mouseup', detenerDibujo);
+    canvas.addEventListener('mouseout', detenerDibujo);
+    
+    // Touch events para dispositivos móviles
+    canvas.addEventListener('touchstart', function(e) {
+        e.preventDefault();
+        const touch = e.touches[0];
+        const mouseEvent = new MouseEvent('mousedown', {
+            clientX: touch.clientX,
+            clientY: touch.clientY
+        });
+        canvas.dispatchEvent(mouseEvent);
+    });
+    
+    canvas.addEventListener('touchmove', function(e) {
+        e.preventDefault();
+        const touch = e.touches[0];
+        const mouseEvent = new MouseEvent('mousemove', {
+            clientX: touch.clientX,
+            clientY: touch.clientY
+        });
+        canvas.dispatchEvent(mouseEvent);
+    });
+    
+    canvas.addEventListener('touchend', function(e) {
+        e.preventDefault();
+        const mouseEvent = new MouseEvent('mouseup', {});
+        canvas.dispatchEvent(mouseEvent);
+    });
+}
+
+function iniciarDibujo(e) {
+    dibujando = true;
+    const rect = canvas.getBoundingClientRect();
+    ctx.beginPath();
+    ctx.moveTo(e.clientX - rect.left, e.clientY - rect.top);
+}
+
+function dibujar(e) {
+    if (!dibujando) return;
+    
+    const rect = canvas.getBoundingClientRect();
+    ctx.lineTo(e.clientX - rect.left, e.clientY - rect.top);
+    ctx.stroke();
+}
+
+function detenerDibujo() {
+    if (dibujando) {
+        dibujando = false;
+        ctx.beginPath();
+    }
+}
+
+function limpiarCanvas() {
+    ctx.fillStyle = 'white';
+    ctx.fillRect(0, 0, canvas.width, canvas.height);
+}
+
+function cambiarColorFirma(color) {
+    colorFirma = color;
+    ctx.strokeStyle = color;
+}
+
+function guardarFirma() {
+    // Convertir canvas a base64
+    const firmaData = canvas.toDataURL('image/png');
+    
+    // Guardar en el campo oculto
+    document.getElementById('firmaData').value = firmaData;
+    
+    // Mostrar preview
+    const imagenPreview = document.getElementById('imagenPreview');
+    const textoPreview = document.getElementById('textoPreview');
+    
+    imagenPreview.src = firmaData;
+    imagenPreview.style.display = 'block';
+    textoPreview.style.display = 'none';
+    
+    // Cerrar modal
+    cerrarModalFirma();
+    
+    alert('Firma guardada correctamente');
+}
+
+function cerrarModalFirma() {
+    document.getElementById('modalFirmaDigital').classList.add('hidden');
+    
+    // Remover event listeners
+    if (canvas) {
+        canvas.removeEventListener('mousedown', iniciarDibujo);
+        canvas.removeEventListener('mousemove', dibujar);
+        canvas.removeEventListener('mouseup', detenerDibujo);
+        canvas.removeEventListener('mouseout', detenerDibujo);
+    }
+}
     </script>
 </body>
 </html>
